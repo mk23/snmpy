@@ -1,4 +1,4 @@
-import json, snmpy, httplib2
+import json, httplib2, snmpy_plugins
 import logging as log
 
 class rabbitmq_statistics:
@@ -29,7 +29,7 @@ class rabbitmq_statistics:
         return 'string', self.data[idx - 1]
 
     def val(self, idx):
-        resp, text = self.http.request('http://localhost:55672/api/nodes/rabbit@%s' % snmpy.role())
+        resp, text = self.http.request('http://localhost:55672/api/nodes/rabbit@%s' % snmpy_plugins.role())
         log.debug('received http api response: (%d) %s', resp.status, text)
 
         stat = json.loads(text)

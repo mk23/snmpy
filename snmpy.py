@@ -44,7 +44,7 @@ def initialize(args):
         mods = {}
         for name in conf.sections():
             base = conf.get(name, 'module')
-            full = 'snmpy.%s' % base
+            full = 'snmpy_plugins.%s' % base
 
             if full not in sys.modules:
                 __import__(full)
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--baseoid', default='.1.3.6.1.4.1.2021.1123',
                         help='base oid as configured in pass_persist by snmpd.conf')
     parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.cfg',
-                        help='location for the snmpy module configuration')
+                        help='snmpy configuration file')
     parser.add_argument('-l', '--logfile', default=None,
                         help='log file destination path, implies --verbose')
     parser.add_argument('-p', '--pidfile', default='/var/run/snmpy/agent.pid',

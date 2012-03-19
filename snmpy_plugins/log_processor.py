@@ -1,4 +1,4 @@
-import re, snmpy
+import re, snmpy_plugins
 
 class log_processor:
     def __init__(self, conf):
@@ -14,7 +14,7 @@ class log_processor:
     def val(self, idx):
         return 'integer', self.data[idx - 1]['value']
 
-    @snmpy.task
+    @snmpy_plugins.task
     def proc(self, file):
         for line in snmpy.tail(file):
             for item in xrange(len(self.data)):
