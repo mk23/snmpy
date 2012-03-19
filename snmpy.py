@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, signal, traceback
+import os, sys, signal, traceback, ConfigParser
 import logging as log
 
 def delete_pid(*args):
@@ -9,6 +9,20 @@ def delete_pid(*args):
         os.remove(delete_pid.pidfile)
     finally:
         os._exit(1)
+
+def build_conf(items):
+    conf = {'objects':{}}
+    for item in items:
+        key = item[0].split('.')
+        if unicode(key[-1]).isnumeric():
+            if conf['objects'].has_key(key[-1]):
+                conf['objects'][key[-1]][key[0]] = item[1]
+            else:
+                conf['objects'][key[-1]] = {key[0]: item[1]}
+        else:
+            conf[item[0]] = item[1]
+
+    return conf
 
 def initialize(opts):
     log.info('initialization started')
@@ -20,30 +34,24 @@ def initialize(opts):
         open(opts.pidfile, 'w').write('%d\n' % os.getpid())
         log.debug('wrote pidfile: %s (%d)', opts.pidfile, os.getpid())
 
-        sys.path.insert(0, os.path.dirname(os.path.abspath(opts.modules)))
-
-        root = __import__(os.path.basename(opts.modules))
-        log.debug('imported root module')
-
-        conf = [item.strip() for line in open(opts.cfgfile) for item in line.split() if not line.startswith('#') and item.strip()]
-        log.debug('read enabled object list: %s', ' '.join(conf))
+        conf = ConfigParser.SafeConfigParser()
+        conf.read(opts.cfgfile)
 
         mods = {}
-        for name, opts in root.configuration.modules():
-            if name in conf:
-                path = '%s.%s' % (root.__name__, opts.module)
+        for name in conf.sections():
+            if name == 'snmpy_global':
+                continue
 
-                if path not in sys.modules:
-                    __import__(path)
-                    log.debug('imported plugin module: %s', path)
+            base = conf.get(name, 'module')
+            full = 'snmpy.%s' % base
 
-                item = sys.modules[path].__dict__[opts.module](opts)
-            else:
-                item = root.disabled_plugin()
+            if full not in sys.modules:
+                __import__(full)
+                log.debug('importing module %s', full)
 
-            mods[opts.index] = item
-            log.debug('created plugin instance: %s (%s)', name, item.__class__)
-
+            item = sys.modules[full].__dict__[base](build_conf(conf.items(name)))
+            mods[conf.getint(name, 'index')] = item
+            log.debug('created plugin %s instance of %s (%s)', name, base, item)
     except Exception as e:
         log.error('initialization failed: %s', e)
         for line in traceback.format_exc().split('\n'):
@@ -53,26 +61,13 @@ def initialize(opts):
     log.info('initialization complete')
     return mods
 
-def chop_index(oid, base, next=False):
-    top, sep, bot = oid.partition(base)
-    log.debug('partitioned oid: %s / %s / %s', top, sep, bot)
-
-    obj = [int(item) for item in bot.lstrip('.').split('.') if item]
-    log.debug('requested oid parts: %s', obj)
-
-    ret = tuple(i < len(obj) and obj[i] or int(not next or i != 2) for i in xrange(3))
-    log.debug('normalized oid parts: %s', ret)
-
-    if (not next and len(obj) != 3) or ret[1] not in (1, 2):
-        raise ValueError('invalid oid: %s' % oid)
-
-    return ret
-
 def enter_loop(base, mods):
     log.info('command loop started')
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
     log.debug('stdout set unbuffered')
+
+    keys = sorted(mods)
     while True:
         try:
             req = sys.stdin.readline().strip()
@@ -90,29 +85,69 @@ def enter_loop(base, mods):
             oid = sys.stdin.readline().strip()
             log.info('received %s request for %s', req, oid)
 
-#TEMPORARY FOR OID MIGRATION
-            if oid == '.1.3.6.1.4.1.2021.1123.1.25':
-                vtype, vdata = mods[1].val(25)
-                print '.1.3.6.1.4.1.2021.1123.2.25'
-                print vtype
-                print vdata
-                continue
-#TEMPORARY FOR OID MIGRATION
+            top, sep, bot = oid.partition(base)
+            log.debug('partitioned oid: %s / %s / %s', top, sep, bot)
 
-            tbl, sub, idx = chop_index(oid, base, req == 'getnext')
-            if req == 'getnext':
-                log.debug('requested table length: %d', mods[tbl].len())
-                if idx < mods[tbl].len():
-                    idx += 1;
-                elif idx == mods[tbl].len():
-                    if sub == 1:
-                        sub = 2; idx = 1
-                    else:
-                        tbl += 1; sub = 1; idx = 1
+            obj = [int(prt) for prt in bot.lstrip('.').split('.') if prt]
+            log.debug('requested oid parts: %s', obj)
+
+            if req == 'get':
+                if len(obj) == 3 and obj[1] in (1, 2) and obj[0] in keys and obj[2] <= mods[obj[0]].len():
+                    tbl, sub, idx = obj
                 else:
-                    raise ValueError('%s request for %s is out of range' % (req, oid))
-            elif tbl > len(mods) or idx > mods[tbl].len():
-                raise ValueError('%s request for %s is out of range' % (req, oid))
+                    raise ValueError('invalid oid: %s' % oid)
+            elif req == 'getnext':
+                if len(obj) == 0:
+                    idx = 1
+                    sub = 1
+                    tbl = min(keys)
+                elif len(obj) == 1:
+                    idx = 1
+                    sub = 1
+                    if obj[0] in keys:
+                        tbl = obj[0]
+                    elif obj[0] <= min(keys):
+                        tbl = min(i for i in keys if i >= obj[0])
+                    else:
+                        raise ValueError('invalid oid: %s' % oid)
+                elif len(obj) == 2:
+                    if obj[0] in keys:
+                        idx = 1
+                        tbl = obj[0]
+                        if obj[1] in (1, 2):
+                            sub = obj[1]
+                        else:
+                            raise ValueError('invalid oid: %s' % oid)
+                    elif obj[0] <= min(keys):
+                        idx = 1
+                        sub = 1
+                        tbl = min(i for i in keys if i >= obj[0])
+                    else:
+                        raise ValueError('invalid oid: %s' % oid)
+                elif len(obj) == 3:
+                    if obj[0] in keys:
+                        tbl = obj[0]
+                        if obj[1] in (1, 2):
+                            sub = obj[1]
+                        else:
+                            raise ValueError('invalid oid: %s' % oid)
+                        if obj[2] < mods[tbl].len():
+                            idx = obj[2] + 1
+                        else:
+                            idx = 1
+                            if sub == 1:
+                                sub = 2
+                            elif tbl + 1 <= min(keys):
+                                sub = 1
+                                tbl = min(i for i in keys if i >= obj[0])
+                            else:
+                                raise ValueError('invalid oid: %s' % oid)
+                    elif obj[0] <= min(keys):
+                        idx = 1
+                        sub = 1
+                        tbl = min(i for i in keys if i >= obj[0])
+                    else:
+                        raise ValueError('invalid oid: %s' % oid)
 
             vtype, vdata = sub == 1 and mods[tbl].key(idx) or mods[tbl].val(idx)
             log.debug('received plugin data: %s/%s', vtype, vdata)
@@ -137,8 +172,6 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage='%prog [options]')
     parser.add_option('-b', '--baseoid', default='.1.3.6.1.4.1.2021.1123',
                       help='base oid as configured in pass_persist by snmpd.conf')
-    parser.add_option('-m', '--modules', default='/usr/local/lib/snmpy',
-                      help='location for extra snmpy modules')
     parser.add_option('-f', '--cfgfile', default='/etc/snmpy.cfg',
                       help='location for the snmpy module configuration')
     parser.add_option('-l', '--logfile', default=None,

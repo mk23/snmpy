@@ -1,16 +1,6 @@
 import os, time, socket, threading
 import logging as log
 
-class disabled_plugin:
-    def len(self):
-        return 1
-
-    def key(self, idx):
-        return 'string', 'disabled'
-
-    def val(self, idx):
-        return 'string', 'disabled'
-
 def tail(file):
     file = open(file)
     file.seek(0, 2) # start at the end
@@ -53,31 +43,3 @@ def role():
         return dict(line.strip().split()[0:2] for line in open('/etc/rolename')).get(host, host)
     except IOError:
         return host
-
-class configuration:
-    @staticmethod
-    def modules():
-        for k, v in configuration.__dict__.items():
-            if type(v) == type(configuration):
-                yield k, v
-
-    class disk_utilization:
-        index  = 1
-        module = 'disk_utilization'
-
-    class rabbitmq_statistics:
-        index  = 2
-        module = 'rabbitmq_statistics'
-
-    class http_status_counter:
-        index   = 3
-        module  = 'log_processor'
-        logfile = '/var/log/varnish/varnishncsa.log'
-        objects = [
-            ('HTTP 1XX', r'"[^\s]+ [^\s]+ [^\s]+" 1\d\d'),
-            ('HTTP 2XX', r'"[^\s]+ [^\s]+ [^\s]+" 2\d\d'),
-            ('HTTP 3XX', r'"[^\s]+ [^\s]+ [^\s]+" 3\d\d'),
-            ('HTTP 4XX', r'"[^\s]+ [^\s]+ [^\s]+" 4\d\d'),
-            ('HTTP 5XX', r'"[^\s]+ [^\s]+ [^\s]+" 5\d\d'),
-        ]
-
