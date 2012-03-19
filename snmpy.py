@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys, signal, traceback, ConfigParser
+import os, signal, sys, traceback
+import glob, ConfigParser
 import logging as log
 
 def delete_pid(*args):
@@ -37,11 +38,14 @@ def initialize(opts):
         conf = ConfigParser.SafeConfigParser()
         conf.read(opts.cfgfile)
 
+        if conf.has_option('snmpy_global', 'include_dir'):
+            conf.read([opts.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
+            conf.remove_section('snmpy_global')
+
+        log.info('configuring %d tables: %s', len(conf.sections()), ', '.join(conf.sections()))
+
         mods = {}
         for name in conf.sections():
-            if name == 'snmpy_global':
-                continue
-
             base = conf.get(name, 'module')
             full = 'snmpy.%s' % base
 

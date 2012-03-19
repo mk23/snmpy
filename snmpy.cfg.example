@@ -1,3 +1,6 @@
+[snmpy_global]
+include_dir: /etc/snmpy.d
+
 [disk_utilization]
 index: 1
 module: disk_utilization
