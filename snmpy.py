@@ -25,21 +25,21 @@ def build_conf(items):
 
     return conf
 
-def initialize(opts):
+def initialize(args):
     log.info('initialization started')
 
     try:
-        delete_pid.pidfile = opts.pidfile
+        delete_pid.pidfile = args.pidfile
         signal.signal(signal.SIGTERM, delete_pid)
 
-        open(opts.pidfile, 'w').write('%d\n' % os.getpid())
-        log.debug('wrote pidfile: %s (%d)', opts.pidfile, os.getpid())
+        open(args.pidfile, 'w').write('%d\n' % os.getpid())
+        log.debug('wrote pidfile: %s (%d)', args.pidfile, os.getpid())
 
         conf = ConfigParser.SafeConfigParser()
-        conf.read(opts.cfgfile)
+        conf.read(args.cfgfile)
 
         if conf.has_option('snmpy_global', 'include_dir'):
-            conf.read([opts.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
+            conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
             conf.remove_section('snmpy_global')
 
         log.info('configuring %d tables: %s', len(conf.sections()), ', '.join(conf.sections()))
@@ -172,47 +172,48 @@ def enter_loop(base, mods):
     log.info('command loop complete')
 
 if __name__ == '__main__':
-    import optparse
-    parser = optparse.OptionParser(usage='%prog [options]')
-    parser.add_option('-b', '--baseoid', default='.1.3.6.1.4.1.2021.1123',
-                      help='base oid as configured in pass_persist by snmpd.conf')
-    parser.add_option('-f', '--cfgfile', default='/etc/snmpy.cfg',
-                      help='location for the snmpy module configuration')
-    parser.add_option('-l', '--logfile', default=None,
-                      help='log file destination path, implies --verbose')
-    parser.add_option('-p', '--pidfile', default='/var/run/snmpy/agent.pid',
-                      help='pid file destination path')
-    parser.add_option('-k', '--killpid', default=False, action='store_true',
-                      help='kill existing process saved in pidfile if exists')
-    parser.add_option('-v', '--verbose', default=False, action='store_true',
-                      help='enable basic logging')
-    parser.add_option('-d', '--debug', default=False, action='store_true',
-                      help='enable debug logging')
+    import argparse
 
-    opts, args = parser.parse_args()
-    if opts.logfile or opts.verbose or opts.debug:
+    parser = argparse.ArgumentParser(description='net-snmp pluggable module system')
+    parser.add_argument('-b', '--baseoid', default='.1.3.6.1.4.1.2021.1123',
+                        help='base oid as configured in pass_persist by snmpd.conf')
+    parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.cfg',
+                        help='location for the snmpy module configuration')
+    parser.add_argument('-l', '--logfile', default=None,
+                        help='log file destination path, implies --verbose')
+    parser.add_argument('-p', '--pidfile', default='/var/run/snmpy/agent.pid',
+                        help='pid file destination path')
+    parser.add_argument('-k', '--killpid', default=False, action='store_true',
+                        help='kill existing process saved in pidfile if exists')
+    parser.add_argument('-v', '--verbose', default=False, action='store_true',
+                        help='enable basic logging')
+    parser.add_argument('-d', '--debug', default=False, action='store_true',
+                        help='enable debug logging')
+    args = parser.parse_args()
+
+    if args.logfile or args.verbose or args.debug:
         log.basicConfig(format='%(asctime)s.%(msecs)03d - %(funcName)10s:%(lineno)-3d - %(levelname)10s: %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S', level=opts.debug and log.DEBUG or log.INFO, filename=opts.logfile)
+                        datefmt='%Y-%m-%d %H:%M:%S', level=args.debug and log.DEBUG or log.INFO, filename=args.logfile)
         log.info('logging started')
     else:
         log.disable(log.CRITICAL)
 
-    if opts.killpid:
+    if args.killpid:
         try:
-            os.kill(int(open(opts.pidfile).readline()), signal.SIGTERM)
+            os.kill(int(open(args.pidfile).readline()), signal.SIGTERM)
             sys.exit(0)
         except:
             sys.exit(1)
-    elif os.path.exists(opts.pidfile):
-        log.debug('%s exists' % opts.pidfile)
+    elif os.path.exists(args.pidfile):
+        log.debug('%s exists' % args.pidfile)
         try:
-            os.kill(int(open(opts.pidfile).readline()), 0)
+            os.kill(int(open(args.pidfile).readline()), 0)
             log.error('snmpy process is running')
         except OSError:
-            os.remove(opts.pidfile)
+            os.remove(args.pidfile)
             log.debug('removed orphaned pidfile')
         else:
             sys.exit(1)
 
-    mods = initialize(opts)
-    enter_loop(opts.baseoid, mods)
+    mods = initialize(args)
+    enter_loop(args.baseoid, mods)
