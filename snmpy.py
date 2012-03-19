@@ -4,12 +4,12 @@ import os, signal, sys, traceback
 import glob, ConfigParser
 import logging as log
 
-def delete_pid(*args):
+def delete_pid(*args, **kwargs):
     log.debug('removing pidfile: %s', delete_pid.pidfile)
     try:
         os.remove(delete_pid.pidfile)
     finally:
-        os._exit(1)
+        os._exit(kwargs.get('exit_code', 1))
 
 def build_conf(items):
     conf = {'objects':{}}
@@ -29,9 +29,6 @@ def initialize(args):
     log.info('initialization started')
 
     try:
-        delete_pid.pidfile = args.pidfile
-        signal.signal(signal.SIGTERM, delete_pid)
-
         open(args.pidfile, 'w').write('%d\n' % os.getpid())
         log.debug('wrote pidfile: %s (%d)', args.pidfile, os.getpid())
 
@@ -60,13 +57,15 @@ def initialize(args):
         log.error('initialization failed: %s', e)
         for line in traceback.format_exc().split('\n'):
             log.debug('  %s', line)
-        os._exit(1)
+        sys.exit(1)
 
     log.info('initialization complete')
     return mods
 
 def enter_loop(base, mods):
     log.info('command loop started')
+
+    signal.signal(signal.SIGTERM, delete_pid)
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
     log.debug('stdout set unbuffered')
@@ -162,7 +161,7 @@ def enter_loop(base, mods):
 
         except KeyboardInterrupt:
             log.info('caught user interrupt, exiting')
-            delete_pid()
+            sys.exit(0)
         except Exception as e:
             log.error(e)
             for line in traceback.format_exc().split('\n'):
@@ -198,22 +197,28 @@ if __name__ == '__main__':
     else:
         log.disable(log.CRITICAL)
 
-    if args.killpid:
-        try:
-            os.kill(int(open(args.pidfile).readline()), signal.SIGTERM)
-            sys.exit(0)
-        except:
-            sys.exit(1)
-    elif os.path.exists(args.pidfile):
-        log.debug('%s exists' % args.pidfile)
-        try:
-            os.kill(int(open(args.pidfile).readline()), 0)
-            log.error('snmpy process is running')
-        except OSError:
-            os.remove(args.pidfile)
-            log.debug('removed orphaned pidfile')
-        else:
-            sys.exit(1)
+    delete_pid.pidfile = args.pidfile
 
-    mods = initialize(args)
-    enter_loop(args.baseoid, mods)
+    try:
+        if args.killpid:
+            try:
+                os.kill(int(open(args.pidfile).readline()), signal.SIGTERM)
+                sys.exit(0)
+            except Exception as e:
+                log.debug('process not killed: %s', e)
+                sys.exit(1)
+        elif os.path.exists(args.pidfile):
+            log.debug('%s exists' % args.pidfile)
+            try:
+                os.kill(int(open(args.pidfile).readline()), 0)
+                log.error('snmpy process is running')
+            except OSError:
+                os.remove(args.pidfile)
+                log.debug('removed orphaned pidfile')
+            else:
+                sys.exit(1)
+
+        mods = initialize(args)
+        enter_loop(args.baseoid, mods)
+    except SystemExit as e:
+        delete_pid(exit_code=e.code)
