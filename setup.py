@@ -18,7 +18,7 @@ def run_setup():
         version=re.search(r'(?P<version>[0-9]+(?:\.[0-9]*)*)$', version).group('version'),
         scripts=['snmpy.py'],
         py_modules=[mod[:-3] for mod in glob.glob('snmpy_plugins/*.py')],
-        data_files=['snmpy.cfg.example']
+        data_files=[('/etc', ['snmpy.cfg'])]
     )
 
 if __name__ == '__main__':
