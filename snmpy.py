@@ -11,6 +11,28 @@ def delete_pid(*args, **kwargs):
     finally:
         os._exit(kwargs.get('exit_code', 1))
 
+def create_pid(path):
+    open(path, 'w').write('%d\n' % os.getpid())
+    log.debug('wrote pidfile: %s (%d)', path, os.getpid())
+
+def parse_conf(args):
+    conf = ConfigParser.SafeConfigParser()
+    conf.read(args.cfgfile)
+
+    if conf.has_option('snmpy_global', 'include_dir'):
+        conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
+
+    if conf.has_option('snmpy_global', 'log_path'):
+        args.logfile = args.logfile or conf.get('snmpy_global', 'log_path')
+
+    if conf.has_option('snmpy_global', 'pid_path'):
+        args.pidfile = args.pidfile or conf.get('snmpy_global', 'pid_path')
+
+    if conf.has_section('snmpy_global'):
+        conf.remove_section('snmpy_global')
+
+    return conf
+
 def build_conf(items):
     conf = {'objects':{}}
     for item in items:
@@ -25,20 +47,10 @@ def build_conf(items):
 
     return conf
 
-def initialize(args):
+def initialize(conf):
     log.info('initialization started')
 
     try:
-        open(args.pidfile, 'w').write('%d\n' % os.getpid())
-        log.debug('wrote pidfile: %s (%d)', args.pidfile, os.getpid())
-
-        conf = ConfigParser.SafeConfigParser()
-        conf.read(args.cfgfile)
-
-        if conf.has_option('snmpy_global', 'include_dir'):
-            conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
-            conf.remove_section('snmpy_global')
-
         log.info('configuring %d tables: %s', len(conf.sections()), ', '.join(conf.sections()))
 
         mods = {}
@@ -62,7 +74,7 @@ def initialize(args):
     log.info('initialization complete')
     return mods
 
-def enter_loop(base, mods):
+def enter_loop(conf, base):
     log.info('command loop started')
 
     signal.signal(signal.SIGTERM, delete_pid)
@@ -70,6 +82,7 @@ def enter_loop(base, mods):
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
     log.debug('stdout set unbuffered')
 
+    mods = initialize(conf)
     keys = sorted(mods)
     while True:
         try:
@@ -180,7 +193,7 @@ if __name__ == '__main__':
                         help='snmpy configuration file')
     parser.add_argument('-l', '--logfile', default=None,
                         help='log file destination path, implies --verbose')
-    parser.add_argument('-p', '--pidfile', default='/var/run/snmpy/agent.pid',
+    parser.add_argument('-p', '--pidfile', default=None,
                         help='pid file destination path')
     parser.add_argument('-k', '--killpid', default=False, action='store_true',
                         help='kill existing process saved in pidfile if exists')
@@ -189,6 +202,10 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', default=False, action='store_true',
                         help='enable debug logging')
     args = parser.parse_args()
+
+    conf = parse_conf(args)
+    if not args.pidfile:
+        parser.error('no pidfile provided in args or configuration')
 
     if args.logfile or args.verbose or args.debug:
         log.basicConfig(format='%(asctime)s.%(msecs)03d - %(funcName)10s:%(lineno)-3d - %(levelname)10s: %(message)s',
@@ -217,8 +234,9 @@ if __name__ == '__main__':
                 log.debug('removed orphaned pidfile')
             else:
                 sys.exit(1)
+        else:
+            create_pid(args.pidfile)
 
-        mods = initialize(args)
-        enter_loop(args.baseoid, mods)
+        enter_loop(conf, args.baseoid)
     except SystemExit as e:
         delete_pid(exit_code=e.code)
