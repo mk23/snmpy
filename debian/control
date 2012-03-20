@@ -1,0 +1,12 @@
+Source: snmpy
+Section: python
+Priority: extra
+Maintainer: Max Kalika <max@topsy.com>
+Build-Depends: debhelper (>= 7), ub-python2.7
+Standards-Version: 3.8.3
+
+Package: snmpy
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ub-python2.7
+Description: Topsy snmpy
+ Topsy snmpy
