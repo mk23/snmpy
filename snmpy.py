@@ -1,8 +1,34 @@
 #!/usr/bin/env python
 
-import os, signal, sys, traceback
-import glob, ConfigParser
-import logging as log
+import ConfigParser
+import glob
+import logging
+import logging.handlers
+import os
+import signal
+import sys
+import traceback
+
+def create_log(logfile=None, verbose=False, debug=False):
+    log = logging.getLogger()
+    if logfile or verbose or debug:
+        if logfile and logfile.startswith('syslog:'):
+            log_hdlr = logging.handlers.SysLogHandler(facility=logfile.split(':')[-1])
+        elif logfile and not logfile.startswith('console:'):
+            log_hdlr = logging.FileHandler(logfile)
+        else:
+            log_hdlr = logging.StreamHandler()
+
+        log_hdlr.setFormatter(logging.Formatter('%(asctime)s.%(msecs)03d - %(funcName)10s:%(lineno)-3d - %(levelname)10s: %(message)s', '%Y-%m-%d %H:%M:%S'))
+
+        log.setLevel(logging.DEBUG if debug else logging.INFO)
+        log.addHandler(log_hdlr)
+
+        log.info('logging started')
+    else:
+        log.addHandler(logging.NullHandler())
+
+    return log
 
 def delete_pid(*args, **kwargs):
     log.debug('removing pidfile: %s', delete_pid.pidfile)
@@ -12,6 +38,7 @@ def delete_pid(*args, **kwargs):
         os._exit(kwargs.get('exit_code', 1))
 
 def create_pid(path):
+    delete_pid.pidfile = path
     open(path, 'w').write('%d\n' % os.getpid())
     log.debug('wrote pidfile: %s (%d)', path, os.getpid())
 
@@ -192,7 +219,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.cfg',
                         help='snmpy configuration file')
     parser.add_argument('-l', '--logfile', default=None,
-                        help='log file destination path, implies --verbose')
+                        help='file path, console:, or syslog:<facility>, implies --verbose')
     parser.add_argument('-p', '--pidfile', default=None,
                         help='pid file destination path')
     parser.add_argument('-k', '--killpid', default=False, action='store_true',
@@ -207,14 +234,7 @@ if __name__ == '__main__':
     if not args.pidfile:
         parser.error('no pidfile provided in args or configuration')
 
-    if args.logfile or args.verbose or args.debug:
-        log.basicConfig(format='%(asctime)s.%(msecs)03d - %(funcName)10s:%(lineno)-3d - %(levelname)10s: %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S', level=args.debug and log.DEBUG or log.INFO, filename=args.logfile)
-        log.info('logging started')
-    else:
-        log.disable(log.CRITICAL)
-
-    delete_pid.pidfile = args.pidfile
+    log = create_log(args.logfile, args.verbose, args.debug)
 
     try:
         if args.killpid:
@@ -234,9 +254,8 @@ if __name__ == '__main__':
                 log.debug('removed orphaned pidfile')
             else:
                 sys.exit(1)
-        else:
-            create_pid(args.pidfile)
 
+        create_pid(args.pidfile)
         enter_loop(conf, args.baseoid)
     except SystemExit as e:
         delete_pid(exit_code=e.code)
