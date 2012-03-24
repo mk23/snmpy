@@ -16,7 +16,7 @@ class log_processor:
 
     @snmpy_plugins.task
     def proc(self, file):
-        for line in snmpy.tail(file):
+        for line in snmpy_plugins.tail(file):
             for item in xrange(len(self.data)):
                 find = self.data[item]['regex'].search(line)
                 if find:
