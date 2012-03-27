@@ -1,16 +1,15 @@
-import os, time, subprocess
+import os
+import time
+import snmpy
+import subprocess
 import logging as log
 
-class disk_utilization:
-    def __init__(self, conf):
-        os.environ['LC_TIME'] = 'POSIX'
-        self.devs = ['dev%s-%s' % tuple(line.split()[0:2]) for line in open('/proc/diskstats')]
-
-    def len(self):
-        return len(self.devs)
+class disk_utilization(snmpy.plugin):
+    def __init__(self, conf, script=False):
+        snmpy.plugin.__init__(self, conf, script)
 
     def key(self, idx):
-        return 'string', self.devs[idx - 1]
+        return 'string', self.data[idx - 1]
 
     def val(self, idx):
         ts = time.localtime(time.time() - 60 * 20)
@@ -26,4 +25,8 @@ class disk_utilization:
                 results[line[1]] = int(float(line[9]))
 
         log.debug('results: %s', results)
-        return 'integer', results.get(self.devs[idx - 1], 0)
+        return 'integer', results.get(self.data[idx - 1], 0)
+
+    def worker(self):
+        os.environ['LC_TIME'] = 'POSIX'
+        self.data = ['dev%s-%s' % tuple(line.split()[0:2]) for line in open('/proc/diskstats')]
