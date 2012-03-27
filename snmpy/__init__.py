@@ -15,10 +15,33 @@ class plugin:
     def script(self):
         if self.conf.get('script', False):
             raise SnmpyError('script enabled, but script() unimplemented')
-        return
 
     def worker(self):
-        return
+        pass
+
+    @staticmethod
+    def load(func):
+        def load_func(self, *args, **kwargs):
+            data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
+            self.data = pickle.load(open(data_file, 'r'))
+            log.debug('loaded saved data from %s' % data_file)
+
+            return func(self, *args, **kwargs)
+        return load_func
+
+    @staticmethod
+    def save(func):
+        def save_func(self, *args, **kwargs):
+            data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
+            if not os.path.exists(data_file) or os.stat(data_file).st_mtime < time.time() - int(self.conf['script']):
+                func(self, *args, **kwargs)
+                pickle.dump(self.data, open('%s/%s.dat' % (self.conf['path'], self.conf['name']), 'w'))
+                log.info('saved result data to %s' % data_file)
+            else:
+                log.debug('%s: skipping run: recent change', data_file)
+
+            return func(self, *args, **kwargs)
+        return save_func
 
     def len(self):
         return len(self.data)
@@ -29,17 +52,6 @@ class plugin:
     def val(self, idx):
         raise SnmpyError('plugin error:  val() unimplemented')
 
-def load(item):
-    if isinstance(item, plugin):
-        item.data = pickle.load(open('%s/%s.dat' % (item.conf['path'], item.conf['name']), 'r'))
-    else:
-        raise SnmpyError('%s: not a plugin instance')
-
-def save(item):
-    if isinstance(item, plugin):
-        pickle.dump(item.data, open('%s/%s.dat' % (item.conf['path'], item.conf['name']), 'w'))
-    else:
-        raise SnmpyError('%s: not a plugin instance')
 
 def tail(file):
     file = open(file)

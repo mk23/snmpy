@@ -12,12 +12,13 @@ class periodic_cmd(snmpy.plugin):
     def key(self, idx):
         return 'string', self.conf['objects'][idx]['label']
 
+    @snmpy.plugin.load
     def val(self, idx):
-        snmpy.load(self)
         return self.conf['objects'][idx]['type'], self.data[idx - 1]
 
+    @snmpy.plugin.save
     def script(self):
-        data = [{'value': None, 'label': self.conf['objects'][item]['label'], 'regex': re.compile(self.conf['objects'][item]['regex'])} for item in sorted(self.conf['objects'])]
+        data = [{'value': None, 'regex': re.compile(self.conf['objects'][item]['regex'])} for item in sorted(self.conf['objects'])]
 
         for line in subprocess.check_output(self.conf['command'], shell=True, stderr=subprocess.STDOUT).split('\n'):
             for item in xrange(len(data)):
@@ -27,4 +28,3 @@ class periodic_cmd(snmpy.plugin):
                     data[item]['value'] = unicode(value).isnumeric and int(value) or value
 
         self.data = [item['value'] for item in data]
-        snmpy.save(self)
