@@ -1,5 +1,45 @@
-import os, time, socket, threading
+import os
+import pickle
+import time
+import socket
+import threading
 import logging as log
+
+class SnmpyError(Exception): pass
+
+class plugin:
+    def __init__(self, conf, script=False):
+        self.conf = conf
+        self.init = script and self.script or self.worker
+
+    def script(self):
+        if self.conf.get('script', False):
+            raise SnmpyError('script enabled, but script() unimplemented')
+        return
+
+    def worker(self):
+        return
+
+    def len(self):
+        return len(self.data)
+
+    def key(self, idx):
+        raise SnmpyError('plugin error:  key() unimplemented')
+
+    def val(self, idx):
+        raise SnmpyError('plugin error:  val() unimplemented')
+
+def load(item):
+    if isinstance(item, plugin):
+        item.data = pickle.load(open('%s/%s.dat' % (item.conf['path'], item.conf['name']), 'r'))
+    else:
+        raise SnmpyError('%s: not a plugin instance')
+
+def save(item):
+    if isinstance(item, plugin):
+        pickle.dump(item.data, open('%s/%s.dat' % (item.conf['path'], item.conf['name']), 'w'))
+    else:
+        raise SnmpyError('%s: not a plugin instance')
 
 def tail(file):
     file = open(file)
