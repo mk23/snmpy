@@ -24,7 +24,6 @@ class periodic_cmd(snmpy.plugin):
             for item in xrange(len(data)):
                 find = data[item]['regex'].search(line)
                 if find:
-                    value = find.group(1)
-                    data[item]['value'] = unicode(value).isnumeric and int(value) or value
+                    data[item]['value'] = find.group(1)
 
         self.data = [item['value'] for item in data]
