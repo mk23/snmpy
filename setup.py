@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-import glob, re, subprocess, sys
+import re, subprocess, sys
 from distutils.core import setup
 
 def run_setup():
@@ -16,9 +16,10 @@ def run_setup():
 
         name='snmpy',
         version=re.search(r'(?P<version>[0-9]+(?:\.[0-9]*)*)$', version).group('version'),
-        scripts=['snmpy.py'],
-        py_modules=[mod[:-3] for mod in glob.glob('snmpy/*.py')],
-        data_files=[('/etc', ['snmpy.cfg'])]
+        scripts=['snmpy'],
+        packages=['snmpy'],
+        package_dir={'snmpy': 'lib'},
+        data_files=[('/etc/snmpy', ['snmpy.cfg'])]
     )
 
 if __name__ == '__main__':
