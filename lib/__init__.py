@@ -35,7 +35,7 @@ class plugin:
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
             if not os.path.exists(data_file) or os.stat(data_file).st_mtime < time.time() - int(self.conf['script']):
                 func(self, *args, **kwargs)
-                pickle.dump(self.data, open('%s/%s.dat' % (self.conf['path'], self.conf['name']), 'w'))
+                pickle.dump(self.data, open(data_file, 'w'))
                 log.info('saved result data to %s' % data_file)
             else:
                 log.debug('%s: skipping run: recent change', data_file)
