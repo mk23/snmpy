@@ -205,9 +205,9 @@ def enter_loop(conf, base):
                             idx = 1
                             if sub == 1:
                                 sub = 2
-                            elif tbl + 1 <= min(keys):
+                            elif tbl + 1 <= max(keys):
                                 sub = 1
-                                tbl = min(i for i in keys if i >= obj[0])
+                                tbl = min(i for i in keys if i > tbl)
                             else:
                                 raise ValueError('invalid oid: %s' % oid)
                     elif obj[0] <= min(keys):
