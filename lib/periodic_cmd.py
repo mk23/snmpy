@@ -19,7 +19,7 @@ class periodic_cmd(snmpy.plugin):
     @snmpy.plugin.save
     def script(self):
         data = [{'value': 0, 'regex': re.compile(self.conf['objects'][item]['regex'])} for item in sorted(self.conf['objects'])]
-        text = subprocess.check_output(self.conf['command'], shell=True, stderr=subprocess.STDOUT)
+        text = subprocess.Popen(self.conf['command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
 
         for item in xrange(len(data)):
             find = data[item]['regex'].search(text)
