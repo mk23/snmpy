@@ -39,7 +39,10 @@ class plugin:
     def save(func):
         def save_func(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
-            if not os.path.exists(data_file) or os.stat(data_file).st_mtime < time.time() - int(self.conf['script']):
+            run_limit = boot if self.conf['script'] == 'boot' else time.time() - int(self.conf['script'])
+
+            log.debug('%s run limit: %s', self.conf['name'], str(datetime.datetime.fromtimestamp(boot)))
+            if not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
                 pickle.dump(self.data, open(data_file, 'w'))
                 log.info('saved result data to %s' % data_file)
