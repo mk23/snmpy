@@ -1,7 +1,12 @@
+import ctypes
+import ctypes.util
+
+import datetime
 import os
 import pickle
 import time
 import socket
+import sys
 import threading
 import logging as log
 
@@ -96,3 +101,33 @@ def role():
         return dict(line.strip().split()[0:2] for line in open('/etc/rolename')).get(host, host)
     except IOError:
         return host
+
+def boot_lnx():
+    return int([line.split()[1] for line in open('/proc/stat') if line.startswith('btime')][0])
+
+def boot_bsd():
+    class timeval(ctypes.Structure):
+        _fields_ = [
+            ('tv_sec',  ctypes.c_long),
+            ('tv_usec', ctypes.c_long),
+        ]
+
+    c = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
+
+    tv = timeval()
+    sz = ctypes.c_size_t(ctypes.sizeof(tv))
+
+    if (c.sysctlbyname(ctypes.c_char_p('kern.boottime'), ctypes.byref(tv), ctypes.byref(sz), None, ctypes.c_size_t(0)) == -1):
+        raise RuntimeError('sysctl error')
+
+    return tv.tv_sec
+
+if sys.platform.startswith('linux'):
+    boot = boot_lnx()
+elif sys.platform.startswith('darwin'):
+    boot = boot_bsd()
+elif sys.platform.startswith('freebsd'):
+    boot = boot_bsd()
+else:
+    raise SnmpyError('unsupported platform')
+log.debug('system boot time: %s', str(datetime.datetime.fromtimestamp(boot)))
