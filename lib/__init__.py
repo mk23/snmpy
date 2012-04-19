@@ -49,7 +49,6 @@ class plugin:
             else:
                 log.debug('%s: skipping run: recent change', data_file)
 
-            return func(self, *args, **kwargs)
         return save_func
 
     def len(self):
