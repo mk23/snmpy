@@ -58,7 +58,6 @@ class plugin:
     def val(self, idx):
         raise SnmpyError('plugin error:  val() unimplemented')
 
-
 def tail(file):
     file = open(file)
     file.seek(0, 2) # start at the end
