@@ -5,7 +5,8 @@ import socket
 import threading
 import logging as log
 
-class SnmpyError(Exception): pass
+class SnmpyError(Exception):
+    pass
 
 class plugin:
     def __init__(self, conf, script=False):
