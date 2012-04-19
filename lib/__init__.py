@@ -41,7 +41,7 @@ class plugin:
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
             run_limit = boot if self.conf['script'] == 'boot' else time.time() - int(self.conf['script'])
 
-            log.debug('%s run limit: %s', self.conf['name'], str(datetime.datetime.fromtimestamp(boot)))
+            log.debug('%s run limit: %s', self.conf['name'], str(datetime.datetime.fromtimestamp(run_limit)))
             if not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
                 pickle.dump(self.data, open(data_file, 'w'))
