@@ -7,6 +7,6 @@ Standards-Version: 3.8.3
 
 Package: snmpy
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ub-python2.7
+Depends: ${misc:Depends}, ub-python2.7
 Description: Topsy snmpy
  Topsy snmpy
