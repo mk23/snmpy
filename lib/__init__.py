@@ -25,6 +25,15 @@ class plugin:
     def worker(self):
         pass
 
+    def len(self):
+        return len(self.data)
+
+    def key(self, idx):
+        raise SnmpyError('plugin error:  key() unimplemented')
+
+    def val(self, idx):
+        raise SnmpyError('plugin error:  val() unimplemented')
+
     @staticmethod
     def task(func):
         def async_task(*args, **kwargs):
@@ -58,15 +67,6 @@ class plugin:
                 log.debug('%s: skipping run: recent change', data_file)
 
         return save_func
-
-    def len(self):
-        return len(self.data)
-
-    def key(self, idx):
-        raise SnmpyError('plugin error:  key() unimplemented')
-
-    def val(self, idx):
-        raise SnmpyError('plugin error:  val() unimplemented')
 
 def tail(file):
     file = open(file)
