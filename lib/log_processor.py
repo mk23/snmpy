@@ -15,7 +15,7 @@ class log_processor(snmpy.plugin):
         self.data = [{'value':0, 'label': self.conf['objects'][item]['label'], 'regex': re.compile(self.conf['objects'][item]['regex'])} for item in sorted(self.conf['objects'])]
         self.tail()
 
-    @snmpy.task
+    @snmpy.plugin.task
     def tail(self):
         for line in snmpy.tail(self.conf['logfile']):
             for item in xrange(len(self.data)):

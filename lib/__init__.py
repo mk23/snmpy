@@ -26,6 +26,14 @@ class plugin:
         pass
 
     @staticmethod
+    def task(func):
+        def async_task(*args, **kwargs):
+            threading.Thread(target=func, args=args, kwargs=kwargs).start()
+            log.debug('started background task: %s', func.__name__)
+
+        return async_task
+
+    @staticmethod
     def load(func):
         def load_func(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
@@ -88,13 +96,6 @@ def tail(file):
                 yield line
 
         time.sleep(1)
-
-def task(func):
-    def async_task(*args, **kwargs):
-        threading.Thread(target=func, args=args, kwargs=kwargs).start()
-        log.debug('started background task: %s', func.__name__)
-
-    return async_task
 
 def role():
     host = socket.gethostname()
