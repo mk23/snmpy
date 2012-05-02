@@ -21,5 +21,5 @@ class log_processor(snmpy.plugin):
             for item in xrange(len(self.data)):
                 find = self.data[item]['regex'].search(line)
                 if find:
-                    self.data[item]['value'] += 1
+                    self.data[item]['value'] += int(find.group(1)) if len(find.groups()) > 0 else 1
                     break
