@@ -68,6 +68,7 @@ class plugin:
 
         return decorated
 
+
 def tail(file):
     file = open(file)
     file.seek(0, 2) # start at the end
@@ -97,12 +98,14 @@ def tail(file):
 
         time.sleep(1)
 
+
 def role():
     host = socket.gethostname()
     try:
         return dict(line.strip().split()[0:2] for line in open('/etc/rolename')).get(host, host)
     except IOError:
         return host
+
 
 def boot_lnx():
     return int([line.split()[1] for line in open('/proc/stat') if line.startswith('btime')][0])
@@ -123,6 +126,7 @@ def boot_bsd():
         raise RuntimeError('sysctl error')
 
     return tv.tv_sec
+
 
 if sys.platform.startswith('linux'):
     boot = boot_lnx()
