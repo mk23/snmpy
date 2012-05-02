@@ -36,25 +36,25 @@ class plugin:
 
     @staticmethod
     def task(func):
-        def async_task(*args, **kwargs):
+        def decorated(*args, **kwargs):
             threading.Thread(target=func, args=args, kwargs=kwargs).start()
             log.debug('started background task: %s', func.__name__)
 
-        return async_task
+        return decorated
 
     @staticmethod
     def load(func):
-        def load_func(self, *args, **kwargs):
+        def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
             self.data = pickle.load(open(data_file, 'r'))
             log.debug('loaded saved data from %s' % data_file)
 
             return func(self, *args, **kwargs)
-        return load_func
+        return decorated
 
     @staticmethod
     def save(func):
-        def save_func(self, *args, **kwargs):
+        def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
             run_limit = boot if self.conf['script'] == 'boot' else time.time() - int(self.conf['script'])
 
@@ -66,7 +66,7 @@ class plugin:
             else:
                 log.debug('%s: skipping run: recent change', data_file)
 
-        return save_func
+        return decorated
 
 def tail(file):
     file = open(file)
