@@ -1,3 +1,4 @@
+import __builtin__
 import re
 import snmpy
 import subprocess
@@ -18,12 +19,19 @@ class periodic_cmd(snmpy.plugin):
 
     @snmpy.plugin.save
     def script(self):
-        data = [{'value': 0, 'regex': re.compile(self.conf['objects'][item]['regex'])} for item in sorted(self.conf['objects'])]
         text = subprocess.Popen(self.conf['command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
 
-        for item in xrange(len(data)):
-            find = data[item]['regex'].search(text)
-            if find:
-                data[item]['value'] = find.group(1) if len(find.groups()) > 0 else len(data[item]['regex'].findall(text))
+        self.data = []
+        for key, val in sorted(self.conf['objects'].items()):
+            regex = re.compile(val['regex'])
+            found = regex.findall(text)
 
-        self.data = [item['value'] for item in data]
+            if found:
+                if regex.groups == 0:
+                    self.data.append(len(found))
+                elif not val.has_key('cdef'):
+                    self.data.append(found[0])
+                else:
+                    self.data.append(getattr(__builtin__, val['cdef'])([int(i) for i in found]))
+            else:
+                self.data.append(0)
