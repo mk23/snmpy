@@ -113,7 +113,7 @@ def initialize(conf, path, scripts):
                 __import__(full)
                 log.debug('importing module %s', full)
 
-            item = sys.modules[full].__dict__[base](args, scripts)
+            item = getattr(sys.modules[full], base)(args, scripts)
             item.init()
 
             mods[conf.getint(name, 'index')] = item
