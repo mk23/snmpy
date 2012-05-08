@@ -30,7 +30,7 @@ class periodic_cmd(snmpy.plugin):
                 if regex.groups == 0:
                     self.data.append(len(found))
                 elif not val.has_key('cdef'):
-                    self.data.append(found[0])
+                    self.data.append(found[0].strip())
                 else:
                     self.data.append(getattr(__builtin__, val['cdef'])([int(i) for i in found]))
             else:
