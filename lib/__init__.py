@@ -10,9 +10,6 @@ import sys
 import threading
 import logging as log
 
-class SnmpyError(Exception):
-    pass
-
 class plugin:
     def __init__(self, conf, script=False):
         self.conf = conf
@@ -20,7 +17,7 @@ class plugin:
 
     def script(self):
         if self.conf.get('script', False):
-            raise SnmpyError('script enabled, but script() unimplemented')
+            raise NotImplementedError('plugin error: script() unimplemented')
 
     def worker(self):
         pass
@@ -29,10 +26,10 @@ class plugin:
         return len(self.data)
 
     def key(self, idx):
-        raise SnmpyError('plugin error:  key() unimplemented')
+        raise NotImplementedError('plugin error: key() unimplemented')
 
     def val(self, idx):
-        raise SnmpyError('plugin error:  val() unimplemented')
+        raise NotImplementedError('plugin error: val() unimplemented')
 
     @staticmethod
     def task(func):
@@ -135,5 +132,5 @@ elif sys.platform.startswith('darwin'):
 elif sys.platform.startswith('freebsd'):
     boot = boot_bsd()
 else:
-    raise SnmpyError('unsupported platform')
+    raise OSError('unsupported platform')
 log.debug('system boot time: %s', str(datetime.datetime.fromtimestamp(boot)))
