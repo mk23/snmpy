@@ -80,8 +80,6 @@ def parse_conf(args):
 
     if conf.has_option('snmpy_global', 'base_oid'):
         args.baseoid = args.baseoid or conf.get('snmpy_global', 'base_oid')
-    elif not args.baseoid:
-        raise SystemExit('base oid not specified')
 
     if conf.has_section('snmpy_global'):
         conf.remove_section('snmpy_global')
@@ -242,12 +240,17 @@ if __name__ == '__main__':
                 parser.error('no pidfile provided in args or configuration')
 
             create_pid(args.pidfile, args.killpid)
+
+            if not args.baseoid:
+                parser.error('no baseoid provided in args or configuration')
+
             enter_loop(mods, args.baseoid)
         else:
             # wait for threads
             log.debug('scripts completed')
             sys.exit(0)
     except SystemExit as e:
+        snmpy.log_exc('snmpy exiting')
         delete_pid(exit_code=e.code)
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class
