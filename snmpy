@@ -6,6 +6,7 @@ import logging
 import logging.handlers
 import os
 import signal
+import snmpy
 import sys
 
 def create_log(logfile=None, verbose=False, debug=False):
