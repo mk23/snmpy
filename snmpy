@@ -82,7 +82,7 @@ def parse_conf(args):
 
     return conf
 
-def build_conf(name, path, items):
+def build_conf(name, path, items=[]):
     conf = {'name': name, 'path': path, 'objects': {}}
     for item in items:
         key = item[0].split('.')
