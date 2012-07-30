@@ -1,6 +1,7 @@
 import ctypes
 import ctypes.util
 
+import bisect
 import datetime
 import os
 import pickle
@@ -10,26 +11,184 @@ import sys
 import threading
 import logging as log
 
+class oidkey:
+    def __init__(self, o):
+        if isinstance(o, (str, unicode)):
+            self.s = str(o)
+            self.k = tuple(int(i) for i in o.split('.'))
+        elif isinstance(o, (list, tuple)) and len([None for i in o if not isinstance(i, int) and not str(i).isdigit()]) == 0:
+            self.s = '.'.join(str(s) for s in o)
+            self.k = tuple(o)
+        elif isinstance(o, oidkey):
+            self = o
+        else:
+            raise TypeError('require a list or dot-separated string of positive integers')
+
+    def __repr__(self):
+        return self.s
+
+    def __str__(self):
+        return self.s
+
+    def __cmp__(self, other):
+        if isinstance(other, oidkey):
+            peer = other
+        elif isinstance(other, (str, unicode, list, tuple)):
+            peer = oidkey(other)
+        else:
+            raise TypeError('cannot compare with %s' % type(other))
+
+        t1 = self.k + tuple(0 for i in xrange(len(peer.k) - len(self.k)))
+        t2 = peer.k + tuple(0 for i in xrange(len(self.k) - len(peer.k)))
+
+        if t1  < t2:
+            return -1
+        if t1 == t2:
+            return 0
+        if t1  > t2:
+            return 1
+
+
+class oidval:
+    def __init__(self, t, v, e={}):
+        self.t = t
+        self.v = v
+        self.e = e
+
+    def get(self):
+        return self.t, self.v
+
+    def set(self, v):
+        self.v = v
+
+    def __str__(self):
+        return '%s: %s' % (self.t, self.v)
+
+    def __contains__(self, k):
+        return k in self.e
+
+    def __getitem__(self, k):
+        return self.e[k]
+
+    def __iadd__(self, v):
+        self.v += v
+        return self
+    def __add__(self, v):
+        return self.v + v
+
+    def __isub__(self, v):
+        self.v -= v
+        return self
+    def __sub__(self, v):
+        return self.v - v
+
+    def __imul__(self, v):
+        self.v *= v
+        return self
+    def __mul__(self, v):
+        return self * v
+
+    def __idiv__(self, v):
+        self.v /= v
+        return self
+    def __div__(self, v):
+        return self.v / v
+
+    def __imod__(self, v):
+        self.v %= v
+        return self
+    def __mod__(self, v):
+        return self.v % v
+
+
+class bucket:
+    def __init__(self):
+        self.d = {}
+        self.l = []
+
+    def __str__(self):
+        return '\n'.join('%-3d: %5s: %s' % (i, self.l[i], self.d[str(self.l[i])]) for i in xrange(len(self.l)))
+
+    def __contains__(self, key):
+        return key in self.d
+
+    def __delitem__(self, key):
+        idx = bisect.bisect_left(self.l, oidkey(key))
+        del self.l[idx]
+        del self.d[key]
+
+    def __getitem__(self, key):
+        if type(key) == slice:
+            if key.stop is None:
+                log.debug('requested iterator starting from key %s', key.start)
+                idx = bisect.bisect_right(self.l, oidkey(key.start))
+                return (str(k) for k in self.l[idx:])
+            if key.stop is True:
+                log.debug('requested just value from key %s', key.start)
+                return self.d[str(key.start)]
+            if type(key.stop) == str:
+                log.debug('requested attribute %s from key %s', key.stop, key.start)
+                return self.d[str(key.start)][key.stop]
+
+            log.debug('requested key position %d starting from %s', key.stop, key.start)
+            idx = bisect.bisect_left(self.l, oidkey(key.start)) + key.stop
+            ref = str(self.l[idx])
+        elif type(key) == int:
+            log.debug('requested key position %d', key)
+            ref = str(self.l[key])
+        else:
+            log.debug('requested key %s', key)
+            ref = str(key)
+
+        if 'run' in self.d[ref]:
+            log.debug('performing callback')
+            self.d[ref]['run'](ref)
+
+        return ref, self.d[ref].get()
+
+    def __setitem__(self, key, val):
+        if key not in self.d:
+            oid = oidkey(key)
+            idx = bisect.bisect_right(self.l, oid)
+
+            self.l.insert(idx, oid)
+            self.d[key] = oidval(*val)
+            log.debug('created key %5s: %s', key, self.d[key])
+        else:
+            self.d[key].set(val)
+            log.debug('changed key %5s: %s', key, val)
+
+    def __len__(self):
+        return len(self.l)
+
+    def __iter__(self):
+        return (str(k) for k in self.l)
+
 class plugin:
     def __init__(self, conf, script=False):
         self.conf = conf
-        self.init = script and self.script or self.worker
+        self.data = bucket()
+        if not script:
+            self.create()
+        else:
+            self.info = {}
+            self.script()
 
-    def script(self):
-        if self.conf.get('script', False):
-            raise NotImplementedError('plugin error: script() unimplemented')
-
-    def worker(self):
+    def create(self):
         pass
 
-    def len(self):
-        return len(self.data)
+    def script(self):
+        raise NotImplementedError('%s: plugin cannot run scripts' % self.name)
 
-    def key(self, idx):
-        raise NotImplementedError('plugin error: key() unimplemented')
-
-    def val(self, idx):
-        raise NotImplementedError('plugin error: val() unimplemented')
+    def member(self, obj, nxt=False):
+        if nxt:
+            oid, val = self.data[0]
+            if obj < oid:
+                return oid, val
+            else:
+                return self.data[obj:1]
+        else:
+            return self.data[obj]
 
     @staticmethod
     def task(func):
@@ -43,8 +202,9 @@ class plugin:
     def load(func):
         def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
-            self.data = pickle.load(open(data_file, 'r'))
-            log.debug('loaded saved data from %s' % data_file)
+            log.debug('loading saved data from %s', data_file)
+            for key, val in pickle.load(open(data_file, 'r')).items():
+                self.data[key] = val
 
             return func(self, *args, **kwargs)
         return decorated
@@ -53,13 +213,16 @@ class plugin:
     def save(func):
         def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
-            run_limit = boot if self.conf['script'] == 'boot' else time.time() - int(self.conf['script'])
 
-            log.debug('%s run limit: %s', self.conf['name'], str(datetime.datetime.fromtimestamp(run_limit)))
+            threshold = boot if self.conf['script'] == 'boot' else time.time() - int(self.conf['script'])
+            code_date = os.stat(sys.modules[self.__class__.__module__].__file__).st_mtime
+            run_limit = max(code_date, threshold)
+
+            log.debug('%s run limit: %s', self.conf['name'], datetime.datetime.fromtimestamp(run_limit))
             if not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
-                pickle.dump(self.data, open(data_file, 'w'))
-                log.info('saved result data to %s' % data_file)
+                pickle.dump(self.info, open(data_file, 'w'))
+                log.info('saved result data to %s', data_file)
             else:
                 log.debug('%s: skipping run: recent change', data_file)
 

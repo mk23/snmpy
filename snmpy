@@ -114,7 +114,6 @@ def initialize(conf, path, scripts):
                 log.debug('importing module %s', full)
 
             item = getattr(sys.modules[full], base)(args, scripts)
-            item.init()
 
             mods[conf.getint(name, 'index')] = item
             log.debug('created plugin %s instance of %s (%s)', name, base, item)
@@ -147,8 +146,10 @@ def enter_loop(conf, base):
                 sys.stdin.readline() # value
                 print 'not-writable'
                 continue
-            if req != 'get' and req != 'getnext':
+            if req and req != 'get' and req != 'getnext':
                 raise ValueError('invalid request: %s' % req.strip())
+            if not req and not sys.stdin.isatty():
+                raise SystemExit('eof')
 
             oid = sys.stdin.readline().strip()
             log.info('received %s request for %s', req, oid)
@@ -156,77 +157,28 @@ def enter_loop(conf, base):
             top, sep, bot = oid.partition(base)
             log.debug('partitioned oid: %s / %s / %s', top, sep, bot)
 
-            obj = [int(prt) for prt in bot.lstrip('.').split('.') if prt]
-            log.debug('requested oid parts: %s', obj)
-
             if req == 'get':
-                if len(obj) == 3 and obj[1] in (1, 2) and obj[0] in keys and obj[2] <= mods[obj[0]].len():
-                    tbl, sub, idx = obj
-                else:
-                    raise ValueError('invalid oid: %s' % oid)
+                mod, obj = bot.lstrip('.').split('.', 1)
+
+                key, (vtype, vdata) = mods[int(mod)].member(obj)
             elif req == 'getnext':
-                if len(obj) == 0:
-                    idx = 1
-                    sub = 1
-                    tbl = min(keys)
-                elif len(obj) == 1:
-                    idx = 1
-                    sub = 1
-                    if obj[0] in keys:
-                        tbl = obj[0]
-                    elif obj[0] <= min(keys):
-                        tbl = min(i for i in keys if i >= obj[0])
-                    else:
-                        raise ValueError('invalid oid: %s' % oid)
-                elif len(obj) == 2:
-                    if obj[0] in keys:
-                        idx = 1
-                        tbl = obj[0]
-                        if obj[1] in (1, 2):
-                            sub = obj[1]
-                        else:
-                            raise ValueError('invalid oid: %s' % oid)
-                    elif obj[0] <= min(keys):
-                        idx = 1
-                        sub = 1
-                        tbl = min(i for i in keys if i >= obj[0])
-                    else:
-                        raise ValueError('invalid oid: %s' % oid)
-                elif len(obj) == 3:
-                    if obj[0] in keys:
-                        tbl = obj[0]
-                        if obj[1] in (1, 2):
-                            sub = obj[1]
-                        else:
-                            raise ValueError('invalid oid: %s' % oid)
-                        if obj[2] < mods[tbl].len():
-                            idx = obj[2] + 1
-                        else:
-                            idx = 1
-                            if sub == 1:
-                                sub = 2
-                            elif tbl + 1 <= max(keys):
-                                sub = 1
-                                tbl = min(i for i in keys if i > tbl)
-                            else:
-                                raise ValueError('invalid oid: %s' % oid)
-                    elif obj[0] <= min(keys):
-                        idx = 1
-                        sub = 1
-                        tbl = min(i for i in keys if i >= obj[0])
-                    else:
-                        raise ValueError('invalid oid: %s' % oid)
+                prt = bot.lstrip('.').split('.', 1)
+                mod = keys[0] if prt[0] == '' else int(prt[0])
+                obj = '' if len(prt) < 2 else prt[1]
 
-            vtype, vdata = sub == 1 and mods[tbl].key(idx) or mods[tbl].val(idx)
-            log.debug('received plugin data: %s/%s', vtype, vdata)
+                key, (vtype, vdata) = mods[mod].member(obj, True)
 
-            print '%s.%d.%d.%d' % (base, tbl, sub, idx)
+            log.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
+            print '%s.%s.%s' % (base, mod, key)
             print vtype
             print vdata
 
         except KeyboardInterrupt:
             log.info('caught user interrupt, exiting')
             sys.exit(0)
+        except SystemExit as e:
+            log.error(e)
+            sys.exit(1)
         except Exception as e:
             log.error(e)
             for line in traceback.format_exc().split('\n'):

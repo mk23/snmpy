@@ -2,24 +2,18 @@ import re
 import snmpy
 
 class log_processor(snmpy.plugin):
-    def __init__(self, conf, script=False):
-        snmpy.plugin.__init__(self, conf, script)
+    def create(self):
+        for k, v in sorted(self.conf['objects'].items()):
+            self.data['1.%s' % k] = 'string', v['label']
+            self.data['2.%s' % k] = 'integer', 0, {'re': re.compile(v['regex'])}
 
-    def key(self, idx):
-        return 'string', self.data[idx - 1]['label']
-
-    def val(self, idx):
-        return 'integer', self.data[idx - 1]['value']
-
-    def worker(self):
-        self.data = [{'value':0, 'label': self.conf['objects'][item]['label'], 'regex': re.compile(self.conf['objects'][item]['regex'])} for item in sorted(self.conf['objects'])]
         self.tail()
 
     @snmpy.plugin.task
     def tail(self):
         for line in snmpy.tail(self.conf['logfile']):
-            for item in xrange(len(self.data)):
-                find = self.data[item]['regex'].search(line)
+            for item in self.data['2.0':]:
+                find = self.data[item:'re'].search(line)
                 if find:
-                    self.data[item]['value'] += int(find.group(1)) if len(find.groups()) > 0 else 1
+                    self.data[item] = self.data[item:True] + (int(find.group(1)) if len(find.groups()) > 0 else 1)
                     break
