@@ -28,34 +28,33 @@ class filesystem_stat(snmpy.plugin):
     def s_pass(self, obj):
         return obj
 
+    def s_name(self, obj):
+        return self.conf['file_name']
+
     def gather(self, obj):
         try:
             info = os.lstat(self.name)
             for k, v in self.stat.items():
-                self.data['2.%s' % k] = v[2](info.getattr('st_%s' % v[0], info.st_mode))
+                self.data['2.%s' % k] = v[1](info.getattr('st_%s' % v[0], info.st_mode))
         except:
             for k, v in self.stat.items():
-                self.data['2.%s' % k] = v[1]
+                self.data['2.%s' % k] = v[2]
 
     def create(self):
         self.stat = {
-            '1':  ('name', self.name, self.s_pass),
-            '2':  ('type', 'missing', self.s_type),
-            '3':  ('atime', -1,       self.s_time),
-            '4':  ('mtime', -1,       self.s_time),
-            '5':  ('ctime', -1,       self.s_time),
-            '6':  ('nlink', -1,       self.s_pass),
-            '7':  ('size',  -1,       self.s_pass),
-            '8':  ('ino',   -1,       self.s_pass),
-            '9':  ('uid',   -1,       self.s_pass),
-            '10': ('gid',   -1,       self.s_pass),
+            '1':  ('name',  self.s_name, self.conf['file_name']),
+            '2':  ('type',  self.s_type, 'missing'),
+            '3':  ('atime', self.s_time, -1),
+            '4':  ('mtime', self.s_time, -1),
+            '5':  ('ctime', self.s_time, -1),
+            '6':  ('nlink', self.s_pass, -1),
+            '7':  ('size',  self.s_pass, -1),
+            '8':  ('ino',   self.s_pass, -1),
+            '9':  ('uid',   self.s_pass, -1),
+            '10': ('gid',   self.s_pass, -1),
         }
 
         for k, v in self.stat.items():
-            snmp_type = 'integer' if type(v[1]) == int else 'string'
-
+            snmp_type = 'integer' if type(v[2]) == int else 'string'
             self.data['1.%s' % k] = 'string', v[0]
-            if k == '1':
-                self.data['2.%s' % k] = snmp_type, v[1]
-            else:
-                self.data['2.%s' % k] = snmp_type, v[1], {'run': self.gather}
+            self.data['2.%s' % k] = snmp_type, v[2], {'run': self.gather}
