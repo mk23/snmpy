@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
+import bisect
 import glob
 import logging
 import logging.handlers
@@ -178,13 +179,23 @@ def enter_loop(conf, base):
                 mod = keys[0] if prt[0] == '' else int(prt[0])
                 obj = '' if len(prt) < 2 else prt[1]
 
-                key, (vtype, vdata) = mods[mod].member(obj, True)
+                try:
+                    key, (vtype, vdata) = mods[mod].member(obj, True)
+                except IndexError:
+                    mod = bisect.bisect_right(keys, mod)
+                    obj = ''
+                    if mod in mods:
+                        key, (vtype, vdata) = mods[mod].member(obj, True)
+                    else:
+                        raise
 
             log.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
             print '%s.%s.%s' % (base, mod, key)
             print vtype
             print vdata
 
+        except IndexError as e:
+            log.info('%s: end of tree', req)
         except KeyboardInterrupt:
             log.info('caught user interrupt, exiting')
             sys.exit(0)
