@@ -9,6 +9,7 @@ import time
 import socket
 import sys
 import threading
+import traceback
 import logging as log
 
 class oidkey:
@@ -266,6 +267,10 @@ def role():
     except IOError:
         return host
 
+def log_exc(e, msg=''):
+    log.error('%s: %s', msg, e)
+    for line in traceback.format_exc().split('\n'):
+        log.debug('  %s', line)
 
 def boot_lnx():
     return int([line.split()[1] for line in open('/proc/stat') if line.startswith('btime')][0])
