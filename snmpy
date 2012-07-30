@@ -198,7 +198,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--libpath', default=None,
                         help='location for offline collector data')
     parser.add_argument('-l', '--logfile', default=None,
-                        help='file path, console:, or syslog:<facility>, implies --verbose')
+                        help='file path, console:, or syslog:<facility>')
     parser.add_argument('-p', '--pidfile', default=None,
                         help='pid file destination path')
     parser.add_argument('-s', '--scripts', default=False, action='store_true',
