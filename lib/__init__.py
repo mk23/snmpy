@@ -267,8 +267,11 @@ def role():
     except IOError:
         return host
 
-def log_exc(e, msg=''):
-    log.error('%s: %s', msg, e)
+def log_exc(e, msg=None):
+    if msg:
+        log.error('%s: %s', msg, e)
+    else:
+        log.error(e)
     for line in traceback.format_exc().split('\n'):
         log.debug('  %s', line)
 
