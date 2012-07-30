@@ -77,6 +77,11 @@ def parse_conf(args):
     if conf.has_option('snmpy_global', 'pid_path'):
         args.pidfile = args.pidfile or conf.get('snmpy_global', 'pid_path')
 
+    if conf.has_option('snmpy_global', 'base_oid'):
+        args.baseoid = args.baseoid or conf.get('snmpy_global', 'base_oid')
+    elif not args.baseoid:
+        raise SystemExit('base oid not specified')
+
     if conf.has_section('snmpy_global'):
         conf.remove_section('snmpy_global')
 
@@ -191,7 +196,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='net-snmp pluggable module system')
-    parser.add_argument('-b', '--baseoid', default='.1.3.6.1.4.1.2021.1123',
+    parser.add_argument('-b', '--baseoid', default=None,
                         help='base oid as configured in pass_persist by snmpd.conf')
     parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.cfg',
                         help='snmpy configuration file')
