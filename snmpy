@@ -7,7 +7,6 @@ import logging.handlers
 import os
 import signal
 import sys
-import traceback
 
 def create_log(logfile=None, verbose=False, debug=False):
     log = logging.getLogger()
@@ -120,10 +119,9 @@ def initialize(conf, path, scripts):
 
             mods[indx] = getattr(sys.modules[full], base)(args, scripts)
             log.debug('created plugin %s instance of %s (%s)', name, base, mods[indx])
+
     except Exception as e:
-        log.error('initialization failed: %s', e)
-        for line in traceback.format_exc().split('\n'):
-            log.debug('  %s', line)
+        snmpy.log_exc(e, 'initialization failed')
         sys.exit(1)
 
     log.info('initialization complete')
@@ -183,9 +181,7 @@ def enter_loop(conf, base):
             log.error(e)
             sys.exit(1)
         except Exception as e:
-            log.error(e)
-            for line in traceback.format_exc().split('\n'):
-                log.debug('  %s', line)
+            snmpy.log_exc(e)
             print 'NONE'
 
     log.info('command loop complete')
