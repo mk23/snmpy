@@ -105,18 +105,21 @@ def initialize(conf, path, scripts):
 
         mods = {}
         for name in conf.sections():
+            indx = conf.getint(name, 'index')
             args = build_conf(name, path, conf.items(name))
             base = conf.get(name, 'module')
             full = 'snmpy.%s' % base
+
+            if indx < 1:
+                log.warning('plugin %s has invalid index %d', name, indx)
+                continue
 
             if full not in sys.modules:
                 __import__(full)
                 log.debug('importing module %s', full)
 
-            item = getattr(sys.modules[full], base)(args, scripts)
-
-            mods[conf.getint(name, 'index')] = item
-            log.debug('created plugin %s instance of %s (%s)', name, base, item)
+            mods[indx] = getattr(sys.modules[full], base)(args, scripts)
+            log.debug('created plugin %s instance of %s (%s)', name, base, mods[indx])
     except Exception as e:
         log.error('initialization failed: %s', e)
         for line in traceback.format_exc().split('\n'):
