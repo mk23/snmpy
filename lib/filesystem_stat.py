@@ -32,14 +32,13 @@ class filesystem_stat(snmpy.plugin):
         return self.conf['file_name']
 
     def gather(self, obj):
+        item = self.stat[obj.split('.')[-1]]
         try:
-            info = os.lstat(self.name)
-            for k, v in self.stat.items():
-                self.data['2.%s' % k] = v[1](info.getattr('st_%s' % v[0], info.st_mode))
+            info = os.lstat(self.conf['file_name'])
+            self.data[obj] = item[1](getattr(info, 'st_%s' % item[0], info.st_mode))
         except Exception as e:
             snmpy.log_exc(e, '%s: os.stat() error' % self.conf['file_name'])
-            for k, v in self.stat.items():
-                self.data['2.%s' % k] = v[2]
+            self.data[obj] = item[2]
 
     def create(self):
         self.stat = {
