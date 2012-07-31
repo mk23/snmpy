@@ -11,7 +11,7 @@ class log_processor(snmpy.plugin):
 
     @snmpy.plugin.task
     def tail(self):
-        for line in snmpy.tail(self.conf['logfile']):
+        for line in snmpy.plugin.tail(self.conf['logfile']):
             for item in self.data['2.0':]:
                 find = self.data[item:'re'].search(line)
                 if find:
