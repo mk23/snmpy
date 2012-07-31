@@ -12,6 +12,8 @@ import sys
 
 def create_log(logfile=None, verbose=False, debug=False):
     log = logging.getLogger()
+    log.removeHandler(log.handlers[0]) # remove default stderr logger
+
     if logfile or verbose or debug:
         if logfile and logfile.startswith('syslog:'):
             log_hdlr = logging.handlers.SysLogHandler(facility=logfile.split(':')[-1])
