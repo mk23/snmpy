@@ -157,16 +157,19 @@ def enter_loop(conf, base):
                 sys.stdin.readline() # value
                 print 'not-writable'
                 continue
-            if req and req != 'get' and req != 'getnext':
-                raise ValueError('invalid request: %s' % req.strip())
             if not req and not sys.stdin.isatty():
                 raise SystemExit('eof')
+            if not req or (req != 'get' and req != 'getnext'):
+                raise ValueError('invalid request: %s' % req.strip())
 
             oid = sys.stdin.readline().strip()
             log.info('received %s request for %s', req, oid)
 
             top, sep, bot = oid.partition(base)
             log.debug('partitioned oid: %s / %s / %s', top, sep, bot)
+
+            if sep != base:
+                raise ValueError('invalid request: %s: %s' % (req, oid))
 
             if req == 'get':
                 mod, obj = bot.lstrip('.').split('.', 1)
