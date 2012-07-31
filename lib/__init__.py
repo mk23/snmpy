@@ -171,7 +171,7 @@ class plugin:
         self.data = bucket()
         if not script:
             self.create()
-        else:
+        elif 'script' in self.conf:
             self.info = {}
             self.script()
 
