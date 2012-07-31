@@ -183,10 +183,9 @@ def enter_loop(conf, base):
                 try:
                     key, (vtype, vdata) = mods[mod].member(obj, True)
                 except IndexError:
-                    mod = bisect.bisect_right(keys, mod)
-                    obj = ''
+                    mod = keys[bisect.bisect_right(keys, mod)]
                     if mod in mods:
-                        key, (vtype, vdata) = mods[mod].member(obj, True)
+                        key, (vtype, vdata) = mods[mod].member('', True)
                     else:
                         raise
 
@@ -195,14 +194,15 @@ def enter_loop(conf, base):
             print vtype
             print vdata
 
-        except IndexError as e:
-            log.info('%s: end of tree', req)
-        except KeyboardInterrupt:
-            log.info('caught user interrupt, exiting')
-            sys.exit(0)
         except SystemExit as e:
             log.error(e)
             sys.exit(1)
+        except KeyboardInterrupt:
+            log.info('caught user interrupt, exiting')
+            sys.exit(0)
+        except IndexError as e:
+            log.info('%s: end of tree', req)
+            print 'NONE'
         except Exception as e:
             snmpy.log_exc(e)
             print 'NONE'
