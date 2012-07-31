@@ -107,9 +107,8 @@ def initialize(conf, path, scripts):
     try:
         log.info('configuring %d table(s): %s', len(conf.sections()), ', '.join(conf.sections()))
 
-        mods = {
-            0: snmpy.plugin(build_conf('loaded_modules', path))
-        }
+        mods = { 0: snmpy.plugin(build_conf('loaded_modules', path)) }
+        mods[0].data['0.0'] = 'string', snmpy.__version__
         for name in conf.sections():
             indx = conf.getint(name, 'index')
             args = build_conf(name, path, conf.items(name))

@@ -2,3 +2,4 @@
 *.pyc
 build
 test
+lib/__version__.py

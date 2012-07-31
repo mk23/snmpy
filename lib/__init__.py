@@ -12,6 +12,8 @@ import threading
 import traceback
 import logging as log
 
+from snmpy.__version__ import __version__
+
 class oidkey:
     def __init__(self, o):
         if isinstance(o, (str, unicode)):
