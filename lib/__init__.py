@@ -192,14 +192,6 @@ class plugin:
             return self.data[obj]
 
     @staticmethod
-    def task(func):
-        def decorated(*args, **kwargs):
-            threading.Thread(target=func, args=args, kwargs=kwargs).start()
-            log.debug('started background task: %s', func.__name__)
-
-        return decorated
-
-    @staticmethod
     def load(func):
         def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
@@ -229,35 +221,43 @@ class plugin:
 
         return decorated
 
+    @staticmethod
+    def task(func):
+        def decorated(*args, **kwargs):
+            threading.Thread(target=func, args=args, kwargs=kwargs).start()
+            log.debug('started background task: %s', func.__name__)
 
-def tail(file):
-    file = open(file)
-    file.seek(0, 2) # start at the end
-    log.debug('opened file for tail: %s', file.name)
+        return decorated
 
-    while True:
-        spot = file.tell()
-        stat = os.fstat(file.fileno())
+    @staticmethod
+    def tail(file):
+        file = open(file)
+        file.seek(0, 2) # start at the end
+        log.debug('opened file for tail: %s', file.name)
 
-        if stat.st_nlink == 0 or spot > stat.st_size:
-            try:
-                file = open(file.name)
-                log.info('file truncated or removed, reopened')
-            except IOError:
-                pass
-        elif spot != stat.st_size:
-            buff = file.read(stat.st_size - spot)
-            while True:
-                indx = buff.find('\n')
-                if indx == -1:
-                    file.seek(-len(buff), 1)
-                    break
-                line = buff[0:indx]
-                buff = buff[indx + 1:]
+        while True:
+            spot = file.tell()
+            stat = os.fstat(file.fileno())
 
-                yield line
+            if stat.st_nlink == 0 or spot > stat.st_size:
+                try:
+                    file = open(file.name)
+                    log.info('file truncated or removed, reopened')
+                except IOError:
+                    pass
+            elif spot != stat.st_size:
+                buff = file.read(stat.st_size - spot)
+                while True:
+                    indx = buff.find('\n')
+                    if indx == -1:
+                        file.seek(-len(buff), 1)
+                        break
+                    line = buff[0:indx]
+                    buff = buff[indx + 1:]
 
-        time.sleep(1)
+                    yield line
+
+            time.sleep(1)
 
 
 def role():
