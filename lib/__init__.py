@@ -264,13 +264,6 @@ class plugin:
             time.sleep(1)
 
 
-def role():
-    host = socket.gethostname()
-    try:
-        return dict(line.strip().split()[0:2] for line in open('/etc/rolename')).get(host, host)
-    except IOError:
-        return host
-
 def log_exc(e, msg=None):
     if msg:
         log.error('%s: %s', msg, e)
@@ -278,6 +271,7 @@ def log_exc(e, msg=None):
         log.error(e)
     for line in traceback.format_exc().split('\n'):
         log.debug('  %s', line)
+
 
 def boot_lnx():
     return int([line.split()[1] for line in open('/proc/stat') if line.startswith('btime')][0])
