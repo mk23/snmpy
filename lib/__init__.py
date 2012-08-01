@@ -232,7 +232,7 @@ class plugin:
         return decorated
 
     @staticmethod
-    def tail(file):
+    def tail(file, notify=False):
         file = open(file)
         file.seek(0, 2) # start at the end
         log.debug('opened file for tail: %s', file.name)
@@ -242,6 +242,9 @@ class plugin:
             stat = os.fstat(file.fileno())
 
             if stat.st_nlink == 0 or spot > stat.st_size:
+                if notify:
+                    yield True
+
                 try:
                     file = open(file.name)
                     log.info('file truncated or removed, reopened')
