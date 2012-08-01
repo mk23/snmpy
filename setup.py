@@ -12,7 +12,7 @@ def run_setup():
         sys.exit(1)
 
     try:
-        vsn_lib = open('lib/__version__.py')
+        vsn_lib = open('lib/__version__.py', 'w')
         vsn_lib.write("__version__ = '%s'\n" % version)
         vsn_lib.close()
     except Exception as e:
