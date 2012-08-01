@@ -1,8 +1,8 @@
+import bisect
 import ctypes
 import ctypes.util
-
-import bisect
 import datetime
+import logging as log
 import os
 import pickle
 import time
@@ -10,7 +10,6 @@ import socket
 import sys
 import threading
 import traceback
-import logging as log
 
 from snmpy.__version__ import __version__
 
