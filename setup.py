@@ -1,12 +1,14 @@
 #!/usr/bin/env python2.7
 
-import re, subprocess, sys
+import subprocess, sys
 from distutils.core import setup
 
 def run_setup():
     try:
         git_tag = subprocess.check_output(['git', 'describe', '--tags'], stderr=open('/dev/null', 'w')).strip()
-        version = re.search(r'(?P<version>[0-9]+(?:\.[0-9]*)*)$', git_tag).group('version'),
+        version = git_tag.partition('snmpy.')[-1]
+        if not git_tag.startswith('snmpy.') or not version:
+            raise
     except Exception as e:
         print 'cannot determine version: no tags detected: %s', e
         sys.exit(1)
@@ -19,6 +21,7 @@ def run_setup():
         print 'cannot write to version file: %s', e
         sys.exit(1)
 
+    print 'setting up snmpy version %s' % version
     setup(
         author='Max Kalika',
         author_email='max@topsy.com',
