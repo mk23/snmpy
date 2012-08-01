@@ -241,7 +241,7 @@ class plugin:
             spot = file.tell()
             stat = os.fstat(file.fileno())
 
-            if os.stat(file).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
+            if os.stat(file.name).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
                 if notify:
                     yield True
 
