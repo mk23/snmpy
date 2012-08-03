@@ -236,7 +236,7 @@ if __name__ == '__main__':
                         help='file path, console:, or syslog:<facility>')
     parser.add_argument('-p', '--pidfile', default=None,
                         help='pid file destination path')
-    parser.add_argument('-s', '--scripts', default=False, action='store_true',
+    parser.add_argument('-s', '--scripts', default=False, const=True, nargs='?', choices=['force'],
                         help='run offline collector scripts')
     parser.add_argument('-k', '--killpid', default=False, action='store_true',
                         help='kill existing process saved in pidfile if exists')

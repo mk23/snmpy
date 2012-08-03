@@ -176,6 +176,7 @@ class plugin:
             self.create()
         elif 'script' in self.conf:
             self.info = {}
+            self.need = script == 'force'
             self.script()
 
     def create(self):
@@ -218,7 +219,7 @@ class plugin:
             run_limit = max(code_date, threshold)
 
             log.debug('%s run limit: %s', self.conf['name'], datetime.datetime.fromtimestamp(run_limit))
-            if not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
+            if self.need or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
                 pickle.dump(self.info, open(data_file, 'w'))
                 log.info('saved result data to %s', data_file)
