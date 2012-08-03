@@ -6,7 +6,6 @@ import logging as log
 import os
 import pickle
 import time
-import socket
 import sys
 import threading
 import traceback
