@@ -12,6 +12,9 @@ import traceback
 
 from snmpy.__version__ import __version__
 
+class ReachedLastKeyError(Exception): pass
+class ReachedLastModError(Exception): pass
+
 class oidkey:
     def __init__(self, o):
         if isinstance(o, (str, unicode)):
@@ -183,11 +186,14 @@ class plugin:
 
     def member(self, obj, nxt=False):
         if nxt:
-            oid, val = self.data[0]
-            if obj < oid:
-                return oid, val
-            else:
-                return self.data[obj:1]
+            try:
+                oid, val = self.data[0]
+                if obj < oid:
+                    return oid, val
+                else:
+                    return self.data[obj:1]
+            except IndexError:
+                raise ReachedLastKeyError
         else:
             return self.data[obj]
 

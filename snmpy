@@ -174,21 +174,25 @@ def enter_loop(conf, base):
 
             if req == 'get':
                 mod, obj = bot.lstrip('.').split('.', 1)
-
                 key, (vtype, vdata) = mods[int(mod)].member(obj)
             elif req == 'getnext':
                 prt = bot.lstrip('.').split('.', 1)
                 mod = keys[0] if prt[0] == '' else int(prt[0])
                 obj = '' if len(prt) < 2 else prt[1]
 
-                try:
-                    key, (vtype, vdata) = mods[mod].member(obj, True)
-                except IndexError:
-                    mod = keys[bisect.bisect_right(keys, mod)]
-                    if mod in mods:
-                        key, (vtype, vdata) = mods[mod].member('', True)
+                idx = bisect.bisect_left(keys, mod) if mod in mods else bisect.bisect_right(keys, mod)
+                while True:
+                    if idx < len(keys):
+                        mod = keys[idx]
                     else:
-                        raise
+                        raise snmpy.ReachedLastModError
+
+                    try:
+                        key, (vtype, vdata) = mods[mod].member(obj, True)
+                        break
+                    except snmpy.ReachedLastKeyError:
+                        obj = ''
+                        idx = bisect.bisect_right(keys, mod)
 
             log.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
             print '%s.%s.%s' % (base, mod, key)
@@ -201,12 +205,20 @@ def enter_loop(conf, base):
         except KeyboardInterrupt:
             log.info('caught user interrupt, exiting')
             sys.exit(0)
-        except IndexError as e:
-            log.info('%s: end of tree', req)
+        except snmpy.ReachedLastModError:
             print 'NONE'
         except Exception as e:
             snmpy.log_exc(e)
-            print 'NONE'
+            if req == 'getnext':
+                idx = bisect.bisect_right(keys, mod)
+                if idx < len(keys):
+                    print '%s.%s' % (base, keys[idx])
+                    print 'string'
+                    print 'error: %s' % e
+                else:
+                    print 'NONE'
+            else:
+                print 'NONE'
 
     log.info('command loop complete')
 
