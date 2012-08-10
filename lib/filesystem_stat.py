@@ -1,6 +1,6 @@
 import os
-import stat
 import snmpy
+import stat
 import time
 
 class filesystem_stat(snmpy.plugin):
