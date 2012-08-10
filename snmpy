@@ -71,9 +71,11 @@ def parse_conf(args):
     if conf.has_option('snmpy_global', 'include_dir'):
         conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
 
-    for key, val in {'libpath': 'lib_path', 'pidfile': 'pid_path', 'baseoid': 'base_oid'}.items():
-        if conf.has_option('snmpy_global', val):
-            setattr(args, key, getattr(args, key, conf.get('snmpy_global', val)))
+    for arg, cfg in {'libpath': 'lib_path', 'pidfile': 'pid_path', 'baseoid': 'base_oid'}.items():
+        if conf.has_option('snmpy_global', cfg):
+            val = getattr(args, arg)
+            val = val if val is not None else conf.get('snmpy_global', cfg)
+            setattr(args, arg, val)
 
     if conf.has_section('snmpy_global'):
         conf.remove_section('snmpy_global')
