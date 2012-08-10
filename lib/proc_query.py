@@ -14,7 +14,7 @@ class proc_query(snmpy.plugin):
             self.data['2.%s' % key] = val['type'], val.get('start', 0), extra
 
     def gather(self, obj):
-        text = open('/proc/%s' % self.conf['proc_entry'])
+        text = open('/proc/%s' % self.conf['object']).read()
         find = self.data[obj:'regex'].findall(text)
         if find:
             if self.data[obj:'regex'].groups == 0:
