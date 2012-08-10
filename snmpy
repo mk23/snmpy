@@ -73,7 +73,7 @@ def parse_conf(args):
 
     for key, val in {'libpath': 'lib_path', 'pidfile': 'pid_path', 'baseoid': 'base_oid'}.items():
         if conf.has_option('snmpy_global', val):
-            setattr(args, key, getattr(args, key, conf.get('snmp_global', val)))
+            setattr(args, key, getattr(args, key, conf.get('snmpy_global', val)))
 
     if conf.has_section('snmpy_global'):
         conf.remove_section('snmpy_global')
