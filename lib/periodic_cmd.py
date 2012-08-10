@@ -23,9 +23,9 @@ class periodic_cmd(snmpy.plugin):
                 else:
                     self.info['2.%s' % key] = getattr(__builtin__, val['cdef'])([int(i) for i in found])
             else:
-                self.info['2.%s' % key] = 0
+                self.info['2.%s' % key] = val.get('init', 0)
 
     def create(self):
         for key, val in sorted(self.conf['objects'].items()):
             self.data['1.%s' % key] = 'string', val['label']
-            self.data['2.%s' % key] = val['type'], 0, {'run': self.gather}
+            self.data['2.%s' % key] = val['type'], val.get('init', 0), {'run': self.gather}
