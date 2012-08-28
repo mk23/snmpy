@@ -237,24 +237,30 @@ class plugin:
         return decorated
 
     @staticmethod
-    def tail(file, notify=False):
-        file = open(file)
-        file.seek(0, 2) # start at the end
-        log.debug('opened file for tail: %s', file.name)
+    def tail(name, notify=False):
+        while True:
+            try:
+                file = open(name)
+                file.seek(0, 2) # start at the end
+                log.debug('%s: opened file for tail', name)
+                break
+            except IOError as e:
+                log.info('%s: cannot open for tail: %s', name, e)
+                time.sleep(1)
 
         while True:
             spot = file.tell()
             stat = os.fstat(file.fileno())
 
-            if os.stat(file.name).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
+            if os.stat(name).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
                 if notify:
                     yield True
 
                 try:
-                    file = open(file.name)
-                    log.info('repopened file for tail: %s: because it was moved, truncated, or removed', file)
-                except IOError:
-                    pass
+                    file = open(name)
+                    log.info('%s: repopened for tail: moved, truncated, or removed', name)
+                except IOError as e:
+                    log.info('%s: cannot open for tail: %s', name, e)
             elif spot != stat.st_size:
                 buff = file.read(stat.st_size - spot)
                 while True:
