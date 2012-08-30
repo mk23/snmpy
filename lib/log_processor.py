@@ -18,8 +18,6 @@ class log_processor(snmpy.plugin):
 
     @snmpy.plugin.task
     def tail(self):
-        import pprint
-        pprint.pprint(self.conf)
         for line in snmpy.plugin.tail(self.conf['file_name'].format(**self.conf['info']), True):
             if line is True:
                 for item in self.data['2.0':]:
