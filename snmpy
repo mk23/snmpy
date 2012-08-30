@@ -8,6 +8,7 @@ import logging.handlers
 import os
 import signal
 import snmpy
+import socket
 import sys
 
 def create_log(logfile=None, verbose=False, debug=False):
@@ -68,22 +69,31 @@ def parse_conf(args):
     conf = ConfigParser.SafeConfigParser()
     conf.read(args.cfgfile)
 
-    if conf.has_option('snmpy_global', 'include_dir'):
-        conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
-
-    for arg, cfg in {'libpath': 'lib_path', 'pidfile': 'pid_path', 'baseoid': 'base_oid'}.items():
-        if conf.has_option('snmpy_global', cfg):
-            val = getattr(args, arg)
-            val = val if val is not None else conf.get('snmpy_global', cfg)
-            setattr(args, arg, val)
+    info = {
+        'host':   socket.gethostname().split('.')[0],
+        'domain': '.'.join(socket.getfqdn().split('.')[1:]),
+    }.items()
 
     if conf.has_section('snmpy_global'):
+        if conf.has_option('snmpy_global', 'include_dir'):
+            conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
+
+        for arg, cfg in {'libpath': 'lib_path', 'pidfile': 'pid_path', 'baseoid': 'base_oid'}.items():
+            if conf.has_option('snmpy_global', cfg):
+                val = getattr(args, arg)
+                val = val if val is not None else conf.get('snmpy_global', cfg)
+                setattr(args, arg, val)
+
         conf.remove_section('snmpy_global')
 
-    return conf
+    if conf.has_section('snmpy_extra'):
+        info += conf.items('snmpy_extra')
+        conf.remove_section('snmpy_extra')
 
-def build_conf(name, path, items=[]):
-    conf = {'name': name, 'path': path, 'objects': {}}
+    return conf, dict(info + args.extra.items())
+
+def build_conf(name, info, path, items=[]):
+    conf = {'name': name, 'info':info, 'path': path, 'objects': {}}
     for item in items:
         key = item[0].split('.')
         if unicode(key[-1]).isnumeric():
@@ -97,13 +107,13 @@ def build_conf(name, path, items=[]):
 
     return conf
 
-def initialize(conf, path, scripts):
+def initialize(conf, info, path, scripts):
     log.info('initialization started')
 
     try:
         log.info('configuring %d table(s): %s', len(conf.sections()), ', '.join(conf.sections()))
 
-        mods = { 0: snmpy.plugin(build_conf('loaded_modules', path)) }
+        mods = { 0: snmpy.plugin(build_conf('loaded_modules', info, path)) }
         mods[0].data['0.0'] = 'string', snmpy.__version__
         for name in conf.sections():
             indx = conf.getint(name, 'index')
@@ -219,6 +229,10 @@ def enter_loop(conf, base):
 if __name__ == '__main__':
     import argparse
 
+    class DictAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option=False):
+            setattr(namespace, self.dest, dict(item.split('=', 1) for item in values))
+
     parser = argparse.ArgumentParser(description='net-snmp pluggable module system')
     parser.add_argument('-b', '--baseoid', default=None,
                         help='base oid as configured in pass_persist by snmpd.conf')
@@ -236,14 +250,16 @@ if __name__ == '__main__':
                         help='kill existing process saved in pidfile if exists')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='enable basic logging')
+    parser.add_argument('-e', '--extra', default={}, action=DictAction, nargs='+',
+                        help='extra arbitrary facts for use in plugins')
     parser.add_argument('-d', '--debug', default=False, action='store_true',
                         help='enable debug logging')
     args = parser.parse_args()
 
     log = create_log(args.logfile, args.verbose, args.debug)
     try:
-        conf = parse_conf(args)
-        mods = initialize(conf, args.libpath, args.scripts)
+        conf, info = parse_conf(args)
+        mods = initialize(conf, info, args.libpath, args.scripts)
 
         if not args.scripts:
             if not args.pidfile:
