@@ -117,7 +117,7 @@ def initialize(conf, info, path, scripts):
         mods[0].data['0.0'] = 'string', snmpy.__version__
         for name in conf.sections():
             indx = conf.getint(name, 'index')
-            args = build_conf(name, path, conf.items(name))
+            args = build_conf(name, info, path, conf.items(name))
             base = conf.get(name, 'module')
             full = 'snmpy.%s' % base
 
