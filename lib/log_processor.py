@@ -1,4 +1,3 @@
-import glob
 import re
 import snmpy
 
@@ -19,7 +18,9 @@ class log_processor(snmpy.plugin):
 
     @snmpy.plugin.task
     def tail(self):
-        for line in snmpy.plugin.tail(glob.glob(self.conf['file_name'])[0], True):
+        import pprint
+        pprint.pprint(self.conf)
+        for line in snmpy.plugin.tail(self.conf['file_name'].format(**self.conf['info']), True):
             if line is True:
                 for item in self.data['2.0':]:
                     if self.data[item:'rotate'] and line is True:
