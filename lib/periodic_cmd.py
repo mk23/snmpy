@@ -17,13 +17,13 @@ class periodic_cmd(snmpy.plugin):
 
             if found:
                 if regex.groups == 0:
-                    self.info['2.%s' % key] = len(found)
+                    self.data['2.%s' % key] = len(found)
                 elif not val.has_key('cdef'):
-                    self.info['2.%s' % key] = found[0].strip()
+                    self.data['2.%s' % key] = found[0].strip()
                 else:
-                    self.info['2.%s' % key] = getattr(__builtin__, val['cdef'])([int(i) for i in found])
+                    self.data['2.%s' % key] = getattr(__builtin__, val['cdef'])([int(i) for i in found])
             else:
-                self.info['2.%s' % key] = val.get('init', 0)
+                self.data['2.%s' % key] = val.get('init', 0)
 
     def create(self):
         for key, val in sorted(self.conf['objects'].items()):

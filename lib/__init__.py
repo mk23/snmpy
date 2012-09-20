@@ -208,7 +208,6 @@ class plugin:
         if not script:
             self.create()
         elif 'script' in self.conf:
-            self.info = {}
             self.need = script == 'force'
             self.script()
 
