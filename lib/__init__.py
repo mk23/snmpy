@@ -28,11 +28,11 @@ class oidkey:
         else:
             raise TypeError('require a list or dot-separated string of positive integers')
 
-    def __repr__(self):
-        return self.s
-
     def __str__(self):
         return self.s
+
+    def __repr__(self):
+        return 'snmpy.oidkey(%r)' % self.s
 
     def __cmp__(self, other):
         if isinstance(other, oidkey):
@@ -67,6 +67,9 @@ class oidval:
 
     def __str__(self):
         return '%s: %s' % (self.t, self.v)
+
+    def __repr__(self):
+        return 'snmpy.oidval(%r, %r, %r)' % (self.t, self.v, self.e)
 
     def __contains__(self, k):
         return k in self.e
