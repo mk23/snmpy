@@ -3,16 +3,17 @@ import snmpy
 
 class log_processor(snmpy.plugin):
     def create(self):
-        for k, v in sorted(self.conf['objects'].items()):
-            extra = {
-                'count':  re.compile(v['count']),
-                'reset':  re.compile(v['reset']) if 'reset' in v else None,
-                'start':  int(v['start']) if 'start' in v else 0,
-                'rotate': bool(v['rotate']) if 'rotate' in v else False
-            }
+        if not len(self.data):
+            for k, v in sorted(self.conf['objects'].items()):
+                extra = {
+                    'count':  re.compile(v['count']),
+                    'reset':  re.compile(v['reset']) if 'reset' in v else None,
+                    'start':  int(v['start']) if 'start' in v else 0,
+                    'rotate': bool(v['rotate']) if 'rotate' in v else False,
+                }
 
-            self.data['1.%s' % k] = 'string', v['label']
-            self.data['2.%s' % k] = 'integer', extra['start'], extra
+                self.data['1.%s' % k] = 'string', v['label']
+                self.data['2.%s' % k] = 'integer', extra['start'], extra
 
         self.tail()
 
