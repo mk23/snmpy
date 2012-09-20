@@ -106,9 +106,18 @@ class oidval:
 
 
 class bucket:
-    def __init__(self):
+    def __init__(self, save=None):
         self.d = {}
         self.l = []
+        self.f = save
+
+        if save:
+            try:
+                self.d = pickle.load(open(self.f))
+                self.l = sorted(self.d.keys())
+                log.info('loaded saved bucket state from: %s', self.f)
+            except Exception as e:
+                log_exc(e, 'unable to load data file: %s' % self.f)
 
     def __str__(self):
         return '\n'.join('%-3d: %5s: %s' % (i, self.l[i], self.d[str(self.l[i])]) for i in xrange(len(self.l)))
@@ -161,6 +170,12 @@ class bucket:
         else:
             self.d[key].set(val)
             log.debug('changed key %5s: %s', key, val)
+            if self.f:
+                try:
+                    pickle.dump(self.d, open(self.f, 'w'))
+                    log.debug('saved bucket change to data file %s', self.f)
+                except Exception as e:
+                    log_exc(e, 'unable to save data file: %s' % self.f)
 
     def __len__(self):
         return len(self.l)
@@ -171,7 +186,12 @@ class bucket:
 class plugin:
     def __init__(self, conf, script=False):
         self.conf = conf
-        self.data = bucket()
+        if self.conf.get('persist'):
+            data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
+            self.data = bucket(data_file)
+        else:
+            self.data = bucket()
+
         if not script:
             self.create()
         elif 'script' in self.conf:
