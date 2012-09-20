@@ -235,12 +235,7 @@ class plugin:
     def load(func):
         def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
-            log.debug('loading saved data from %s', data_file)
-            try:
-                for key, val in pickle.load(open(data_file)).items():
-                    self.data[key] = val
-            except Exception as e:
-                log_exc(e, 'unable load data file: %s', data_file)
+            self.data.load(data_file)
 
             return func(self, *args, **kwargs)
         return decorated
@@ -257,7 +252,7 @@ class plugin:
             log.debug('%s run limit: %s', self.conf['name'], datetime.datetime.fromtimestamp(run_limit))
             if self.need or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
-                pickle.dump(self.info, open(data_file, 'w'))
+                self.data.save(data_file)
                 log.info('saved result data to %s', data_file)
             else:
                 log.debug('%s: skipping run: recent change', data_file)
