@@ -116,22 +116,24 @@ class bucket:
 
         self.load()
 
-    def save(self):
-        if self.f:
+    def save(self, f=None):
+        dst = self.f or f
+        if dst:
             try:
-                pickle.dump(self.d, open(self.f, 'w'))
-                log.debug('saved bucket change to %s', self.f)
+                pickle.dump(self.d, open(dst, 'w'))
+                log.debug('saved bucket change to %s', dst)
             except Exception as e:
-                log_exc(e, 'unable to save data file: %s' % self.f)
+                log_exc(e, 'unable to save data file: %s' % dst)
 
-    def load(self):
-        if self.f:
+    def load(self, f=None):
+        src = self.f or f
+        if src:
             try:
-                self.d = pickle.load(open(self.f))
+                self.d = pickle.load(open(src))
                 self.l = sorted(self.d.keys())
-                log.info('loaded saved bucket state from: %s', self.f)
+                log.info('loaded saved bucket state from: %s', src)
             except Exception as e:
-                log_exc(e, 'unable to load data file: %s' % self.f)
+                log_exc(e, 'unable to load data file: %s' % src)
 
     def __str__(self):
         return '\n'.join('%-3d: %5s: %s' % (i, self.l[i], self.d[str(self.l[i])]) for i in xrange(len(self.l)))
