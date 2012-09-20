@@ -223,8 +223,11 @@ class plugin:
         def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
             log.debug('loading saved data from %s', data_file)
-            for key, val in pickle.load(open(data_file, 'r')).items():
-                self.data[key] = val
+            try:
+                for key, val in pickle.load(open(data_file)).items():
+                    self.data[key] = val
+            except Exception as e:
+                log_exc(e, 'unable load data file: %s', data_file)
 
             return func(self, *args, **kwargs)
         return decorated
