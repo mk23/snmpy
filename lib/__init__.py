@@ -186,7 +186,7 @@ class bucket:
 class plugin:
     def __init__(self, conf, script=False):
         self.conf = conf
-        if self.conf.get('persist'):
+        if 'persist' in self.conf:
             data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
             self.data = bucket(data_file)
         else:
