@@ -114,7 +114,18 @@ class bucket:
         self.l = []
         self.f = save
 
-        if save:
+        self.load()
+
+    def save(self):
+        if self.f:
+            try:
+                pickle.dump(self.d, open(self.f, 'w'))
+                log.debug('saved bucket change to %s', self.f)
+            except Exception as e:
+                log_exc(e, 'unable to save data file: %s' % self.f)
+
+    def load(self):
+        if self.f:
             try:
                 self.d = pickle.load(open(self.f))
                 self.l = sorted(self.d.keys())
@@ -173,18 +184,15 @@ class bucket:
         else:
             self.d[key].set(val)
             log.debug('changed key %5s: %s', key, val)
-            if self.f:
-                try:
-                    pickle.dump(self.d, open(self.f, 'w'))
-                    log.debug('saved bucket change to data file %s', self.f)
-                except Exception as e:
-                    log_exc(e, 'unable to save data file: %s' % self.f)
+
+        self.save()
 
     def __len__(self):
         return len(self.l)
 
     def __iter__(self):
         return (str(k) for k in self.l)
+
 
 class plugin:
     def __init__(self, conf, script=False):
