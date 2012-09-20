@@ -189,6 +189,7 @@ def enter_loop(conf, base):
                     if idx < len(keys):
                         mod = keys[idx]
                     else:
+                        log.debug('end of mods')
                         raise snmpy.ReachedLastModError
 
                     try:
