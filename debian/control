@@ -2,11 +2,10 @@ Source: snmpy
 Section: python
 Priority: extra
 Maintainer: Max Kalika <max@topsy.com>
-Build-Depends: debhelper (>= 7), ub-python2.7
+Build-Depends: debhelper (>= 7), python2.7
 Standards-Version: 3.8.3
 
 Package: snmpy
 Architecture: any
-Depends: ${misc:Depends}, ub-python2.7
-Description: Topsy snmpy
- Topsy snmpy
+Depends: ${misc:Depends}, python2.7
+Description: SNMPy is a modular system for extending net-snmp through its pass_persist mechanism.

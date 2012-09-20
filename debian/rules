@@ -9,7 +9,7 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/$(shell dh_listpackages)
-PYTHON ?= /opt/python/bin/python2.7
+PYTHON ?= /usr/bin/python2.7
 
 %:
 	dh $@ 
@@ -18,4 +18,4 @@ override_dh_auto_build:
 	$(PYTHON) setup.py build
 
 override_dh_auto_install:
-	$(PYTHON) setup.py install --root=$(DESTDIR)
+	$(PYTHON) setup.py install --prefix=/usr --root=$(DESTDIR)
