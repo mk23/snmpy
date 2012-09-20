@@ -135,7 +135,7 @@ class bucket:
                 return self.d[str(key.start)][key.stop]
 
             log.debug('requested key position %d starting from %s', key.stop, key.start)
-            idx = bisect.bisect_left(self.l, oidkey(key.start)) + key.stop
+            idx = bisect.bisect_right(self.l, oidkey(key.start)) + key.stop
             ref = str(self.l[idx])
         elif type(key) == int:
             log.debug('requested key position %d', key)
@@ -192,7 +192,7 @@ class plugin:
                 if obj < oid:
                     return oid, val
                 else:
-                    return self.data[obj:1]
+                    return self.data[obj:0]
             except IndexError:
                 raise ReachedLastKeyError
         else:
