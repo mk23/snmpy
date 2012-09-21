@@ -10,6 +10,7 @@
 #export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/$(shell dh_listpackages)
 PYTHON ?= /usr/bin/python2.7
+PREFIX ?= /usr
 
 %:
 	dh $@ 
@@ -18,4 +19,4 @@ override_dh_auto_build:
 	$(PYTHON) setup.py build
 
 override_dh_auto_install:
-	$(PYTHON) setup.py install --prefix=/usr --root=$(DESTDIR)
+	$(PYTHON) setup.py install --prefix=$(PREFIX) --root=$(DESTDIR)
