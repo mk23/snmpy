@@ -63,7 +63,10 @@ class oidval:
         return self.t, self.v
 
     def set(self, v):
-        self.v = v
+        if type(v) == dict:
+            self.e = v
+        else:
+            self.v = v
 
     def __str__(self):
         return '%s: %s' % (self.t, self.v)
@@ -120,7 +123,7 @@ class bucket:
         dst = self.f or f
         if dst:
             try:
-                pickle.dump(self.d, open(dst, 'w'))
+                pickle.dump(dict((k, v.get()) for k, v in self.d.items()), open(dst, 'w'))
                 log.debug('saved bucket change to %s', dst)
             except Exception as e:
                 log_exc(e, 'unable to save data file: %s' % dst)
@@ -129,8 +132,9 @@ class bucket:
         src = self.f or f
         if src:
             try:
-                self.d = pickle.load(open(src))
-                self.l = sorted(self.d.keys())
+                for k, v in pickle.load(open(src)).items():
+                    self[k] = v[1] if k in self else v
+
                 log.info('loaded saved bucket state from: %s', src)
             except Exception as e:
                 log_exc(e, 'unable to load data file: %s' % src)

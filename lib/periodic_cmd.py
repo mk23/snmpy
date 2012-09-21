@@ -15,6 +15,9 @@ class periodic_cmd(snmpy.plugin):
             regex = re.compile(val['regex'])
             found = regex.findall(text)
 
+            self.data['1.%s' % key] = 'string', val['label']
+            self.data['2.%s' % key] = val['type'], val.get('init', 0)
+
             if found:
                 if regex.groups == 0:
                     self.data['2.%s' % key] = len(found)
