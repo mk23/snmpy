@@ -3,6 +3,7 @@
 import argparse
 import bisect
 import glob
+import importlib
 import logging
 import logging.handlers
 import os
@@ -82,15 +83,12 @@ def initialize(conf):
         for name in keys:
             base = conf[name]['module']
             full = 'snmpy.%s' % base
-
-            if full not in sys.modules:
-                __import__(full)
-                log.debug('importing module %s', full)
+            code = importlib.import_module(full)
 
             plugins[0].data['1.%d' % conf[name]['snmpy_index']] = 'string', name
             log.debug('%s: added plugin at index %d', name, conf[name]['snmpy_index'])
 
-            plugins[conf[name]['snmpy_index']] = getattr(sys.modules[full], base)(name, conf[name])
+            plugins[conf[name]['snmpy_index']] = getattr(code, base)(name, conf[name])
             log.debug('%s: created plugin instance of %s (%s)', name, base, plugins[conf[name]['snmpy_index']])
 
     except Exception as e:
