@@ -201,19 +201,29 @@ class bucket:
 
 
 class plugin:
-    def __init__(self, conf, script=False):
-        self.conf = conf
-        if 'persist' in self.conf:
-            data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
-            self.data = bucket(data_file)
+    def __init__(self, name, conf=None):
+        self.name = name
+        self.conf = {} if conf is None else conf
+
+        if self.conf.get('persist') and self.conf.get('snmpy_datadir'):
+            self.data = bucket('%s/%s.dat' % (self.conf['snmpy_datadir'], self.name))
         else:
             self.data = bucket()
 
-        if not script:
+        if self.conf.get('snmpy_collect'):
+            if self.conf.get('script'):
+                self.script()
+            else:
+                log.debug('%s: skipping collection in non-collector plugin', name)
+        else:
             self.create()
-        elif 'script' in self.conf:
-            self.need = script == 'force'
-            self.script()
+
+    def __iter__(self):
+        items = self.conf.get('objects')
+        if type(items) in (tuple, list):
+            return ((i + 1, items[i]) for i in xrange(len(items)))
+        elif isinstance(items, dict):
+            return ((k, v) for k, v in sorted(items.items()))
 
     def create(self):
         pass
@@ -237,8 +247,7 @@ class plugin:
     @staticmethod
     def load(func):
         def decorated(self, *args, **kwargs):
-            data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
-            self.data.load(data_file)
+            self.data.load('%s/%s.dat' % (self.conf['snmpy_datadir'], self.name))
 
             return func(self, *args, **kwargs)
         return decorated
@@ -246,14 +255,14 @@ class plugin:
     @staticmethod
     def save(func):
         def decorated(self, *args, **kwargs):
-            data_file = '%s/%s.dat' % (self.conf['path'], self.conf['name'])
+            data_file = '%s/%s.dat' % (self.conf['snmpy_datadir'], self.name)
 
-            threshold = boot if self.conf['script'] == 'boot' else time.time() - int(self.conf['script'])
+            threshold = boot if self.conf['script'] == 'boot' else time.time() - self.conf['script']
             code_date = os.stat(sys.modules[self.__class__.__module__].__file__).st_mtime
             run_limit = max(code_date, threshold)
 
-            log.debug('%s run limit: %s', self.conf['name'], datetime.datetime.fromtimestamp(run_limit))
-            if self.need or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
+            log.debug('%s: run limit: %s', self.name, datetime.datetime.fromtimestamp(run_limit))
+            if self.conf['snmpy_collect'] == 'force' or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
                 self.data.save(data_file)
                 log.info('saved result data to %s', data_file)

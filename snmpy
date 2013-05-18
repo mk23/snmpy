@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import ConfigParser
+import argparse
 import bisect
 import glob
 import logging
@@ -8,18 +8,19 @@ import logging.handlers
 import os
 import signal
 import snmpy
-import socket
 import sys
+import yaml
 
-def create_log(logfile=None, verbose=False, debug=False):
+def create_log(logger=None, debug=False):
     log = logging.getLogger()
-    log.removeHandler(log.handlers[0]) # remove default stderr logger
+    if len(log.handlers) > 0:
+        log.removeHandler(log.handlers[0]) # remove default stderr logger
 
-    if logfile or verbose or debug:
-        if logfile and logfile.startswith('syslog:'):
-            log_hdlr = logging.handlers.SysLogHandler(facility=logfile.split(':')[-1])
-        elif logfile and not logfile.startswith('console:'):
-            log_hdlr = logging.FileHandler(logfile)
+    if logger or debug:
+        if logger and logger.startswith('syslog:'):
+            log_hdlr = logging.handlers.SysLogHandler(facility=logger.split(':')[-1])
+        elif logger and not logger.startswith('console:'):
+            log_hdlr = logging.FileHandler(logger)
         else:
             log_hdlr = logging.StreamHandler()
 
@@ -34,6 +35,7 @@ def create_log(logfile=None, verbose=False, debug=False):
 
     return log
 
+'''
 def delete_pid(*args, **kwargs):
     try:
         if hasattr(delete_pid, 'pidfile'):
@@ -42,56 +44,66 @@ def delete_pid(*args, **kwargs):
     finally:
         os._exit(kwargs.get('exit_code', 1))
 
-def create_pid(path, kill=False):
-    if kill:
+def create_pid(pidfile, restart=False):
+    if restart:
         try:
-            os.kill(int(open(args.pidfile).readline()), signal.SIGTERM)
+            os.kill(int(open(pidfile).readline()), signal.SIGTERM)
             sys.exit(0)
         except Exception as e:
             log.error('process not killed: %s', e)
             sys.exit(1)
-    elif os.path.exists(args.pidfile):
-        log.debug('%s exists' % args.pidfile)
+    elif os.path.exists(pidfile):
+        log.debug('%s exists' % pidfile)
         try:
-            os.kill(int(open(args.pidfile).readline()), 0)
+            os.kill(int(open(pidfile).readline()), 0)
             log.error('snmpy process is running')
         except OSError:
-            os.remove(args.pidfile)
+            os.remove(pidfile)
             log.debug('removed orphaned pidfile')
         else:
             sys.exit(1)
 
-    delete_pid.pidfile = path
-    open(path, 'w').write('%d\n' % os.getpid())
-    log.debug('wrote pidfile: %s (%d)', path, os.getpid())
+    delete_pid.pidfile = pidfile
+    open(pidfile, 'w').write('%d\n' % os.getpid())
+    log.debug('wrote pidfile: %s (%d)', pidfile, os.getpid())
+'''
 
-def parse_conf(args):
-    conf = ConfigParser.SafeConfigParser()
-    conf.read(args.cfgfile)
+def parse_conf(parser):
+    try:
+        args = parser.parse_args()
+        conf = yaml.load(open(args.cfgfile))
 
-    info = {
-        'host':   socket.gethostname().split('.')[0],
-        'domain': '.'.join(socket.getfqdn().split('.')[1:]),
-    }.items()
+        parser.set_defaults(**(conf['snmpy_global']))
 
-    if conf.has_section('snmpy_global'):
-        if conf.has_option('snmpy_global', 'include_dir'):
-            conf.read([args.cfgfile] + glob.glob('%s/*.cfg' % conf.get('snmpy_global', 'include_dir')))
+        args = parser.parse_args()
+        conf['snmpy_global'].update(vars(args))
+    except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+        parser.error('cannot parse configuration file: %s' % e)
 
-        for arg, cfg in {'libpath': 'lib_path', 'pidfile': 'pid_path', 'baseoid': 'base_oid'}.items():
-            if conf.has_option('snmpy_global', cfg):
-                val = getattr(args, arg)
-                val = val if val is not None else conf.get('snmpy_global', cfg)
-                setattr(args, arg, val)
+    if conf['snmpy_global']['include_dir']:
+        for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['include_dir']):
+            try:
+                indx, name = os.path.splitext(os.path.basename(item))[0].split('_', 1)
+                if name in conf:
+                    raise ValueError('%s: plugin name already assigned at another index', name)
+                if int(indx) < 1:
+                    raise ValueError('%s: invalid plugin index', indx)
+                if int(indx) in list(v['snmpy_index'] for k, v in conf.items() if k != 'snmpy_global'):
+                    raise ValueError('%s: index already assigned to another plugin', indx)
 
-        conf.remove_section('snmpy_global')
+                conf[name] = {
+                    'snmpy_index':   int(indx),
+                    'snmpy_extra':   dict(args.extra),
+                    'snmpy_datadir': args.datadir,
+                    'snmpy_collect': args.collect,
+                }
+                conf[name].update(yaml.load(open(item)))
+            except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+                parser.error('cannot parse configuration file: %s' % e)
 
-    if conf.has_section('snmpy_extra'):
-        info += conf.items('snmpy_extra')
-        conf.remove_section('snmpy_extra')
+    return conf
 
-    return conf, dict(info + args.extra.items())
-
+'''
 def build_conf(name, info, path, items=[]):
     conf = {'name': name, 'info':info, 'path': path, 'objects': {}}
     for item in items:
@@ -106,46 +118,43 @@ def build_conf(name, info, path, items=[]):
             conf[item[0]] = item[1]
 
     return conf
+'''
 
-def initialize(conf, info, path, scripts):
+def initialize(conf):
     log.info('initialization started')
 
     try:
-        log.info('configuring %d table(s): %s', len(conf.sections()), ', '.join(conf.sections()))
+        keys = [i for i in sorted(conf.keys()) if i != 'snmpy_global']
+        log.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
 
-        mods = { 0: snmpy.plugin(build_conf('loaded_modules', info, path)) }
-        mods[0].data['0.0'] = 'string', snmpy.__version__
-        for name in conf.sections():
-            indx = conf.getint(name, 'index')
-            args = build_conf(name, info, path, conf.items(name))
-            base = conf.get(name, 'module')
+        plugins = { 0: snmpy.plugin('loaded_modules') }
+        plugins[0].data['0.0'] = 'string', snmpy.__version__
+
+        for name in keys:
+            base = conf[name]['module']
             full = 'snmpy.%s' % base
-
-            if indx < 1:
-                log.warning('plugin %s has invalid index %d', name, indx)
-                continue
 
             if full not in sys.modules:
                 __import__(full)
                 log.debug('importing module %s', full)
 
-            mods[0].data['1.%d' % indx] = 'string', name
-            log.debug('added plugin %s to module list at index %d', name, indx)
+            plugins[0].data['1.%d' % conf[name]['snmpy_index']] = 'string', name
+            log.debug('%s: added plugin at index %d', name, conf[name]['snmpy_index'])
 
-            mods[indx] = getattr(sys.modules[full], base)(args, scripts)
-            log.debug('created plugin %s instance of %s (%s)', name, base, mods[indx])
+            plugins[conf[name]['snmpy_index']] = getattr(sys.modules[full], base)(name, conf[name])
+            log.debug('%s: created plugin instance of %s (%s)', name, base, plugins[conf[name]['snmpy_index']])
 
     except Exception as e:
         snmpy.log_exc(e, 'initialization failed')
         sys.exit(1)
 
     log.info('initialization complete')
-    return mods
+    return plugins
 
-def enter_loop(conf, base):
-    log.info('command loop started')
+def enter_loop(mods, base):
+    log.info('command loop started for base oid %s', base)
 
-    signal.signal(signal.SIGTERM, delete_pid)
+#    signal.signal(signal.SIGTERM, delete_pid)
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
     log.debug('stdout set unbuffered')
@@ -228,35 +237,37 @@ def enter_loop(conf, base):
     log.info('command loop complete')
 
 if __name__ == '__main__':
-    import argparse
-
-    class DictAction(argparse.Action):
-        def __call__(self, parser, namespace, values, option=False):
-            setattr(namespace, self.dest, dict(item.split('=', 1) for item in values))
-
     parser = argparse.ArgumentParser(description='net-snmp pluggable module system')
     parser.add_argument('-b', '--baseoid', default=None,
                         help='base oid as configured in pass_persist by snmpd.conf')
-    parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.cfg',
+    parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.yml',
                         help='snmpy configuration file')
-    parser.add_argument('-i', '--libpath', default=None,
+    parser.add_argument('-i', '--datadir', default=None,
                         help='location for offline collector data')
     parser.add_argument('-l', '--logfile', default=None,
-                        help='file path, console:, or syslog:<facility>')
+                        help='log to file, console:, or syslog:<facility>')
     parser.add_argument('-p', '--pidfile', default=None,
                         help='pid file destination path')
-    parser.add_argument('-s', '--scripts', default=False, const=True, nargs='?', choices=['force'],
+    parser.add_argument('-s', '--collect', default=False, const=True, nargs='?', choices=['force'],
                         help='run offline collector scripts')
-    parser.add_argument('-k', '--killpid', default=False, action='store_true',
-                        help='kill existing process saved in pidfile if exists')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='enable basic logging')
-    parser.add_argument('-e', '--extra', default={}, action=DictAction, nargs='+',
+    parser.add_argument('-r', '--destroy', default=False, action='store_true',
+                        help='kill existing process saved in pidfile if exists')
+    parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
                         help='extra arbitrary facts for use in plugins')
-    parser.add_argument('-d', '--debug', default=False, action='store_true',
-                        help='enable debug logging')
-    args = parser.parse_args()
 
+    cfg = parse_conf(parser)
+    log = create_log(cfg['snmpy_global']['logfile'], cfg['snmpy_global']['verbose'])
+
+    plugins = initialize(cfg)
+    if not cfg['snmpy_global']['collect']:
+        enter_loop(plugins, cfg['snmpy_global']['baseoid'])
+    else:
+        log.debug('collection scripts completed')
+
+
+'''
     log = create_log(args.logfile, args.verbose, args.debug)
     try:
         conf, info = parse_conf(args)
@@ -279,5 +290,6 @@ if __name__ == '__main__':
     except SystemExit as e:
         log.info('snmpy exiting: %s', e)
         delete_pid(exit_code=e.code)
+'''
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class

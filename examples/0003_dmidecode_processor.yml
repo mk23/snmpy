@@ -1,0 +1,36 @@
+module:  periodic_cmd
+script:  boot
+command: '/usr/sbin/dmidecode -t processor'
+
+objects:
+    - type:  'integer'
+      label: 'count'
+      regex: 'Processor Information'
+
+    - type:  'string'
+      label: 'manufacturer'
+      regex: 'Manufacturer: (.+)'
+
+    - type:  'string'
+      label: 'family'
+      regex: 'Family: (.+)'
+
+    - type:  'string'
+      label: 'version'
+      regex: 'Version: (.+)'
+
+    - type:  'integer'
+      label: 'max speed'
+      regex: 'Max Speed: (\d+) MHz'
+
+    - type:  'integer'
+      label: 'current speed'
+      regex: 'Current Speed: (\d+) MHz'
+
+    - type:  'integer'
+      label: 'cores available'
+      regex: 'Core Count: (\d+)'
+
+    - type:  'integer'
+      label: 'cores enabled'
+      regex: 'Core Enabled: (\d+)'
