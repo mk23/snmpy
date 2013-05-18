@@ -6,7 +6,6 @@ import glob
 import logging
 import logging.handlers
 import os
-import signal
 import snmpy
 import sys
 import yaml
@@ -34,39 +33,6 @@ def create_log(logger=None, debug=False):
         log.addHandler(logging.NullHandler())
 
     return log
-
-'''
-def delete_pid(*args, **kwargs):
-    try:
-        if hasattr(delete_pid, 'pidfile'):
-            log.debug('removing pidfile: %s', delete_pid.pidfile)
-            os.remove(delete_pid.pidfile)
-    finally:
-        os._exit(kwargs.get('exit_code', 1))
-
-def create_pid(pidfile, restart=False):
-    if restart:
-        try:
-            os.kill(int(open(pidfile).readline()), signal.SIGTERM)
-            sys.exit(0)
-        except Exception as e:
-            log.error('process not killed: %s', e)
-            sys.exit(1)
-    elif os.path.exists(pidfile):
-        log.debug('%s exists' % pidfile)
-        try:
-            os.kill(int(open(pidfile).readline()), 0)
-            log.error('snmpy process is running')
-        except OSError:
-            os.remove(pidfile)
-            log.debug('removed orphaned pidfile')
-        else:
-            sys.exit(1)
-
-    delete_pid.pidfile = pidfile
-    open(pidfile, 'w').write('%d\n' % os.getpid())
-    log.debug('wrote pidfile: %s (%d)', pidfile, os.getpid())
-'''
 
 def parse_conf(parser):
     try:
@@ -103,23 +69,6 @@ def parse_conf(parser):
 
     return conf
 
-'''
-def build_conf(name, info, path, items=[]):
-    conf = {'name': name, 'info':info, 'path': path, 'objects': {}}
-    for item in items:
-        key = item[0].split('.')
-        if unicode(key[-1]).isnumeric():
-            idx = int(key[-1])
-            if conf['objects'].has_key(idx):
-                conf['objects'][idx][key[0]] = item[1]
-            else:
-                conf['objects'][idx] = {key[0]: item[1]}
-        else:
-            conf[item[0]] = item[1]
-
-    return conf
-'''
-
 def initialize(conf):
     log.info('initialization started')
 
@@ -153,8 +102,6 @@ def initialize(conf):
 
 def enter_loop(mods, base):
     log.info('command loop started for base oid %s', base)
-
-#    signal.signal(signal.SIGTERM, delete_pid)
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
     log.debug('stdout set unbuffered')
@@ -252,8 +199,6 @@ if __name__ == '__main__':
                         help='run offline collector scripts')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='enable basic logging')
-    parser.add_argument('-r', '--destroy', default=False, action='store_true',
-                        help='kill existing process saved in pidfile if exists')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
                         help='extra arbitrary facts for use in plugins')
 
@@ -265,31 +210,5 @@ if __name__ == '__main__':
         enter_loop(plugins, cfg['snmpy_global']['baseoid'])
     else:
         log.debug('collection scripts completed')
-
-
-'''
-    log = create_log(args.logfile, args.verbose, args.debug)
-    try:
-        conf, info = parse_conf(args)
-        mods = initialize(conf, info, args.libpath, args.scripts)
-
-        if not args.scripts:
-            if not args.pidfile:
-                parser.error('no pidfile provided in args or configuration')
-
-            create_pid(args.pidfile, args.killpid)
-
-            if not args.baseoid:
-                parser.error('no baseoid provided in args or configuration')
-
-            enter_loop(mods, args.baseoid)
-        else:
-            # wait for threads
-            log.debug('scripts completed')
-            sys.exit(0)
-    except SystemExit as e:
-        log.info('snmpy exiting: %s', e)
-        delete_pid(exit_code=e.code)
-'''
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class
