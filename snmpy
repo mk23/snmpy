@@ -2,80 +2,18 @@
 
 import argparse
 import bisect
-import glob
 import importlib
 import logging
-import logging.handlers
 import os
-import snmpy
+import snmpy.util
 import sys
-import yaml
-
-def create_log(logger=None, debug=False):
-    log = logging.getLogger()
-    if len(log.handlers) > 0:
-        log.removeHandler(log.handlers[0]) # remove default stderr logger
-
-    if logger or debug:
-        if logger and logger.startswith('syslog:'):
-            log_hdlr = logging.handlers.SysLogHandler(facility=logger.split(':')[-1])
-        elif logger and not logger.startswith('console:'):
-            log_hdlr = logging.FileHandler(logger)
-        else:
-            log_hdlr = logging.StreamHandler()
-
-        log_hdlr.setFormatter(logging.Formatter('%(asctime)s.%(msecs)03d - %(filename)16s:%(lineno)-3d %(levelname)8s: %(message)s', '%Y-%m-%d %H:%M:%S'))
-
-        log.setLevel(logging.DEBUG if debug else logging.INFO)
-        log.addHandler(log_hdlr)
-
-        log.info('logging started')
-    else:
-        log.addHandler(logging.NullHandler())
-
-    return log
-
-def parse_conf(parser):
-    try:
-        args = parser.parse_args()
-        conf = yaml.load(open(args.cfgfile))
-
-        parser.set_defaults(**(conf['snmpy_global']))
-
-        args = parser.parse_args()
-        conf['snmpy_global'].update(vars(args))
-    except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-        parser.error('cannot parse configuration file: %s' % e)
-
-    if conf['snmpy_global']['include_dir']:
-        for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['include_dir']):
-            try:
-                indx, name = os.path.splitext(os.path.basename(item))[0].split('_', 1)
-                if name in conf:
-                    raise ValueError('%s: plugin name already assigned at another index', name)
-                if int(indx) < 1:
-                    raise ValueError('%s: invalid plugin index', indx)
-                if int(indx) in list(v['snmpy_index'] for k, v in conf.items() if k != 'snmpy_global'):
-                    raise ValueError('%s: index already assigned to another plugin', indx)
-
-                conf[name] = {
-                    'snmpy_index':   int(indx),
-                    'snmpy_extra':   dict(args.extra),
-                    'snmpy_datadir': args.datadir,
-                    'snmpy_collect': args.collect,
-                }
-                conf[name].update(yaml.load(open(item)))
-            except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-                parser.error('cannot parse configuration file: %s' % e)
-
-    return conf
 
 def initialize(conf):
-    log.info('initialization started')
+    logging.info('initialization started')
 
     try:
         keys = [i for i in sorted(conf.keys()) if i != 'snmpy_global']
-        log.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
+        logging.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
 
         plugins = { 0: snmpy.plugin('loaded_modules') }
         plugins[0].data['0.0'] = 'string', snmpy.__version__
@@ -86,23 +24,23 @@ def initialize(conf):
             code = importlib.import_module(full)
 
             plugins[0].data['1.%d' % conf[name]['snmpy_index']] = 'string', name
-            log.debug('%s: added plugin at index %d', name, conf[name]['snmpy_index'])
+            logging.info('%s: added plugin at index %d', name, conf[name]['snmpy_index'])
 
             plugins[conf[name]['snmpy_index']] = getattr(code, base)(name, conf[name])
-            log.debug('%s: created plugin instance of %s (%s)', name, base, plugins[conf[name]['snmpy_index']])
+            logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[conf[name]['snmpy_index']])
 
     except Exception as e:
-        snmpy.log_exc(e, 'initialization failed')
+        snmpy.util.log_exc(e, 'initialization failed')
         sys.exit(1)
 
-    log.info('initialization complete')
+    logging.info('initialization complete')
     return plugins
 
 def enter_loop(mods, base):
-    log.info('command loop started for base oid %s', base)
+    logging.info('command loop started for base oid %s', base)
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
-    log.debug('stdout set unbuffered')
+    logging.debug('stdout set unbuffered')
 
     keys = sorted(mods)
     while True:
@@ -122,10 +60,10 @@ def enter_loop(mods, base):
                 raise ValueError('invalid request: %s' % req.strip())
 
             oid = sys.stdin.readline().strip()
-            log.info('received %s request for %s', req, oid)
+            logging.info('received %s request for %s', req, oid)
 
             top, sep, bot = oid.partition(base)
-            log.debug('partitioned oid: %s / %s / %s', top, sep, bot)
+            logging.debug('partitioned oid: %s / %s / %s', top, sep, bot)
 
             if sep != base:
                 raise ValueError('invalid request: %s: %s' % (req, oid))
@@ -143,7 +81,7 @@ def enter_loop(mods, base):
                     if idx < len(keys):
                         mod = keys[idx]
                     else:
-                        log.debug('end of mods')
+                        logging.debug('end of mods')
                         raise snmpy.ReachedLastModError
 
                     try:
@@ -153,21 +91,21 @@ def enter_loop(mods, base):
                         obj = ''
                         idx = bisect.bisect_right(keys, mod)
 
-            log.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
+            logging.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
             print '%s.%s.%s' % (base, mod, key)
             print vtype
             print vdata
 
         except SystemExit as e:
-            log.error(e)
+            logging.error(e)
             sys.exit(1)
         except KeyboardInterrupt:
-            log.info('caught user interrupt, exiting')
+            logging.info('caught user interrupt, exiting')
             sys.exit(0)
         except snmpy.ReachedLastModError:
             print 'NONE'
         except Exception as e:
-            snmpy.log_exc(e)
+            snmpy.util.log_exc(e)
             if req == 'getnext':
                 idx = bisect.bisect_right(keys, mod)
                 if idx < len(keys):
@@ -179,7 +117,7 @@ def enter_loop(mods, base):
             else:
                 print 'NONE'
 
-    log.info('command loop complete')
+    logging.info('command loop complete')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='net-snmp pluggable module system')
@@ -199,14 +137,12 @@ if __name__ == '__main__':
                         help='enable basic logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
                         help='extra arbitrary facts for use in plugins')
+    conf = snmpy.util.parse_conf(parser)
 
-    cfg = parse_conf(parser)
-    log = create_log(cfg['snmpy_global']['logfile'], cfg['snmpy_global']['verbose'])
-
-    plugins = initialize(cfg)
-    if not cfg['snmpy_global']['collect']:
-        enter_loop(plugins, cfg['snmpy_global']['baseoid'])
+    mods = initialize(conf)
+    if not conf['snmpy_global']['collect']:
+        enter_loop(mods, conf['snmpy_global']['baseoid'])
     else:
-        log.debug('collection scripts completed')
+        logging.debug('collection scripts completed')
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class

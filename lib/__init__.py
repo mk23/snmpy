@@ -1,14 +1,12 @@
 import bisect
-import ctypes
-import ctypes.util
 import datetime
-import logging as log
+import logging
 import os
 import pickle
 import time
+import snmpy.util
 import sys
 import threading
-import traceback
 
 from snmpy.__version__ import __version__
 
@@ -124,9 +122,9 @@ class bucket:
         if dst:
             try:
                 pickle.dump(dict((k, v.get()) for k, v in self.d.items()), open(dst, 'w'))
-                log.debug('saved bucket change to %s', dst)
+                logging.debug('saved bucket change to %s', dst)
             except Exception as e:
-                log_exc(e, 'unable to save data file: %s' % dst)
+                snmpy.util.log_exc(e, 'unable to save data file: %s' % dst)
 
     def load(self, f=None):
         src = self.f or f
@@ -135,9 +133,9 @@ class bucket:
                 for k, v in pickle.load(open(src)).items():
                     self[k] = v[1] if k in self else v
 
-                log.info('loaded saved bucket state from: %s', src)
+                logging.info('loaded saved bucket state from: %s', src)
             except Exception as e:
-                log_exc(e, 'unable to load data file: %s' % src)
+                snmpy.util.log_exc(e, 'unable to load data file: %s' % src)
 
     def __str__(self):
         return '\n'.join('%-3d: %5s: %s' % (i, self.l[i], self.d[str(self.l[i])]) for i in xrange(len(self.l)))
@@ -153,28 +151,28 @@ class bucket:
     def __getitem__(self, key):
         if type(key) == slice:
             if key.stop is None:
-                log.debug('requested iterator starting from key %s', key.start)
+                logging.debug('requested iterator starting from key %s', key.start)
                 idx = bisect.bisect_right(self.l, oidkey(key.start))
                 return (str(k) for k in self.l[idx:])
             if key.stop is True:
                 log.debug('requested just value from key %s', key.start)
                 return self.d[str(key.start)]
             if type(key.stop) == str:
-                log.debug('requested attribute %s from key %s', key.stop, key.start)
+                logging.debug('requested attribute %s from key %s', key.stop, key.start)
                 return self.d[str(key.start)][key.stop]
 
-            log.debug('requested key position %d starting from %s', key.stop, key.start)
+            logging.debug('requested key position %d starting from %s', key.stop, key.start)
             idx = bisect.bisect_right(self.l, oidkey(key.start)) + key.stop
             ref = str(self.l[idx])
         elif type(key) == int:
-            log.debug('requested key position %d', key)
+            logging.debug('requested key position %d', key)
             ref = str(self.l[key])
         else:
-            log.debug('requested key %s', key)
+            logging.debug('requested key %s', key)
             ref = str(key)
 
         if 'run' in self.d[ref]:
-            log.debug('performing callback')
+            logging.debug('performing callback')
             self.d[ref]['run'](ref)
 
         return ref, self.d[ref].get()
@@ -186,10 +184,10 @@ class bucket:
 
             self.l.insert(idx, oid)
             self.d[key] = oidval(*val)
-            log.debug('created key %5s: %s', key, self.d[key])
+            logging.debug('created key %5s: %s', key, self.d[key])
         else:
             self.d[key].set(val)
-            log.debug('changed key %5s: %s', key, val)
+            logging.debug('changed key %5s: %s', key, val)
 
         self.save()
 
@@ -214,7 +212,7 @@ class plugin:
             if self.conf.get('script'):
                 self.script()
             else:
-                log.debug('%s: skipping collection in non-collector plugin', name)
+                logging.debug('%s: skipping collection in non-collector plugin', name)
         else:
             self.create()
 
@@ -261,13 +259,13 @@ class plugin:
             code_date = os.stat(sys.modules[self.__class__.__module__].__file__).st_mtime
             run_limit = max(code_date, threshold)
 
-            log.debug('%s: run limit: %s', self.name, datetime.datetime.fromtimestamp(run_limit))
+            logging.debug('%s: run limit: %s', self.name, datetime.datetime.fromtimestamp(run_limit))
             if self.conf['snmpy_collect'] == 'force' or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
                 self.data.save(data_file)
-                log.info('saved result data to %s', data_file)
+                logging.info('saved result data to %s', data_file)
             else:
-                log.debug('%s: skipping run: recent change', data_file)
+                logging.debug('%s: skipping run: recent change', data_file)
 
         return decorated
 
@@ -275,7 +273,7 @@ class plugin:
     def task(func):
         def decorated(*args, **kwargs):
             threading.Thread(target=func, args=args, kwargs=kwargs).start()
-            log.debug('started background task: %s', func.__name__)
+            logging.debug('started background task: %s', func.__name__)
 
         return decorated
 
@@ -285,10 +283,10 @@ class plugin:
             try:
                 file = open(name)
                 file.seek(0, 2) # start at the end
-                log.debug('%s: opened file for tail', name)
+                logging.debug('%s: opened file for tail', name)
                 break
             except IOError as e:
-                log.info('%s: cannot open for tail: %s', name, e)
+                logging.info('%s: cannot open for tail: %s', name, e)
                 time.sleep(1)
 
         while True:
@@ -301,9 +299,9 @@ class plugin:
 
                 try:
                     file = open(name)
-                    log.info('%s: repopened for tail: moved, truncated, or removed', name)
+                    logging.info('%s: repopened for tail: moved, truncated, or removed', name)
                 except IOError as e:
-                    log.info('%s: cannot open for tail: %s', name, e)
+                    logging.info('%s: cannot open for tail: %s', name, e)
             elif spot != stat.st_size:
                 buff = file.read(stat.st_size - spot)
                 while True:
@@ -317,44 +315,3 @@ class plugin:
                     yield line
 
             time.sleep(1)
-
-
-def log_exc(e, msg=None):
-    if msg:
-        log.error('%s: %s', msg, e)
-    else:
-        log.error(e)
-    for line in traceback.format_exc().split('\n'):
-        log.debug('  %s', line)
-
-
-def boot_lnx():
-    return int([line.split()[1] for line in open('/proc/stat') if line.startswith('btime')][0])
-
-def boot_bsd():
-    class timeval(ctypes.Structure):
-        _fields_ = [
-            ('tv_sec',  ctypes.c_long),
-            ('tv_usec', ctypes.c_long),
-        ]
-
-    c = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
-
-    tv = timeval()
-    sz = ctypes.c_size_t(ctypes.sizeof(tv))
-
-    if (c.sysctlbyname(ctypes.c_char_p('kern.boottime'), ctypes.byref(tv), ctypes.byref(sz), None, ctypes.c_size_t(0)) == -1):
-        raise RuntimeError('sysctl error')
-
-    return tv.tv_sec
-
-
-if sys.platform.startswith('linux'):
-    boot = boot_lnx()
-elif sys.platform.startswith('darwin'):
-    boot = boot_bsd()
-elif sys.platform.startswith('freebsd'):
-    boot = boot_bsd()
-else:
-    raise OSError('unsupported platform')
-log.debug('system boot time: %s', str(datetime.datetime.fromtimestamp(boot)))
