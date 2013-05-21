@@ -5,6 +5,7 @@ import bisect
 import importlib
 import logging
 import os
+import select
 import snmpy
 import sys
 
@@ -36,86 +37,111 @@ def initialize(conf):
     logging.info('initialization complete')
     return plugins
 
-def enter_loop(mods, base):
+def handle_http(pipe, mods):
+    try:
+        data = pipe.recv()
+
+        mod = mods[data.pop('object_id')]
+        logging.info('received load request for %s', mod.name)
+
+        mod.clear()
+        for key, val in data.items():
+            mod[key] = val
+
+        pipe.send(['success', 'loaded %d items to %s' % (len(data), mod.name)])
+    except EOFError:
+        snmpy.log_fatal('broken http pipe')
+    except (KeyError, ValueError) as e:
+        logging.error(e)
+        logging.error('received load request for invalid object_id')
+        pipe.send(['error', 'Invalid object_id specified'])
+
+def handle_snmp(mods, base, keys=[]):
+    if not keys:
+        keys.extend(sorted(mods))
+
+    try:
+        req = sys.stdin.readline().strip()
+        if req == 'PING':
+            print 'PONG'
+            return
+        if req == 'set':
+            sys.stdin.readline() # type
+            sys.stdin.readline() # value
+            print 'not-writable'
+            return
+        if not req and not sys.stdin.isatty():
+            snmpy.log_fatal('broken snmp pipe')
+        if not req or (req != 'get' and req != 'getnext'):
+            raise ValueError('invalid request: %s' % req.strip())
+
+        oid = sys.stdin.readline().strip()
+        logging.info('received %s request for %s', req, oid)
+
+        top, sep, bot = oid.partition(base)
+        logging.debug('partitioned oid: %s / %s / %s', top, sep, bot)
+
+        if sep != base:
+            raise ValueError('invalid request: %s: %s' % (req, oid))
+
+        if req == 'get':
+            mod, obj = bot.lstrip('.').split('.', 1)
+            key, (vtype, vdata) = mods[int(mod)].member(obj)
+        elif req == 'getnext':
+            prt = bot.lstrip('.').split('.', 1)
+            mod = keys[0] if prt[0] == '' else int(prt[0])
+            obj = '' if len(prt) < 2 else prt[1]
+
+            idx = bisect.bisect_left(keys, mod) if mod in mods else bisect.bisect_right(keys, mod)
+            while True:
+                if idx < len(keys):
+                    mod = keys[idx]
+                else:
+                    logging.debug('end of mods')
+                    raise snmpy.ReachedLastModError
+
+                try:
+                    key, (vtype, vdata) = mods[mod].member(obj, True)
+                    break
+                except snmpy.ReachedLastKeyError:
+                    obj = ''
+                    idx = bisect.bisect_right(keys, mod)
+
+        logging.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
+        print '%s.%s.%s' % (base, mod, key)
+        print vtype
+        print vdata
+
+    except snmpy.ReachedLastModError:
+        print 'NONE'
+    except Exception as e:
+        snmpy.log_error(e)
+        if req == 'getnext':
+            idx = bisect.bisect_right(keys, mod)
+            if idx < len(keys):
+                print '%s.%s' % (base, keys[idx])
+                print 'string'
+                print 'error: %s' % e
+            else:
+                print 'NONE'
+        else:
+            print 'NONE'
+
+def enter_loop(pipe, mods, base):
     logging.info('command loop started for base oid %s', base)
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
     logging.debug('stdout set unbuffered')
 
-    keys = sorted(mods)
     while True:
         try:
-            req = sys.stdin.readline().strip()
-            if req == 'PING':
-                print 'PONG'
-                continue
-            if req == 'set':
-                sys.stdin.readline() # type
-                sys.stdin.readline() # value
-                print 'not-writable'
-                continue
-            if not req and not sys.stdin.isatty():
-                raise SystemExit('eof')
-            if not req or (req != 'get' and req != 'getnext'):
-                raise ValueError('invalid request: %s' % req.strip())
-
-            oid = sys.stdin.readline().strip()
-            logging.info('received %s request for %s', req, oid)
-
-            top, sep, bot = oid.partition(base)
-            logging.debug('partitioned oid: %s / %s / %s', top, sep, bot)
-
-            if sep != base:
-                raise ValueError('invalid request: %s: %s' % (req, oid))
-
-            if req == 'get':
-                mod, obj = bot.lstrip('.').split('.', 1)
-                key, (vtype, vdata) = mods[int(mod)].member(obj)
-            elif req == 'getnext':
-                prt = bot.lstrip('.').split('.', 1)
-                mod = keys[0] if prt[0] == '' else int(prt[0])
-                obj = '' if len(prt) < 2 else prt[1]
-
-                idx = bisect.bisect_left(keys, mod) if mod in mods else bisect.bisect_right(keys, mod)
-                while True:
-                    if idx < len(keys):
-                        mod = keys[idx]
-                    else:
-                        logging.debug('end of mods')
-                        raise snmpy.ReachedLastModError
-
-                    try:
-                        key, (vtype, vdata) = mods[mod].member(obj, True)
-                        break
-                    except snmpy.ReachedLastKeyError:
-                        obj = ''
-                        idx = bisect.bisect_right(keys, mod)
-
-            logging.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
-            print '%s.%s.%s' % (base, mod, key)
-            print vtype
-            print vdata
-
-        except SystemExit as e:
-            logging.error(e)
-            sys.exit(1)
-        except KeyboardInterrupt:
-            logging.info('caught user interrupt, exiting')
-            sys.exit(0)
-        except snmpy.ReachedLastModError:
-            print 'NONE'
-        except Exception as e:
-            snmpy.log_error(e)
-            if req == 'getnext':
-                idx = bisect.bisect_right(keys, mod)
-                if idx < len(keys):
-                    print '%s.%s' % (base, keys[idx])
-                    print 'string'
-                    print 'error: %s' % e
+            for fd in select.select([sys.stdin, pipe], [], [])[0]:
+                if fd == sys.stdin:
+                    handle_snmp(mods, base)
                 else:
-                    print 'NONE'
-            else:
-                print 'NONE'
+                    handle_http(pipe, mods)
+        except KeyboardInterrupt:
+            snmpy.log_fatal('caught user interrupt in command loop, exiting', exit=0)
 
     logging.info('command loop complete')
 
@@ -139,10 +165,10 @@ if __name__ == '__main__':
                         help='extra arbitrary facts for use in plugins')
     conf = snmpy.parse_conf(parser)
 
-    pipe = snmpy.start_server(conf['snmpy_global']['runport'])
     mods = initialize(conf)
+    pipe = snmpy.start_server(conf['snmpy_global']['runport'])
     if not conf['snmpy_global']['collect']:
-        enter_loop(mods, conf['snmpy_global']['baseoid'])
+        enter_loop(pipe, mods, conf['snmpy_global']['baseoid'])
     else:
         logging.debug('collection scripts completed')
 

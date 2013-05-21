@@ -5,6 +5,7 @@ import ctypes
 import ctypes.util
 import datetime
 import glob
+import json
 import logging
 import logging.handlers
 import multiprocessing
@@ -15,7 +16,6 @@ import sys
 import time
 import threading
 import traceback
-import urlparse
 import yaml
 
 from snmpy.__version__ import __version__
@@ -233,6 +233,13 @@ class plugin:
         elif isinstance(items, dict):
             return ((k, v) for k, v in sorted(items.items()))
 
+    def __setitem__(self, key, val):
+        self.data[key] = val
+
+    def clear(self):
+        logging.debug('cleared data bucket for %s', self.name)
+        self.data = bucket()
+
     def create(self):
         pass
 
@@ -265,7 +272,7 @@ class plugin:
         def decorated(self, *args, **kwargs):
             data_file = '%s/%s.dat' % (self.conf['snmpy_datadir'], self.name)
 
-            threshold = boot if self.conf['script'] == 'boot' else time.time() - self.conf['script']
+            threshold = self.conf['system_boot'] if self.conf['script'] == 'boot' else time.time() - self.conf['script']
             code_date = os.stat(sys.modules[self.__class__.__module__].__file__).st_mtime
             run_limit = max(code_date, threshold)
 
@@ -349,16 +356,44 @@ class handler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        if self.headers.dict.get('content-type') != 'application/x-www-form-urlencoded':
-            return self.do_response(400, body='Invalid content type\r\n')
+        if self.headers.dict.get('content-type') != 'application/json':
+            return self.do_response(400, body='Invalid content type')
         if not self.headers.dict.get('content-length', '').isdigit():
-            return self.do_response(400, body='Invalid content length\r\n')
+            return self.do_response(400, body='Invalid content length')
 
-        import pprint
-        pprint.pprint(urlparse.parse_qs(self.rfile.read(int(self.headers.dict['content-length']))))
+        data = json.loads(self.rfile.read(int(self.headers.dict['content-length'])))
+
+        self.server.pipe.send(data)
+        code, body = self.server.pipe.recv()
+
+        self.do_response(200 if code == 'success' else 404, body=body)
 
     def do_GET(self):
-        self.do_response(400, body='GET method is unsupported\r\n')
+        self.do_response(400, body='GET method is unsupported')
+
+
+def start_server(port):
+    try:
+        serv = BaseHTTPServer.HTTPServer(('127.0.0.1', port), handler)
+        comm = multiprocessing.Pipe(duplex=True)
+        proc = multiprocessing.Process(target=start_worker, args=(serv, comm))
+        proc.start()
+
+        comm[1].close()
+        return comm[0]
+    except socket.error as e:
+        log_fatal(e)
+
+
+def start_worker(server, (unused_pipe, worker_pipe)):
+    unused_pipe.close()
+
+    try:
+        server.pipe = worker_pipe
+        server.serve_forever(poll_interval=None)
+    except KeyboardInterrupt:
+        log_fatal('caught user interrupt in http server, exiting', exit=0)
+
 
 def create_log(logger=None, debug=False):
     log = logging.getLogger()
@@ -423,36 +458,23 @@ def parse_conf(parser):
 
     return conf
 
-def start_server(port):
-    try:
-        serv = BaseHTTPServer.HTTPServer(('127.0.0.1', port), handler)
-        comm = multiprocessing.Pipe(duplex=True)
-        proc = multiprocessing.Process(target=start_worker, args=(serv, comm))
-        proc.start()
-
-        comm[1].close()
-        return comm[0]
-    except socket.error as e:
-        log_error(e)
-        sys.exit(1)
-
-
-def start_worker(server, (worker_pipe, unused_pipe)):
-    unused_pipe.close()
-
-    try:
-        server.serve_forever(poll_interval=None)
-    except KeyboardInterrupt:
-        sys.exit(0)
-
 def log_error(e, msg=None):
     if msg:
         logging.error('%s: %s', msg, e)
     else:
         logging.error(e)
+
     for line in traceback.format_exc().split('\n'):
         logging.debug('  %s', line)
 
+def log_fatal(item, prio='error', exit=1):
+    if isinstance(item, Exception):
+        log_error(item)
+    else:
+        vars(logging).get(prio, 'error')(item)
+
+    if exit is not None:
+        sys.exit(exit)
 
 def get_boot():
     if sys.platform.startswith('linux'):
