@@ -3,7 +3,7 @@ import snmpy
 
 class proc_query(snmpy.plugin):
     def create(self):
-        for key, val in sorted(self.conf['objects'].items()):
+        for key, val in self:
             extra = {
                 'run':   self.gather,
                 'start': val.get('start', 0),

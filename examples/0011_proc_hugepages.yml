@@ -1,0 +1,19 @@
+module: proc_query
+object: meminfo
+
+objects:
+    - type:  'integer'
+      label: 'total'
+      regex: 'HugePages_Total:\s+(\d+)'
+
+    - type:  'integer'
+      label: 'free'
+      regex: 'HugePages_Free:\s+(\d+)'
+
+    - type:  'integer'
+      label: 'reserved'
+      regex: 'HugePages_Rsvd:\s+(\d+)'
+
+    - type:  'integer'
+      label: 'surplus'
+      regex: 'HugePages_Surp:\s+(\d+)'
