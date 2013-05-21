@@ -39,22 +39,16 @@ def initialize(conf):
 
 def handle_http(pipe, mods):
     try:
-        data = pipe.recv()
-
-        mod = mods[data.pop('object_id')]
+        mod = mods[pipe.recv()]
         logging.info('received load request for %s', mod.name)
 
-        mod.clear()
-        for key, val in data.items():
-            mod[key] = val
-
-        pipe.send(['success', 'loaded %d items to %s' % (len(data), mod.name)])
+        mod.reload()
+        pipe.send(['success', '%s forced to reload' % mod.name])
+    except (KeyError, ValueError) as e:
+        snmpy.log_error(e, 'received load request for invalid object_id')
+        pipe.send(['error', 'Invalid object_id specified'])
     except EOFError:
         snmpy.log_fatal('broken http pipe')
-    except (KeyError, ValueError) as e:
-        logging.error(e)
-        logging.error('received load request for invalid object_id')
-        pipe.send(['error', 'Invalid object_id specified'])
 
 def handle_snmp(mods, base, keys=[]):
     if not keys:
@@ -166,8 +160,8 @@ if __name__ == '__main__':
     conf = snmpy.parse_conf(parser)
 
     mods = initialize(conf)
-    pipe = snmpy.start_server(conf['snmpy_global']['runport'])
     if not conf['snmpy_global']['collect']:
+        pipe = snmpy.start_server(conf['snmpy_global']['runport'])
         enter_loop(pipe, mods, conf['snmpy_global']['baseoid'])
     else:
         logging.debug('collection scripts completed')

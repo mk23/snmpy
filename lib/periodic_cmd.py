@@ -4,10 +4,6 @@ import snmpy
 import subprocess
 
 class periodic_cmd(snmpy.plugin):
-    @snmpy.plugin.load
-    def gather(self, key):
-        pass
-
     @snmpy.plugin.save
     def script(self):
         text = subprocess.Popen(self.conf['command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
@@ -27,8 +23,3 @@ class periodic_cmd(snmpy.plugin):
                     self.data['2.%s' % key] = getattr(__builtin__, val['cdef'])([int(i) for i in found])
             else:
                 self.data['2.%s' % key] = val.get('init', 0)
-
-    def create(self):
-        for key, val in self:
-            self.data['1.%s' % key] = 'string', val['label']
-            self.data['2.%s' % key] = val['type'], val.get('init', 0), {'run': self.gather}

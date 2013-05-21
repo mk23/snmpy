@@ -5,17 +5,18 @@ import ctypes
 import ctypes.util
 import datetime
 import glob
-import json
 import logging
 import logging.handlers
 import multiprocessing
 import os
 import pickle
+import re
 import socket
 import sys
 import time
 import threading
 import traceback
+import urllib2
 import yaml
 
 from snmpy.__version__ import __version__
@@ -120,10 +121,10 @@ class oidval:
 
 
 class bucket:
-    def __init__(self, save=None):
+    def __init__(self, name=None):
         self.d = {}
         self.l = []
-        self.f = save
+        self.f = name
 
         self.load()
 
@@ -165,7 +166,7 @@ class bucket:
                 idx = bisect.bisect_right(self.l, oidkey(key.start))
                 return (str(k) for k in self.l[idx:])
             if key.stop is True:
-                log.debug('requested just value from key %s', key.start)
+                logging.debug('requested just value from key %s', key.start)
                 return self.d[str(key.start)]
             if type(key.stop) == str:
                 logging.debug('requested attribute %s from key %s', key.stop, key.start)
@@ -199,8 +200,6 @@ class bucket:
             self.d[key].set(val)
             logging.debug('changed key %5s: %s', key, val)
 
-        self.save()
-
     def __len__(self):
         return len(self.l)
 
@@ -212,11 +211,7 @@ class plugin:
     def __init__(self, name, conf=None):
         self.name = name
         self.conf = {} if conf is None else conf
-
-        if self.conf.get('persist') and self.conf.get('snmpy_datadir'):
-            self.data = bucket('%s/%s.dat' % (self.conf['snmpy_datadir'], self.name))
-        else:
-            self.data = bucket()
+        self.data = bucket()
 
         if self.conf.get('snmpy_collect'):
             if self.conf.get('script'):
@@ -224,6 +219,8 @@ class plugin:
             else:
                 logging.debug('%s: skipping collection in non-collector plugin', name)
         else:
+            if self.conf.has_key('snmpy_datadir'):
+                self.reload()
             self.create()
 
     def __iter__(self):
@@ -233,18 +230,9 @@ class plugin:
         elif isinstance(items, dict):
             return ((k, v) for k, v in sorted(items.items()))
 
-    def __setitem__(self, key, val):
-        self.data[key] = val
-
-    def clear(self):
-        logging.debug('cleared data bucket for %s', self.name)
-        self.data = bucket()
-
-    def create(self):
-        pass
-
-    def script(self):
-        raise NotImplementedError('%s: plugin cannot run scripts' % self.name)
+    def reload(self):
+        temp_data = bucket('%s/%s.dat' % (self.conf['snmpy_datadir'], self.name))
+        self.data = temp_data
 
     def member(self, obj, nxt=False):
         if nxt:
@@ -259,13 +247,11 @@ class plugin:
         else:
             return self.data[obj]
 
-    @staticmethod
-    def load(func):
-        def decorated(self, *args, **kwargs):
-            self.data.load('%s/%s.dat' % (self.conf['snmpy_datadir'], self.name))
+    def create(self):
+        pass
 
-            return func(self, *args, **kwargs)
-        return decorated
+    def script(self):
+        raise NotImplementedError('%s: plugin cannot run scripts' % self.name)
 
     @staticmethod
     def save(func):
@@ -280,6 +266,7 @@ class plugin:
             if self.conf['snmpy_collect'] == 'force' or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
                 func(self, *args, **kwargs)
                 self.data.save(data_file)
+                urllib2.urlopen('http://localhost:%d/%d' %(self.conf['snmpy_runport'], self.conf['snmpy_index']))
                 logging.info('saved result data to %s', data_file)
             else:
                 logging.debug('%s: skipping run: recent change', data_file)
@@ -334,42 +321,19 @@ class plugin:
             time.sleep(1)
 
 class handler(BaseHTTPServer.BaseHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        self.protocol_version = 'HTTP/1.0'
-        self.server_version  += ' snmpy/%s' % __version__
-
-        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
-
-    def do_response(self, code, line=None, head=None, body=None):
-        resp = self.responses.get(code, ('Unknown Code', 'Unknown HTTP Response code'))
-
-        line = line or resp[0]
-        body = body or resp[1]
-        head = head if isinstance(head, dict) else {}
-
-        self.send_response(code, line)
-        self.send_header('Content-length', len(body))
-        for key, val in head.items():
-            if key.lower() != 'content-length':
-                self.send_header(key, val)
-        self.end_headers()
-        self.wfile.write(body)
-
-    def do_POST(self):
-        if self.headers.dict.get('content-type') != 'application/json':
-            return self.do_response(400, body='Invalid content type')
-        if not self.headers.dict.get('content-length', '').isdigit():
-            return self.do_response(400, body='Invalid content length')
-
-        data = json.loads(self.rfile.read(int(self.headers.dict['content-length'])))
-
-        self.server.pipe.send(data)
-        code, body = self.server.pipe.recv()
-
-        self.do_response(200 if code == 'success' else 404, body=body)
+    log_message = lambda *args: True
+    server_version = '%s %s/%s' % (BaseHTTPServer.BaseHTTPRequestHandler.server_version, __name__, __version__)
 
     def do_GET(self):
-        self.do_response(400, body='GET method is unsupported')
+        find = re.match(r'^/(\d+)$', self.path)
+        if find:
+            self.server.pipe.send(int(find.group(1)))
+            code, body = self.server.pipe.recv()
+
+            self.send_error(200 if code == 'success' else 404, body)
+        else:
+            self.send_error(404, '%s is not available' % self.path)
+
 
 
 def start_server(port):
@@ -383,7 +347,6 @@ def start_server(port):
         return comm[0]
     except socket.error as e:
         log_fatal(e)
-
 
 def start_worker(server, (unused_pipe, worker_pipe)):
     unused_pipe.close()
@@ -449,6 +412,7 @@ def parse_conf(parser):
                     'system_boot':   boot_time,
                     'snmpy_index':   int(indx),
                     'snmpy_extra':   dict(args.extra),
+                    'snmpy_runport': args.runport,
                     'snmpy_datadir': args.datadir,
                     'snmpy_collect': args.collect,
                 }
