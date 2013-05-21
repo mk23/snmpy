@@ -5,7 +5,7 @@ import bisect
 import importlib
 import logging
 import os
-import snmpy.util
+import snmpy
 import sys
 
 def initialize(conf):
@@ -30,7 +30,7 @@ def initialize(conf):
             logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[conf[name]['snmpy_index']])
 
     except Exception as e:
-        snmpy.util.log_exc(e, 'initialization failed')
+        snmpy.log_error(e, 'initialization failed')
         sys.exit(1)
 
     logging.info('initialization complete')
@@ -105,7 +105,7 @@ def enter_loop(mods, base):
         except snmpy.ReachedLastModError:
             print 'NONE'
         except Exception as e:
-            snmpy.util.log_exc(e)
+            snmpy.log_error(e)
             if req == 'getnext':
                 idx = bisect.bisect_right(keys, mod)
                 if idx < len(keys):
@@ -127,18 +127,19 @@ if __name__ == '__main__':
                         help='snmpy configuration file')
     parser.add_argument('-i', '--datadir', default=None,
                         help='location for offline collector data')
-    parser.add_argument('-l', '--logfile', default=None,
-                        help='log to file, console:, or syslog:<facility>')
-    parser.add_argument('-p', '--pidfile', default=None,
-                        help='pid file destination path')
+    parser.add_argument('-p', '--runport', default=1123, type=int,
+                        help='runtime lock and api http port')
     parser.add_argument('-s', '--collect', default=False, const=True, nargs='?', choices=['force'],
                         help='run offline collector scripts')
+    parser.add_argument('-l', '--logfile', default=None,
+                        help='log to file, console:, or syslog:<facility>')
     parser.add_argument('-v', '--verbose', default=False, action='store_true',
                         help='enable basic logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
                         help='extra arbitrary facts for use in plugins')
-    conf = snmpy.util.parse_conf(parser)
+    conf = snmpy.parse_conf(parser)
 
+    pipe = snmpy.start_server(conf['snmpy_global']['runport'])
     mods = initialize(conf)
     if not conf['snmpy_global']['collect']:
         enter_loop(mods, conf['snmpy_global']['baseoid'])

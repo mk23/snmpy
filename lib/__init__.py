@@ -1,12 +1,22 @@
+import BaseHTTPServer
+
 import bisect
+import ctypes
+import ctypes.util
 import datetime
+import glob
 import logging
+import logging.handlers
+import multiprocessing
 import os
 import pickle
-import time
-import snmpy.util
+import socket
 import sys
+import time
 import threading
+import traceback
+import urlparse
+import yaml
 
 from snmpy.__version__ import __version__
 
@@ -124,7 +134,7 @@ class bucket:
                 pickle.dump(dict((k, v.get()) for k, v in self.d.items()), open(dst, 'w'))
                 logging.debug('saved bucket change to %s', dst)
             except Exception as e:
-                snmpy.util.log_exc(e, 'unable to save data file: %s' % dst)
+                log_error(e, 'unable to save data file: %s' % dst)
 
     def load(self, f=None):
         src = self.f or f
@@ -135,7 +145,7 @@ class bucket:
 
                 logging.info('loaded saved bucket state from: %s', src)
             except Exception as e:
-                snmpy.util.log_exc(e, 'unable to load data file: %s' % src)
+                log_error(e, 'unable to load data file: %s' % src)
 
     def __str__(self):
         return '\n'.join('%-3d: %5s: %s' % (i, self.l[i], self.d[str(self.l[i])]) for i in xrange(len(self.l)))
@@ -315,3 +325,162 @@ class plugin:
                     yield line
 
             time.sleep(1)
+
+class handler(BaseHTTPServer.BaseHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        self.protocol_version = 'HTTP/1.0'
+        self.server_version  += ' snmpy/%s' % __version__
+
+        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+
+    def do_response(self, code, line=None, head=None, body=None):
+        resp = self.responses.get(code, ('Unknown Code', 'Unknown HTTP Response code'))
+
+        line = line or resp[0]
+        body = body or resp[1]
+        head = head if isinstance(head, dict) else {}
+
+        self.send_response(code, line)
+        self.send_header('Content-length', len(body))
+        for key, val in head.items():
+            if key.lower() != 'content-length':
+                self.send_header(key, val)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        if self.headers.dict.get('content-type') != 'application/x-www-form-urlencoded':
+            return self.do_response(400, body='Invalid content type\r\n')
+        if not self.headers.dict.get('content-length', '').isdigit():
+            return self.do_response(400, body='Invalid content length\r\n')
+
+        import pprint
+        pprint.pprint(urlparse.parse_qs(self.rfile.read(int(self.headers.dict['content-length']))))
+
+    def do_GET(self):
+        self.do_response(400, body='GET method is unsupported\r\n')
+
+def create_log(logger=None, debug=False):
+    log = logging.getLogger()
+
+    if logger or debug:
+        if logger and logger.startswith('syslog:'):
+            log_hdlr = logging.handlers.SysLogHandler(facility=logger.split(':')[-1])
+        elif logger and not logger.startswith('console:'):
+            log_hdlr = logging.FileHandler(logger)
+        else:
+            log_hdlr = logging.StreamHandler()
+
+        log_hdlr.setFormatter(logging.Formatter('%(asctime)s.%(msecs)03d - %(filename)16s:%(lineno)-3d %(levelname)8s: %(message)s', '%Y-%m-%d %H:%M:%S'))
+
+        log.setLevel(logging.DEBUG if debug else logging.INFO)
+        log.addHandler(log_hdlr)
+
+        log.info('logging started')
+    else:
+        log.addHandler(logging.NullHandler())
+
+    return log
+
+def parse_conf(parser):
+    try:
+        args = parser.parse_args()
+        conf = yaml.load(open(args.cfgfile))
+
+        parser.set_defaults(**(conf['snmpy_global']))
+
+        args = parser.parse_args()
+        conf['snmpy_global'].update(vars(args))
+
+        create_log(conf['snmpy_global']['logfile'], conf['snmpy_global']['verbose'])
+    except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+        parser.error('cannot parse configuration file: %s' % e)
+
+    boot_time = get_boot()
+    logging.debug('system boot time: %s', str(datetime.datetime.fromtimestamp(boot_time)))
+
+    if conf['snmpy_global']['include_dir']:
+        for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['include_dir']):
+            try:
+                indx, name = os.path.splitext(os.path.basename(item))[0].split('_', 1)
+                if name in conf:
+                    raise ValueError('%s: plugin name already assigned at another index', name)
+                if int(indx) < 1:
+                    raise ValueError('%s: invalid plugin index', indx)
+                if int(indx) in list(v['snmpy_index'] for k, v in conf.items() if k != 'snmpy_global'):
+                    raise ValueError('%s: index already assigned to another plugin', indx)
+
+                conf[name] = {
+                    'system_boot':   boot_time,
+                    'snmpy_index':   int(indx),
+                    'snmpy_extra':   dict(args.extra),
+                    'snmpy_datadir': args.datadir,
+                    'snmpy_collect': args.collect,
+                }
+                conf[name].update(yaml.load(open(item)))
+            except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+                parser.error('cannot parse configuration file: %s' % e)
+
+    return conf
+
+def start_server(port):
+    try:
+        serv = BaseHTTPServer.HTTPServer(('127.0.0.1', port), handler)
+        comm = multiprocessing.Pipe(duplex=True)
+        proc = multiprocessing.Process(target=start_worker, args=(serv, comm))
+        proc.start()
+
+        comm[1].close()
+        return comm[0]
+    except socket.error as e:
+        log_error(e)
+        sys.exit(1)
+
+
+def start_worker(server, (worker_pipe, unused_pipe)):
+    unused_pipe.close()
+
+    try:
+        server.serve_forever(poll_interval=None)
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+def log_error(e, msg=None):
+    if msg:
+        logging.error('%s: %s', msg, e)
+    else:
+        logging.error(e)
+    for line in traceback.format_exc().split('\n'):
+        logging.debug('  %s', line)
+
+
+def get_boot():
+    if sys.platform.startswith('linux'):
+        return boot_lnx()
+    elif sys.platform.startswith('darwin'):
+        return boot_bsd()
+    elif sys.platform.startswith('freebsd'):
+        return boot_bsd()
+
+    raise OSError('unsupported platform')
+
+def boot_lnx():
+    return int([line.split()[1] for line in open('/proc/stat') if line.startswith('btime')][0])
+
+def boot_bsd():
+    class timeval(ctypes.Structure):
+        _fields_ = [
+            ('tv_sec',  ctypes.c_long),
+            ('tv_usec', ctypes.c_long),
+        ]
+
+    c = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
+
+    tv = timeval()
+    sz = ctypes.c_size_t(ctypes.sizeof(tv))
+
+    if (c.sysctlbyname(ctypes.c_char_p('kern.boottime'), ctypes.byref(tv), ctypes.byref(sz), None, ctypes.c_size_t(0)) == -1):
+        raise RuntimeError('sysctl error')
+
+    return tv.tv_sec
+
