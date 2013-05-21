@@ -17,7 +17,7 @@ def initialize(conf):
         logging.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
 
         plugins = { 0: snmpy.plugin('loaded_modules') }
-        plugins[0].data['0.0'] = 'string', snmpy.__version__
+        plugins[0].data['0.0'] = 'string', snmpy.VERSION
 
         for name in keys:
             base = conf[name]['module']

@@ -19,7 +19,7 @@ import traceback
 import urllib2
 import yaml
 
-from snmpy.__version__ import __version__
+VERSION = '20120921.001'
 
 class ReachedLastKeyError(Exception): pass
 class ReachedLastModError(Exception): pass
@@ -322,7 +322,7 @@ class plugin:
 
 class handler(BaseHTTPServer.BaseHTTPRequestHandler):
     log_message = lambda *args: True
-    server_version = '%s %s/%s' % (BaseHTTPServer.BaseHTTPRequestHandler.server_version, __name__, __version__)
+    server_version = '%s %s/%s' % (BaseHTTPServer.BaseHTTPRequestHandler.server_version, __name__, VERSION)
 
     def do_GET(self):
         find = re.match(r'^/(\d+)$', self.path)
