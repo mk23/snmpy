@@ -1,1 +1,5 @@
 module: disk_utilization
+script: 15
+
+sar_command: '/usr/bin/sar'
+sysstat_log: '/var/log/sysstat/sa%02d'
