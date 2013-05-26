@@ -3,3 +3,5 @@
 build
 test
 lib/__version__.py
+debian/files
+debian/snmpy*
