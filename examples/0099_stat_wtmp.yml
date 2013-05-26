@@ -1,0 +1,2 @@
+module: filesystem_stat
+object: /var/log/wtmp

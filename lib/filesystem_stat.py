@@ -22,36 +22,28 @@ class filesystem_stat(snmpy.plugin):
 
         return 'unknown'
 
-    def s_time(self, obj):
-        return int(time.time() - obj)
-
-    def s_pass(self, obj):
-        return obj
-
-    def s_name(self, obj):
-        return self.conf['file_name']
-
     def gather(self, obj):
         item = self.stat[obj.split('.')[-1]]
         try:
-            info = os.lstat(self.conf['file_name'])
+            info = os.lstat(self.conf['object'])
             self.data[obj] = item[1](getattr(info, 'st_%s' % item[0], info.st_mode))
         except Exception as e:
-            snmpy.log_exc(e, '%s: os.stat() error' % self.conf['file_name'])
+            snmpy.log_error(e, '%s: os.stat() error' % self.conf['object'])
             self.data[obj] = item[2]
 
     def create(self):
         self.stat = {
-            '1':  ('name',  self.s_name, self.conf['file_name']),
+            '1':  ('name',  lambda: self.conf['object'], self.conf['object']),
             '2':  ('type',  self.s_type, 'missing'),
-            '3':  ('atime', self.s_time, -1),
-            '4':  ('mtime', self.s_time, -1),
-            '5':  ('ctime', self.s_time, -1),
-            '6':  ('nlink', self.s_pass, -1),
-            '7':  ('size',  self.s_pass, -1),
-            '8':  ('ino',   self.s_pass, -1),
-            '9':  ('uid',   self.s_pass, -1),
-            '10': ('gid',   self.s_pass, -1),
+            '3':  ('mode',  lambda x: '%04o' % stat.S_IMODE(x), 'missing'),
+            '4':  ('atime', lambda x: int(time.time() - x), -1),
+            '5':  ('mtime', lambda x: int(time.time() - x), -1),
+            '6':  ('ctime', lambda x: int(time.time() - x), -1),
+            '7':  ('nlink', lambda x: x, -1),
+            '8':  ('size',  lambda x: x, -1),
+            '9':  ('ino',   lambda x: x, -1),
+            '10': ('uid',   lambda x: x, -1),
+            '11': ('gid',   lambda x: x, -1),
         }
 
         for k, v in self.stat.items():
