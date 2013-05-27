@@ -4,24 +4,6 @@ import stat
 import time
 
 class filesystem_stat(snmpy.plugin):
-    def s_type(self, obj):
-        if stat.S_ISDIR(obj):
-            return 'directory'
-        if stat.S_ISCHR(obj):
-            return 'character special device'
-        if stat.S_ISBLK(obj):
-            return 'block special device'
-        if stat.S_ISREG(obj):
-            return 'regular file'
-        if stat.S_ISFIFO(obj):
-            return 'named pipe'
-        if stat.S_ISLNK(obj):
-            return 'symbolic link'
-        if stat.S_ISSOCK(obj):
-            return 'socket'
-
-        return 'unknown'
-
     def gather(self, obj):
         item = self.stat[obj.split('.')[-1]]
         try:
@@ -32,10 +14,20 @@ class filesystem_stat(snmpy.plugin):
             self.data[obj] = item[2]
 
     def create(self):
+        self.kind = {
+            stat.S_IFDIR:  'directory',
+            stat.S_IFCHR:  'character device',
+            stat.S_IFBLK:  'block device',
+            stat.S_IFREG:  'regular file',
+            stat.S_IFIFO:  'named pipe',
+            stat.S_IFLNK:  'symbolic link',
+            stat.S_IFSOCK: 'socket',
+        }
+
         self.stat = {
-            '1':  ('name',  lambda: self.conf['object'], self.conf['object']),
-            '2':  ('type',  self.s_type, 'missing'),
-            '3':  ('mode',  lambda x: '%04o' % stat.S_IMODE(x), 'missing'),
+            '1':  ('name',  lambda x: self.conf['object'], self.conf['object']),
+            '2':  ('type',  lambda x: self.kind.get(stat.S_IFMT(x), 'unknown'), 'unknown'),
+            '3':  ('mode',  lambda x: '%04o' % stat.S_IMODE(x), 'unknown'),
             '4':  ('atime', lambda x: int(time.time() - x), -1),
             '5':  ('mtime', lambda x: int(time.time() - x), -1),
             '6':  ('ctime', lambda x: int(time.time() - x), -1),
