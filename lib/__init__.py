@@ -11,7 +11,8 @@ import multiprocessing
 import os
 import pickle
 import re
-import socket
+import select
+import signal
 import sys
 import time
 import threading
@@ -335,9 +336,9 @@ class handler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_error(404, '%s is not available' % self.path)
 
 
-
 def start_server(port):
     try:
+        logging.info('starting http command channel on port %d', port)
         serv = BaseHTTPServer.HTTPServer(('127.0.0.1', port), handler)
         comm = multiprocessing.Pipe(duplex=True)
         proc = multiprocessing.Process(target=start_worker, args=(serv, comm))
@@ -345,17 +346,29 @@ def start_server(port):
 
         comm[1].close()
         return comm[0]
-    except socket.error as e:
+    except Exception as e:
         log_fatal(e)
 
-def start_worker(server, (unused_pipe, worker_pipe)):
-    unused_pipe.close()
+def start_worker(server, (unused, worker)):
+    logging.debug('started http command channel')
 
-    try:
-        server.pipe = worker_pipe
-        server.serve_forever(poll_interval=None)
-    except KeyboardInterrupt:
-        log_fatal('caught user interrupt in http server, exiting', exit=0)
+    unused.close()
+    server.pipe = worker
+
+    while True:
+        try:
+            for reader in select.select([server, worker], [], [])[0]:
+                logging.debug('http worker received event on %s', reader)
+                if reader == server:
+                    server.handle_request()
+                else:
+                    worker.recv()
+        except KeyboardInterrupt:
+            log_fatal('caught user interrupt in http server, exiting', exit=0)
+        except EOFError:
+            log_fatal('parent exited, terminating http command channel', exit=0)
+        except Exception as e:
+            log_fatal(e)
 
 
 def create_log(logger=None, debug=False):
