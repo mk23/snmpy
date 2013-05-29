@@ -4,7 +4,7 @@ import snmpy
 import subprocess
 
 class periodic_cmd(snmpy.plugin):
-    @snmpy.plugin.save
+    @snmpy.save
     def script(self):
         text = subprocess.Popen(self.conf['command'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
         for key, val in self:

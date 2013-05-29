@@ -253,82 +253,85 @@ class plugin:
     def script(self):
         raise NotImplementedError('%s: plugin cannot run scripts' % self.name)
 
-    @staticmethod
-    def save(func):
-        def decorated(self, *args, **kwargs):
-            data_file = '%s/%s.dat' % (self.conf['snmpy_datadir'], self.name)
+###
+# plugin utility
+###
+def save(func):
+    def decorated(self, *args, **kwargs):
+        data_file = '%s/%s.dat' % (self.conf['snmpy_datadir'], self.name)
 
-            threshold = self.conf['system_boot'] if self.conf['script'] == 'boot' else time.time() - self.conf['script']
-            code_date = os.stat(sys.modules[self.__class__.__module__].__file__).st_mtime
-            run_limit = max(code_date, threshold)
+        threshold = self.conf['system_boot'] if self.conf['script'] == 'boot' else time.time() - self.conf['script']
+        code_date = os.stat(sys.modules[self.__class__.__module__].__file__).st_mtime
+        run_limit = max(code_date, threshold)
 
-            logging.debug('%s: run limit: %s', self.name, datetime.datetime.fromtimestamp(run_limit))
-            if self.conf['snmpy_collect'] == 'force' or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
-                func(self, *args, **kwargs)
-                self.data.save(data_file)
-                urllib2.urlopen('http://localhost:%d/%d' %(self.conf['snmpy_runport'], self.conf['snmpy_index']))
-                logging.info('saved result data to %s', data_file)
-            else:
-                logging.debug('%s: skipping run: recent change', data_file)
+        logging.debug('%s: run limit: %s', self.name, datetime.datetime.fromtimestamp(run_limit))
+        if self.conf['snmpy_collect'] == 'force' or not os.path.exists(data_file) or os.stat(data_file).st_mtime < run_limit:
+            func(self, *args, **kwargs)
+            self.data.save(data_file)
+            urllib2.urlopen('http://localhost:%d/%d' %(self.conf['snmpy_runport'], self.conf['snmpy_index']))
+            logging.info('saved result data to %s', data_file)
+        else:
+            logging.debug('%s: skipping run: recent change', data_file)
 
-        return decorated
+    return decorated
 
-    @staticmethod
-    def task(func):
-        def decorated(*args, **kwargs):
-            threading.Thread(target=plugin.safe_task, args=[func]+list(args), kwargs=kwargs).start()
+def task(func):
+    def decorated(*args, **kwargs):
+        threading.Thread(target=work, args=[func]+list(args), kwargs=kwargs).start()
 
-        return decorated
+    return decorated
 
-    @staticmethod
-    def safe_task(func, *args, **kwargs):
+def work(func, *args, **kwargs):
+    try:
+        logging.debug('starting background task: %s', func.__name__)
+        func(*args, **kwargs)
+    except Exception as e:
+        log_fatal(e)
+
+def tail(name, notify=False):
+    while True:
         try:
-            logging.debug('starting background task: %s', func.__name__)
-            func(*args, **kwargs)
+            file = open(name)
+            file.seek(0, 2) # start at the end
+            logging.debug('%s: opened file for tail', name)
+            break
+        except IOError as e:
+            logging.info('%s: cannot open for tail: %s', name, e)
+            time.sleep(5)
         except Exception as e:
-            log_fatal(e)
+            log_error(e)
 
-    @staticmethod
-    def tail(name, notify=False):
-        while True:
+    while True:
+        spot = file.tell()
+        stat = os.fstat(file.fileno())
+
+        if os.stat(name).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
+            if notify:
+                yield True
+
             try:
                 file = open(name)
-                file.seek(0, 2) # start at the end
-                logging.debug('%s: opened file for tail', name)
-                break
+                logging.info('%s: repopened for tail: moved, truncated, or removed', name)
             except IOError as e:
                 logging.info('%s: cannot open for tail: %s', name, e)
-                time.sleep(5)
-            except Exception as e:
-                log_error(e)
+        elif spot != stat.st_size:
+            buff = file.read(stat.st_size - spot)
+            while True:
+                indx = buff.find('\n')
+                if indx == -1:
+                    file.seek(-len(buff), 1)
+                    break
+                line = buff[0:indx]
+                buff = buff[indx + 1:]
 
-        while True:
-            spot = file.tell()
-            stat = os.fstat(file.fileno())
+                yield line
 
-            if os.stat(name).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
-                if notify:
-                    yield True
+        time.sleep(1)
 
-                try:
-                    file = open(name)
-                    logging.info('%s: repopened for tail: moved, truncated, or removed', name)
-                except IOError as e:
-                    logging.info('%s: cannot open for tail: %s', name, e)
-            elif spot != stat.st_size:
-                buff = file.read(stat.st_size - spot)
-                while True:
-                    indx = buff.find('\n')
-                    if indx == -1:
-                        file.seek(-len(buff), 1)
-                        break
-                    line = buff[0:indx]
-                    buff = buff[indx + 1:]
 
-                    yield line
-
-            time.sleep(1)
-
+###
+# offline loader
+###
 class handler(BaseHTTPServer.BaseHTTPRequestHandler):
     log_message = lambda *args: True
     server_version = '%s %s/%s' % (BaseHTTPServer.BaseHTTPRequestHandler.server_version, __name__, VERSION)
@@ -379,6 +382,9 @@ def start_worker(server, (unused, worker)):
             log_fatal(e)
 
 
+###
+# initialization helpers
+###
 def create_log(logger=None, debug=False):
     log = logging.getLogger()
 
@@ -445,6 +451,10 @@ def parse_conf(parser):
 
     return conf
 
+
+###
+# log utility
+###
 def log_error(e, msg=None):
     if msg:
         logging.error('%s: %s', msg, e)
@@ -463,6 +473,10 @@ def log_fatal(item, prio='error', exit=1):
     if exit is not None:
         sys.exit(exit)
 
+
+###
+# boot time
+###
 def get_boot():
     if sys.platform.startswith('linux'):
         return boot_lnx()

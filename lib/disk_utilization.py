@@ -5,7 +5,7 @@ import snmpy
 import subprocess
 
 class disk_utilization(snmpy.plugin):
-    @snmpy.plugin.save
+    @snmpy.save
     def script(self):
         os.environ['LC_TIME'] = 'POSIX'
 

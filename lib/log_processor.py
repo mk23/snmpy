@@ -17,7 +17,7 @@ class log_processor(snmpy.plugin):
 
         self.tail()
 
-    @snmpy.plugin.task
+    @snmpy.task
     def tail(self):
         for line in snmpy.plugin.tail(self.conf['object'].format(**self.conf['snmpy_extra']), True):
             if line is True:
