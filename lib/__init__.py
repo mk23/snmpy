@@ -12,7 +12,6 @@ import os
 import pickle
 import re
 import select
-import signal
 import sys
 import time
 import threading
@@ -299,7 +298,9 @@ class plugin:
                 break
             except IOError as e:
                 logging.info('%s: cannot open for tail: %s', name, e)
-                time.sleep(1)
+                time.sleep(5)
+            except Exception as e:
+                log_error(e)
 
         while True:
             spot = file.tell()
@@ -411,6 +412,8 @@ def parse_conf(parser):
         conf['snmpy_global'].update(vars(args))
 
         create_log(conf['snmpy_global']['logfile'], conf['snmpy_global']['verbose'])
+
+        logging.debug('starting system with merged args: %s', args)
     except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         parser.error('cannot parse configuration file: %s' % e)
 
