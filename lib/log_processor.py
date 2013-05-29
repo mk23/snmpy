@@ -4,12 +4,12 @@ import snmpy
 class log_processor(snmpy.plugin):
     def create(self):
         if not len(self.data):
-            for k, v in sorted(self.conf['objects'].items()):
+            for k, v in self:
                 extra = {
-                    'count':  re.compile(v['count']),
-                    'reset':  re.compile(v['reset']) if 'reset' in v else None,
-                    'start':  int(v['start']) if 'start' in v else 0,
-                    'rotate': bool(v['rotate']) if 'rotate' in v else False,
+                    'count':  re.compile(v.get('count', r'(?:)')),
+                    'reset':  re.compile(v.get('reset', r'(?!)')),
+                    'start':  v.get('start', 0),
+                    'rotate': v.get('rotate', False),
                 }
 
                 self.data['1.%s' % k] = 'string', v['label']
@@ -19,7 +19,7 @@ class log_processor(snmpy.plugin):
 
     @snmpy.plugin.task
     def tail(self):
-        for line in snmpy.plugin.tail(self.conf['file_name'].format(**self.conf['info']), True):
+        for line in snmpy.plugin.tail(self.conf['object'].format(**self.conf['snmpy_extra']), True):
             if line is True:
                 for item in self.data['2.0':]:
                     if self.data[item:'rotate'] and line is True:
@@ -31,6 +31,6 @@ class log_processor(snmpy.plugin):
                 if count:
                     self.data[item] = self.data[item:True] + (int(count.group(1)) if len(count.groups()) > 0 else 1)
                     break
-                if self.data[item:'reset'] is not None and self.data[item:'reset'].search(line):
+                if self.data[item:'reset'].search(line):
                     self.data[item] = self.data[item:'start']
                     break
