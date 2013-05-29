@@ -277,10 +277,17 @@ class plugin:
     @staticmethod
     def task(func):
         def decorated(*args, **kwargs):
-            threading.Thread(target=func, args=args, kwargs=kwargs).start()
-            logging.debug('started background task: %s', func.__name__)
+            threading.Thread(target=plugin.safe_task, args=[func]+list(args), kwargs=kwargs).start()
 
         return decorated
+
+    @staticmethod
+    def safe_task(func, *args, **kwargs):
+        try:
+            logging.debug('starting background task: %s', func.__name__)
+            func(*args, **kwargs)
+        except Exception as e:
+            log_fatal(e)
 
     @staticmethod
     def tail(name, notify=False):
