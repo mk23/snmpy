@@ -19,7 +19,7 @@ import traceback
 import urllib2
 import yaml
 
-VERSION = '20120921.001'
+VERSION = '1.0.0'
 
 class ReachedLastKeyError(Exception): pass
 class ReachedLastModError(Exception): pass

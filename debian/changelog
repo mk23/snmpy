@@ -1,3 +1,41 @@
+snmpy (1.0.0) precise; urgency=low
+
+  * Tagging 1.0.0
+  * [ec54b36] Issue #9: Move all plugin utility static support methods
+    out of the plugin class.
+  * [7b6eb46] A bit more logging.
+  * [c0ec66c] Issue #10: wrap backgrounded task into a function that
+    catches and reports exceptions.
+  * [7c6bc5b] Issue #1: Convert log_processor module to support new
+    config format.
+  * [b00e7a9] Fix filesystem_stat module name oid and simplify filetype
+    lookup.
+  * [04bbdcc] Issue #5: Detect parent death and exit the http command
+    server.
+  * [e688cdd] Issue #1: Convert filesystem_stat module to yaml config.
+  * [e8f788d] Ignore debian packaging files.
+  * [6d71533] Prep for version number switch by converting to native
+    debian package.
+  * [b2ca219] Issue #3: Use release.py to cut releases.
+  * [68ab0d9] Prep for version number switch.
+  * [2862eea] Issue #2: convert proc_query module to yaml configs.
+  * [9779454] Issue #2: Update example global config to yaml.
+  * [cd4ea38] Issue #6: convert disk_utilization plugin to new offline
+    collection system.
+  * [7c4deb1] Issue #2: Simplify offline loading by augmenting disk
+    persistence with a request to reload a specific module.
+  * [c12a702] Issue #2: Add support for direct offline loading via HTTP
+    POST.
+  * [1338754] On second thought, pile all the utility stuff into snmpy's
+    __init__.
+  * [ac39a6c] Refactor some code into a utility module.
+  * [1921215] Issue #7: Switch to importlib for module loading.
+  * [4a6ae1c] Remove unused code.
+  * [333d3bd] Issue #1: First big refactor to convert config format to
+    yaml.
+
+ -- Max Kalika <max@mklinbox>  Wed, 05 Jun 2013 08:30:50 -0700
+
 snmpy (20120921.001) lucid; urgency=low
 
   * Tagging 20120921.001.
