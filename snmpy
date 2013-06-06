@@ -1,169 +1,127 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 import argparse
-import bisect
+import collections
+import glob
 import importlib
 import logging
 import os
-import select
-import snmpy
-import sys
+import snmpy.plugin
+import yaml
+
+def parse_conf(parser):
+    try:
+        args = parser.parse_args()
+        conf = yaml.load(open(args.config_file))
+
+        parser.set_defaults(**(conf['snmpy_global']))
+
+        args = parser.parse_args()
+        conf['snmpy_global'].update(vars(args))
+
+        create_log(conf['snmpy_global']['logger_dest'], conf['snmpy_global']['debug'])
+
+        logging.debug('starting system with merged args: %s', args)
+    except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+        parser.error('cannot parse configuration file: %s' % e)
+
+    '''
+    boot_time = get_boot()
+    logging.debug('system boot time: %s', str(datetime.datetime.fromtimestamp(boot_time)))
+    '''
+
+    if conf['snmpy_global']['config_path']:
+        for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['config_path']):
+            try:
+                indx, name = os.path.splitext(os.path.basename(item))[0].split('_', 1)
+                if name in conf:
+                    raise ValueError('%s: plugin name already assigned at another index', name)
+                if int(indx) < 1:
+                    raise ValueError('%s: invalid plugin index', indx)
+                if int(indx) in list(v['snmpy_index'] for k, v in conf.items() if k != 'snmpy_global'):
+                    raise ValueError('%s: index already assigned to another plugin', indx)
+
+                conf[name] = {
+                    'module':      name,
+                    'collect':     1,
+                    'snmpy_index': int(indx),
+                    'snmpy_extra': dict(args.extra),
+                }
+                conf[name].update(yaml.load(open(item)) or {})
+            except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
+                parser.error('cannot parse configuration file: %s' % e)
+
+    return conf
+
+def create_log(dest=None, debug=False):
+    logger = logging.getLogger()
+
+    if dest or debug:
+        if dest and dest.startswith('syslog:'):
+            hdlr = logging.handlers.SysLogHandler(facility=dest.split(':')[-1])
+        elif dest and not dest.startswith('console:'):
+            hdlr = logging.FileHandler(dest)
+        else:
+            hdlr = logging.StreamHandler()
+
+        hdlr.setFormatter(logging.Formatter('%(asctime)s.%(msecs)03d - %(filename)16s:%(lineno)-3d %(levelname)8s: %(message)s', '%Y-%m-%d %H:%M:%S'))
+
+        logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        logger.addHandler(hdlr)
+
+        logger.info('logging started')
+    else:
+        logger.addHandler(logging.NullHandler())
+
+    return logger
 
 def initialize(conf):
     logging.info('initialization started')
+
+    plugins = collections.OrderedDict()
 
     try:
         keys = [i for i in sorted(conf.keys()) if i != 'snmpy_global']
         logging.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
 
-        plugins = { 0: snmpy.plugin('loaded_modules') }
-        plugins[0].data['0.0'] = 'string', snmpy.VERSION
-
         for name in keys:
             base = conf[name]['module']
-            full = 'snmpy.%s' % base
+            full = 'snmpy.plugin.%s' % base
             code = importlib.import_module(full)
 
-            plugins[0].data['1.%d' % conf[name]['snmpy_index']] = 'string', name
-            logging.info('%s: added plugin at index %d', name, conf[name]['snmpy_index'])
+            plugins[name] = getattr(code, base)(name, conf[name])
+            logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
 
-            plugins[conf[name]['snmpy_index']] = getattr(code, base)(name, conf[name])
-            logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[conf[name]['snmpy_index']])
-
+        if 'system_info' in plugins:
+            plugins['system_info'].update(conf)
     except Exception as e:
-        snmpy.log_error(e, 'initialization failed')
-        sys.exit(1)
+        snmpy.log_fatal(e, 'initialization failed')
+#        sys.exit(1)
 
     logging.info('initialization complete')
     return plugins
 
-def handle_http(pipe, mods):
-    try:
-        mod = mods[pipe.recv()]
-        logging.info('received load request for %s', mod.name)
-
-        mod.reload()
-        pipe.send(['success', '%s forced to reload' % mod.name])
-    except (KeyError, ValueError) as e:
-        snmpy.log_error(e, 'received load request for invalid object_id')
-        pipe.send(['error', 'Invalid object_id specified'])
-    except EOFError:
-        snmpy.log_fatal('broken http pipe')
-
-def handle_snmp(mods, base, keys=[]):
-    if not keys:
-        keys.extend(sorted(mods))
-
-    try:
-        req = sys.stdin.readline().strip()
-        if req == 'PING':
-            print 'PONG'
-            return
-        if req == 'set':
-            sys.stdin.readline() # type
-            sys.stdin.readline() # value
-            print 'not-writable'
-            return
-        if not req and not sys.stdin.isatty():
-            snmpy.log_fatal('broken snmp pipe')
-        if not req or (req != 'get' and req != 'getnext'):
-            raise ValueError('invalid request: %s' % req.strip())
-
-        oid = sys.stdin.readline().strip()
-        logging.info('received %s request for %s', req, oid)
-
-        top, sep, bot = oid.partition(base)
-        logging.debug('partitioned oid: %s / %s / %s', top, sep, bot)
-
-        if sep != base:
-            raise ValueError('invalid request: %s: %s' % (req, oid))
-
-        if req == 'get':
-            mod, obj = bot.lstrip('.').split('.', 1)
-            key, (vtype, vdata) = mods[int(mod)].member(obj)
-        elif req == 'getnext':
-            prt = bot.lstrip('.').split('.', 1)
-            mod = keys[0] if prt[0] == '' else int(prt[0])
-            obj = '' if len(prt) < 2 else prt[1]
-
-            idx = bisect.bisect_left(keys, mod) if mod in mods else bisect.bisect_right(keys, mod)
-            while True:
-                if idx < len(keys):
-                    mod = keys[idx]
-                else:
-                    logging.debug('end of mods')
-                    raise snmpy.ReachedLastModError
-
-                try:
-                    key, (vtype, vdata) = mods[mod].member(obj, True)
-                    break
-                except snmpy.ReachedLastKeyError:
-                    obj = ''
-                    idx = bisect.bisect_right(keys, mod)
-
-        logging.debug('mod: %s, key: %s: val: %s/%s', mod, obj, vtype, vdata)
-        print '%s.%s.%s' % (base, mod, key)
-        print vtype
-        print vdata
-
-    except snmpy.ReachedLastModError:
-        print 'NONE'
-    except Exception as e:
-        snmpy.log_error(e)
-        if req == 'getnext':
-            idx = bisect.bisect_right(keys, mod)
-            if idx < len(keys):
-                print '%s.%s' % (base, keys[idx])
-                print 'string'
-                print 'error: %s' % e
-            else:
-                print 'NONE'
-        else:
-            print 'NONE'
-
-def enter_loop(pipe, mods, base):
-    logging.info('command loop started for base oid %s', base)
-
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', False)
-    logging.debug('stdout set unbuffered')
-
-    while True:
-        try:
-            for fd in select.select([sys.stdin, pipe], [], [])[0]:
-                if fd == sys.stdin:
-                    handle_snmp(mods, base)
-                else:
-                    handle_http(pipe, mods)
-        except KeyboardInterrupt:
-            snmpy.log_fatal('caught user interrupt in command loop, exiting', exit=0)
-
-    logging.info('command loop complete')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='net-snmp pluggable module system')
-    parser.add_argument('-b', '--baseoid', default=None,
-                        help='base oid as configured in pass_persist by snmpd.conf')
-    parser.add_argument('-f', '--cfgfile', default='/etc/snmpy.yml',
-                        help='snmpy configuration file')
-    parser.add_argument('-i', '--datadir', default=None,
-                        help='location for offline collector data')
-    parser.add_argument('-p', '--runport', default=1123, type=int,
-                        help='runtime lock and api http port')
-    parser.add_argument('-s', '--collect', default=False, const=True, nargs='?', choices=['force'],
-                        help='run offline collector scripts')
-    parser.add_argument('-l', '--logfile', default=None,
-                        help='log to file, console:, or syslog:<facility>')
-    parser.add_argument('-v', '--verbose', default=False, action='store_true',
-                        help='enable basic logging')
+    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
+    parser.add_argument('-p', '--parent-root', default='enterprises',
+                        help='parent root class name')
+    parser.add_argument('-o', '--system-root', default=1123,
+                        help='system root object id')
+    parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
+                        help='system configuration file')
+    parser.add_argument('-i', '--config-path',
+                        help='system configuration path')
+    parser.add_argument('-l', '--logger-dest', default='console:',
+                        help='filename, syslog:<facility>, or console:')
+    parser.add_argument('-m', '--display-mib', default=False, action='store_true',
+                        help='display generated mib file and exit')
+    parser.add_argument('-d', '--debug', default=False, action='store_true',
+                        help='enable debug logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
-                        help='extra arbitrary facts for use in plugins')
-    conf = snmpy.parse_conf(parser)
+                        help='extra key/val pairs for plugins')
+    conf = parse_conf(parser)
 
     mods = initialize(conf)
-    if not conf['snmpy_global']['collect']:
-        pipe = snmpy.start_server(conf['snmpy_global']['runport'])
-        enter_loop(pipe, mods, conf['snmpy_global']['baseoid'])
-    else:
-        logging.debug('collection scripts completed')
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class
