@@ -7,6 +7,8 @@ import importlib
 import logging
 import os
 import snmpy.plugin
+import snmpy.mib_gen
+import sys
 import yaml
 
 def parse_conf(parser):
@@ -43,7 +45,7 @@ def parse_conf(parser):
 
                 conf[name] = {
                     'module':      name,
-                    'collect':     1,
+                    'period':      0,
                     'snmpy_index': int(indx),
                     'snmpy_extra': dict(args.extra),
                 }
@@ -92,15 +94,13 @@ def initialize(conf):
             plugins[name] = getattr(code, base)(name, conf[name])
             logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
 
-        if 'system_info' in plugins:
-            plugins['system_info'].update(conf)
+#        if 'system_info' in plugins:
+#            plugins['system_info'].update(conf)
     except Exception as e:
         snmpy.log_fatal(e, 'initialization failed')
-#        sys.exit(1)
 
     logging.info('initialization complete')
     return plugins
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
@@ -110,18 +110,20 @@ if __name__ == '__main__':
                         help='system root object id')
     parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
                         help='system configuration file')
-    parser.add_argument('-i', '--config-path',
+    parser.add_argument('-i', '--include-dir',
                         help='system configuration path')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
-    parser.add_argument('-m', '--display-mib', default=False, action='store_true',
+    parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
                         help='display generated mib file and exit')
     parser.add_argument('-d', '--debug', default=False, action='store_true',
                         help='enable debug logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
                         help='extra key/val pairs for plugins')
     conf = parse_conf(parser)
-
     mods = initialize(conf)
+
+    if conf['snmpy_global']['create_mib']:
+        conf['snmpy_global']['create_mib'].write(snmpy.mib_gen.create_mib(conf, mods))
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class
