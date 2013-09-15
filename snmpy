@@ -6,8 +6,7 @@ import glob
 import importlib
 import logging
 import os
-import snmpy.plugin
-import snmpy.mib_gen
+import snmpy
 import sys
 import yaml
 
@@ -27,11 +26,6 @@ def parse_conf(parser):
     except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         parser.error('cannot parse configuration file: %s' % e)
 
-    '''
-    boot_time = get_boot()
-    logging.debug('system boot time: %s', str(datetime.datetime.fromtimestamp(boot_time)))
-    '''
-
     if conf['snmpy_global']['config_path']:
         for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['config_path']):
             try:
@@ -44,8 +38,8 @@ def parse_conf(parser):
                     raise ValueError('%s: index already assigned to another plugin', indx)
 
                 conf[name] = {
-                    'module':      name,
-                    'period':      0,
+                    'name':        name,
+                    'time':        0,
                     'snmpy_index': int(indx),
                     'snmpy_extra': dict(args.extra),
                 }
@@ -77,6 +71,7 @@ def create_log(dest=None, debug=False):
 
     return logger
 
+
 def initialize(conf):
     logging.info('initialization started')
 
@@ -87,31 +82,32 @@ def initialize(conf):
         logging.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
 
         for name in keys:
+            logging.debug('%s: creating plugin instance', name)
+
             base = conf[name]['module']
             full = 'snmpy.plugin.%s' % base
             code = importlib.import_module(full)
-
-            plugins[name] = getattr(code, base)(name, conf[name])
+            plugins[name] = getattr(code, base)(conf[name])
             logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
-
-#        if 'system_info' in plugins:
-#            plugins['system_info'].update(conf)
     except Exception as e:
         snmpy.log_fatal(e, 'initialization failed')
 
     logging.info('initialization complete')
     return plugins
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
     parser.add_argument('-p', '--parent-root', default='enterprises',
                         help='parent root class name')
-    parser.add_argument('-o', '--system-root', default=1123,
+    parser.add_argument('-o', '--system-root', type=int, default=1123,
                         help='system root object id')
     parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
                         help='system configuration file')
     parser.add_argument('-i', '--include-dir',
                         help='system configuration path')
+    parser.add_argument('-s', '--master-sock', default='/var/agentx/master',
+                        help='agentx master socket path or host:port')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
     parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
@@ -124,6 +120,11 @@ if __name__ == '__main__':
     mods = initialize(conf)
 
     if conf['snmpy_global']['create_mib']:
-        conf['snmpy_global']['create_mib'].write(snmpy.mib_gen.create_mib(conf, mods))
+        conf['snmpy_global']['create_mib'].write(snmpy.create_mib(conf, mods))
+    else:
+        snmp = snmpy.SnmpyAgent(conf, mods)
+        data = snmpy.SnmpyData(snmp)
+
+        snmp.run_agent()
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class

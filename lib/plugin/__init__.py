@@ -1,4 +1,4 @@
-class plugin(object):
-    def __init__(self, name, conf):
-        self.name = name
+class Plugin(object):
+    def __init__(self, conf):
         self.conf = conf
+        self.name = conf['name']

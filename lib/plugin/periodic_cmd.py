@@ -1,4 +1,4 @@
-import snmpy.plugin
+import snmpy
 
-class periodic_cmd(snmpy.plugin.plugin):
+class periodic_cmd(snmpy.Plugin):
     pass
