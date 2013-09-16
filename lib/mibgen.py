@@ -1,8 +1,16 @@
 import re
 import time
 
+MIB_MODULE  = 'SNMPY-MIB'
+KEY_PREFIX  = 'snmpy'
+VERSION_KEY = 'info_version'
+PLUGINS_KEY = 'info_plugins'
+
 def camel_case(key):
     return ''.join(i[0].upper() + i[1:].lower() for i in key.split('_'))
+
+def get_oidstr(*args):
+    return '%s::%s%s' % (MIB_MODULE, KEY_PREFIX, camel_case('_'.join(args)))
 
 def get_syntax(key, default='DisplayString', type_map={}):
     if not type_map:
@@ -19,23 +27,34 @@ def get_syntax(key, default='DisplayString', type_map={}):
 
     return default
 
+def get_default(key, type_map={}):
+    if not type_map:
+        type_map.update({
+            'Integer32':     0,
+            'Counter32':     0,
+            'Counter64':     0,
+            'DisplayString': '',
+        })
+
+    return type_map[get_syntax(key)]
+
 def config_mib(plugin):
     name = camel_case(plugin.name)
     part = '''
-        snmpy{name} OBJECT IDENTIFIER ::= {{ snmpyMIB {oid} }}
-    '''.format(name=name, oid=plugin.conf['snmpy_index'])
+        {prefix}{name} OBJECT IDENTIFIER ::= {{ {prefix}MIB {oid} }}
+    '''.format(prefix=KEY_PREFIX, name=name, oid=plugin.conf['snmpy_index'])
 
     if 'items' in plugin.conf:
         for oid in xrange(len(plugin.conf['items'])):
             item, conf = plugin.conf['items'][oid].items().pop()
             part += '''
-                snmpy{name}{part} OBJECT-TYPE
-                    SYNTAX      {val}
+                {prefix}{name}{part} OBJECT-TYPE
+                    SYNTAX      {syntax}
                     MAX-ACCESS  read-only
                     STATUS      current
-                    DESCRIPTION "snmpy{name}{part}"
-                    ::= {{ snmpy{name} {oid} }}
-            '''.format(name=name, part=camel_case(item), val=get_syntax(conf['type']), oid=oid+1)
+                    DESCRIPTION "{prefix}{name}{part}"
+                    ::= {{ {prefix}{name} {oid} }}
+            '''.format(prefix=KEY_PREFIX, syntax=get_syntax(conf['type']), name=name, part=camel_case(item), oid=oid+1)
     elif 'table' in plugin.conf:
         for oid in xrange(len(plugin.conf['table'])):
             item, conf = plugin.conf['table'][oid].items().pop()
@@ -47,57 +66,62 @@ def config_mib(plugin):
 
                 types.append(
                     '''
-                        snmpy{name}{part}{key} {val}
-                    '''.format(name=name, part=camel_case(item), key=camel_case(col_key), val=get_syntax(col_val))
+                        {prefix}{name}{part}{key} {syntax}
+                    '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val), name=name, part=camel_case(item), key=camel_case(col_key))
                 )
                 parts += '''
-                    snmpy{name}{part}{key} OBJECT-TYPE
-                    SYNTAX      {val}
+                    {prefix}{name}{part}{key} OBJECT-TYPE
+                    SYNTAX      {syntax}
                     MAX-ACCESS  read-only
                     STATUS      current
-                    DESCRIPTION "snmpy{name}{part}{key}"
-                    ::= {{ snmpy{name}{part}Entry {oid} }}
-                '''.format(name=name, part=camel_case(item), key=camel_case(col_key), val=get_syntax(col_val), oid=col+2)
+                    DESCRIPTION "{prefix}{name}{part}{key}"
+                    ::= {{ {prefix}{name}{part}Entry {oid} }}
+                '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val), name=name, part=camel_case(item), key=camel_case(col_key), oid=col+2)
 
             part += '''
-                snmpy{name}{key} OBJECT IDENTIFIER ::= {{ snmpy{name}Table {oid} }}
-                Snmpy{name}{key}Entry ::= SEQUENCE {{
-                    snmpy{name}{key}Index Integer32,
+                {prefix}{name}{key} OBJECT IDENTIFIER ::= {{ {prefix}{name}Table {oid} }}
+                {Prefix}{name}{key}Entry ::= SEQUENCE {{
+                    {prefix}{name}{key}Index Integer32,
                     {types}
                 }}
-                snmpy{name}{key}Table OBJECT-TYPE
-                    SYNTAX      SEQUENCE OF Snmpy{name}{key}Entry
+                {prefix}{name}{key}Table OBJECT-TYPE
+                    SYNTAX      SEQUENCE OF {Prefix}{name}{key}Entry
                     MAX-ACCESS  not-accessible
                     STATUS      current
-                    DESCRIPTION "snmpy{name}{key}Table"
-                    ::= {{ snmpy{name}{key} 1 }}
-                snmpy{name}{key}Entry OBJECT-TYPE
-                    SYNTAX      Snmpy{name}{key}Entry
+                    DESCRIPTION "{prefix}{name}{key}Table"
+                    ::= {{ {prefix}{name}{key} 1 }}
+                {prefix}{name}{key}Entry OBJECT-TYPE
+                    SYNTAX      {Prefix}{name}{key}Entry
                     MAX-ACCESS  not-accessible
                     STATUS      current
-                    DESCRIPTION "snmpy{name}{key}Entry"
-                    INDEX       {{ snmpy{name}{key}Index }}
-                    ::= {{ snmpy{name}{key}Table 1 }}
-                snmpy{name}{key}Index OBJECT-TYPE
+                    DESCRIPTION "{prefix}{name}{key}Entry"
+                    INDEX       {{ {prefix}{name}{key}Index }}
+                    ::= {{ {prefix}{name}{key}Table 1 }}
+                {prefix}{name}{key}Index OBJECT-TYPE
                     SYNTAX      Integer32 (0..2147483647)
                     MAX-ACCESS  not-accessible
                     STATUS      current
-                    DESCRIPTION "snmpy{name}{key}Index"
-                    ::= {{ snmpy{name}{key}Entry 1 }}
+                    DESCRIPTION "{prefix}{name}{key}Index"
+                    ::= {{ {prefix}{name}{key}Entry 1 }}
                 {parts}
-            '''.format(name=name, key=camel_case(item), types=',\n'.join(types), parts=parts, oid=oid+1)
+            '''.format(prefix=KEY_PREFIX, Prefix=camel_case(KEY_PREFIX), name=name, key=camel_case(item), types=',\n'.join(types), parts=parts, oid=oid+1)
 
     return part
 
 def create_mib(conf, plugins):
     mib_args = {
-        'date':   time.strftime('%Y%m%d%H%MZ'),
-        'parts':  ''.join(config_mib(p) for p in plugins.values() if p.name != 'snmpy_info'),
-        'parent': conf['snmpy_global']['parent_root'],
-        'system': conf['snmpy_global']['system_root'],
+        'date':    time.strftime('%Y%m%d%H%MZ'),
+        'parts':   ''.join(config_mib(p) for p in plugins.values() if p.name != 'snmpy_info'),
+        'parent':  conf['snmpy_global']['parent_root'],
+        'system':  conf['snmpy_global']['system_root'],
+        'module':  MIB_MODULE,
+        'prefix':  KEY_PREFIX,
+        'Prefix':  camel_case(KEY_PREFIX),
+        'version': camel_case(VERSION_KEY),
+        'plugins': camel_case(PLUGINS_KEY),
     }
     mib_text = '''
-        SNMPY-MIB DEFINITIONS ::= BEGIN
+        {module} DEFINITIONS ::= BEGIN
 
         IMPORTS
             MODULE-IDENTITY, OBJECT-TYPE, Integer32, Counter32, Counter64   FROM SNMPv2-SMI
@@ -107,57 +131,57 @@ def create_mib(conf, plugins):
             ucdavis                                                         FROM UCD-SNMP-MIB
             ;
 
-        snmpyMIB MODULE-IDENTITY
+        {prefix}MIB MODULE-IDENTITY
             LAST-UPDATED "{date}"
             ORGANIZATION "N/A"
             CONTACT-INFO "Editor: Max Kalika Email: max.kalika+projects@gmail.com"
-            DESCRIPTION  "snmpy mib"
+            DESCRIPTION  "{module}"
             REVISION     "{date}"
             DESCRIPTION  "autogenerated mib"
             ::= {{ {parent} {system} }}
 
-        snmpyInfo OBJECT IDENTIFIER ::= {{ snmpyMIB 0 }}
+        {prefix}Info OBJECT IDENTIFIER ::= {{ {prefix}MIB 0 }}
 
-        snmpyInfoVersion OBJECT-TYPE
+        {prefix}{version} OBJECT-TYPE
             SYNTAX      DisplayString
             MAX-ACCESS  read-only
             STATUS      current
-            DESCRIPTION "snmpyInfoVersion"
-            ::= {{ snmpyInfo 0 }}
+            DESCRIPTION "{prefix}{version}"
+            ::= {{ {prefix}Info 0 }}
 
-        SnmpyInfoPluginsEntry ::= SEQUENCE {{
-            snmpyInfoPluginsIndex Integer32,
-            snmpyInfoPluginsName  DisplayString
+        {Prefix}{plugins}Entry ::= SEQUENCE {{
+            {prefix}{plugins}Index Integer32,
+            {prefix}{plugins}Name  DisplayString
         }}
 
-        snmpyInfoPluginsTable OBJECT-TYPE
-            SYNTAX      SEQUENCE OF SnmpyInfoPluginsEntry
+        {prefix}{plugins}Table OBJECT-TYPE
+            SYNTAX      SEQUENCE OF {Prefix}{plugins}Entry
             MAX-ACCESS  not-accessible
             STATUS      current
-            DESCRIPTION "snmpyInfoPluginsTable"
-            ::= {{ snmpyInfo 1 }}
+            DESCRIPTION "{prefix}{plugins}Table"
+            ::= {{ {prefix}Info 1 }}
 
-        snmpyInfoPluginsEntry OBJECT-TYPE
-            SYNTAX      SnmpyInfoPluginsEntry
+        {prefix}{plugins}Entry OBJECT-TYPE
+            SYNTAX      {Prefix}{plugins}Entry
             MAX-ACCESS  not-accessible
             STATUS      current
-            DESCRIPTION "snmpyInfoPluginsEntry"
-            INDEX       {{ snmpyInfoPluginsIndex }}
-            ::= {{ snmpyInfoPluginsTable 1 }}
+            DESCRIPTION "{prefix}{plugins}Entry"
+            INDEX       {{ {prefix}{plugins}Index }}
+            ::= {{ {prefix}{plugins}Table 1 }}
 
-        snmpyInfoPluginsIndex OBJECT-TYPE
+        {prefix}{plugins}Index OBJECT-TYPE
             SYNTAX      Integer32 (0..2147483647)
             MAX-ACCESS  not-accessible
             STATUS      current
-            DESCRIPTION "snmpyInfoPluginsIndex"
-            ::= {{ snmpyInfoPluginsEntry 1 }}
+            DESCRIPTION "{prefix}{plugins}Index"
+            ::= {{ {prefix}{plugins}Entry 1 }}
 
-        snmpyInfoPluginsName OBJECT-TYPE
+        {prefix}{plugins}Name OBJECT-TYPE
             SYNTAX      DisplayString
             MAX-ACCESS  read-only
             STATUS      current
-            DESCRIPTION "snmpyInfoPluginsName"
-            ::= {{ snmpyInfoPluginsEntry 2 }}
+            DESCRIPTION "{prefix}{plugins}Name"
+            ::= {{ {prefix}{plugins}Entry 2 }}
         {parts}
 
         END
@@ -168,7 +192,7 @@ def create_mib(conf, plugins):
     for line in re.sub(r'^\s*(.*)$', r'\1', mib_text, flags=re.MULTILINE).splitlines(True):
         if line.strip().startswith('}'):
             sect = False
-        if re.match(r'(?:import|snmpy|end|})', line, flags=re.IGNORECASE) and not sect:
+        if re.match(r'(?:import|%s|end|})' % KEY_PREFIX, line, flags=re.IGNORECASE) and not sect:
             text += line
         else:
             text += line.rjust(len(line) + 4)
