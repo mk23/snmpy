@@ -49,6 +49,7 @@ def parse_conf(parser):
 
     return conf
 
+
 def create_log(dest=None, debug=False):
     logger = logging.getLogger()
 
@@ -79,7 +80,7 @@ def initialize(conf):
 
     try:
         keys = [i for i in sorted(conf.keys()) if i != 'snmpy_global']
-        logging.info('configuring %d table(s): %s', len(keys), ', '.join(keys))
+        logging.info('configuring %d plugin(s): %s', len(keys), ', '.join(keys))
 
         for name in keys:
             logging.debug('%s: creating plugin instance', name)
@@ -88,6 +89,7 @@ def initialize(conf):
             full = 'snmpy.plugin.%s' % base
             code = importlib.import_module(full)
             plugins[name] = getattr(code, base)(conf[name])
+
             logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
     except Exception as e:
         snmpy.log_fatal(e, 'initialization failed')
