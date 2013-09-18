@@ -9,32 +9,30 @@ class SnmpyData(object):
         self.snmp = snmp
         self.data = {}
 
-    def obj_instance(self, kind):
-        return getattr(self.snmp, snmpy.get_syntax(kind))
-
-    def create_value(self, kind, oid, val=None):
+    def create_value(self, syn, oid, val=None):
         if val is None:
-            val = snmpy.get_default(kind)
+            val = snmpy.get_default(syn)
 
         if oid not in self.data:
-            logging.debug('registering value %s/%s (%s)', oid, snmpy.get_syntax(kind), val)
-            self.data[oid] = self.obj_instance(kind)(oidstr=oid, initval=val)
+            logging.debug('registering value %s/%s (%s)', oid, syn, val)
+            self.data[oid] = getattr(self.snmp, syn)(oidstr=oid, initval=val)
 
-    def create_table(self, kind, oid, col):
+    def create_table(self, syn, oid, col):
         if oid not in self.data:
-            logging.debug('registering table %s/%s (%d cols)]', oid, snmpy.get_syntax(kind), len(col))
+            logging.debug('registering table %s/%s (%d cols)]', oid, syn, len(col))
             self.data[oid] = self.snmp.Table(
                 oidstr  = oid,
-                indexes = self.obj_instance(kind)(),
-                columns = [(i + 2, self.obj_instance(col[i]['kind'])(col[i]['val'])) for i in range(len(col))]
+                indexes = getattr(self.snmp, syn)(),
+                columns = [(i + 2, getattr(self.snmp, col[i]['syn'])(col[i]['val'])) for i in range(len(col))]
             )
 
-class SnmpyAgent(object):
     def update_value(self, oid, val):
         self.data[oid].update(val)
 
     def update_table(self, oid, tbl):
         self.data[oid].clear()
+
+class SnmpyAgent(object):
     def __init__(self, conf, mods):
         temp = tempfile.NamedTemporaryFile()
         temp.write(snmpy.create_mib(conf, mods))
@@ -68,12 +66,9 @@ class SnmpyAgent(object):
             mod_row = mtab.addRow([self.snmp.Integer32(mod.conf['snmpy_index'])])
             mod_row.setRowCell(2, self.snmp.DisplayString(key))
 
-            if 'items' in mod.conf:
-                for indx in xrange(len(mod.conf['items'])):
-                    item, conf = mod.conf['items'][indx].items().pop()
-                    self.mods[key].conf['items'][indx]['oid'] = snmpy.get_oidstr(key, item)
-
-                    self.data.create_value(conf['type'], self.mods[key].conf['items'][indx]['oid'], conf.get('val'))
+            if isinstance(mod, snmpy.ValuePlugin):
+                for item, conf in mod:
+                    self.data.create_value(conf['syntax'], conf['oidstr'], conf.get('value'))
 
     def run_agent(self):
         signal.signal(signal.SIGINT, self.end_agent)

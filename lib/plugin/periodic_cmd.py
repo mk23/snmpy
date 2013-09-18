@@ -3,19 +3,17 @@ import re
 import snmpy
 import subprocess
 
-class periodic_cmd(snmpy.Plugin):
+class periodic_cmd(snmpy.ValuePlugin):
     def update(self):
-        text = subprocess.Popen(self.conf['exec'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
-        print text
-        for indx in xrange(len(self.conf['items'])):
-            item, conf = self.conf['items'][indx].items().pop()
+        text = subprocess.Popen(self.conf['object'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
+        for indx, (item, conf) in self:
             regex = re.compile(conf['regex'])
             found = regex.findall(text)
 
             if found:
                 if regex.groups == 0:
-                    self.conf['items'][indx][item]['val'] = len(found)
+                    self[item] = len(found)
                 elif not conf.has_key('cdef'):
-                    self.conf['items'][indx][item]['val'] = found[0].strip()
+                    self[item] = found[0].strip()
                 else:
-                    self.conf['items'][indx][item]['val'] = getattr(__builtin__, conf['cdef'])([int(i) for i in found])
+                    self[item] = getattr(__builtin__, conf['cdef'])([int(i) for i in found])

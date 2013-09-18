@@ -1,16 +1,17 @@
 module:  periodic_cmd
-script:  boot
-command: '/usr/sbin/dmidecode -t system'
+period:  boot
 
-objects:
-    - type:  'string'
-      label: 'uuid'
-      regex: 'UUID: (.+)'
+object: '/usr/sbin/dmidecode -t system'
 
-    - type:  'string'
-      label: 'manufacturer'
-      regex: 'Manufacturer: (.+)'
+items:
+    - uuid:
+          type:  'string'
+          regex: 'UUID: (.+)'
 
-    - type:  'string'
-      label: 'product'
-      regex: 'Product Name: (.+)'
+    - manufacturer:
+          type:  'string'
+          regex: 'Manufacturer: (.+)'
+
+    - product:
+          type:  'string'
+          regex: 'Product Name: (.+)'

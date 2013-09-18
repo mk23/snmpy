@@ -45,8 +45,7 @@ def config_mib(plugin):
     '''.format(prefix=KEY_PREFIX, name=name, oid=plugin.conf['snmpy_index'])
 
     if 'items' in plugin.conf:
-        for oid in xrange(len(plugin.conf['items'])):
-            item, conf = plugin.conf['items'][oid].items().pop()
+        for item, conf in plugin:
             part += '''
                 {prefix}{name}{part} OBJECT-TYPE
                     SYNTAX      {syntax}
@@ -54,7 +53,7 @@ def config_mib(plugin):
                     STATUS      current
                     DESCRIPTION "{prefix}{name}{part}"
                     ::= {{ {prefix}{name} {oid} }}
-            '''.format(prefix=KEY_PREFIX, syntax=get_syntax(conf['type']), name=name, part=camel_case(item), oid=oid+1)
+            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=conf['syntax'], oid=conf['oidnum'])
     elif 'table' in plugin.conf:
         for oid in xrange(len(plugin.conf['table'])):
             item, conf = plugin.conf['table'][oid].items().pop()
