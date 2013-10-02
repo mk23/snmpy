@@ -1,4 +1,5 @@
-import snmpy
+import collections
+import snmpy.mibgen
 
 class Plugin(object):
     def __init__(self, conf):
@@ -9,28 +10,34 @@ class Plugin(object):
         raise(NotImplementedError('plugin module is missing update() method'))
 
 class ValuePlugin(Plugin):
+    class Item(object):
+        def __init__(self, oidnum, oidstr, syntax, native, value, **kwargs):
+            self.__dict__.update(kwargs)
+            self.oidnum = oidnum
+            self.oidstr = oidstr
+            self.syntax = syntax
+            self.native = native
+            self.value  = value
+
     def __init__(self, conf):
         Plugin.__init__(self, conf)
 
+        self.items = collections.OrderedDict()
         for oid in xrange(len(self.conf['items'])):
             obj, cfg = self.conf['items'][oid].items().pop()
-            self.conf['items'][oid][obj]['oidnum'] = oid + 1
-            self.conf['items'][oid][obj]['oidstr'] = '%s.%d' % (snmpy.get_oidstr(conf['name'], obj), oid + 1)
-            self.conf['items'][oid][obj]['syntax'] = snmpy.get_syntax(cfg['type'])
-
-        self._obj = dict((o, c['oidnum'] - 1) for o, c in self)
+            self.items[obj] = ValuePlugin.Item(oid + 1, snmpy.mibgen.get_oidstr(conf['name'], obj), *snmpy.mibgen.get_syntax(cfg['type']), **cfg)
 
     def __iter__(self):
-        return (item.items().pop() for item in self.conf['items'])
+        return (obj for obj in self.items.keys())
 
     def __getitem__(self, obj):
         if type(obj) == slice:
-            return self.conf['items'][self._obj[obj.start]][obj.stop]
+            return getattr(self.items[obj.start], obj.stop, obj.step)
         else:
-            return self.conf['items'][self._obj[obj]]['value']
+            return self.items[obj]
 
     def __setitem__(self, obj, val):
-        self.conf['items'][self._obj[obj]]['value'] = val
+        self.items[obj].value = val
 
 class TablePlugin(Plugin):
     def __iter__(self):

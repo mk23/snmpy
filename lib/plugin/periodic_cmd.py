@@ -1,19 +1,24 @@
-import __builtin__
 import re
-import snmpy
+import snmpy.plugin
 import subprocess
 
-class periodic_cmd(snmpy.ValuePlugin):
+class periodic_cmd(snmpy.plugin.ValuePlugin):
+    CDEF_FUNCS = {
+        'min': min,
+        'max': max,
+        'len': len,
+        'sum': sum,
+        'len': len,
+        'avg': lambda l: 0 if len(l) == 0 else sum(l) / len(l),
+    }
+
     def update(self):
         text = subprocess.Popen(self.conf['object'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
-        for indx, (item, conf) in self:
-            regex = re.compile(conf['regex'])
-            found = regex.findall(text)
+        for item in self:
+            find = re.findall(self[item].regex, text)
 
-            if found:
-                if regex.groups == 0:
-                    self[item] = len(found)
-                elif not conf.has_key('cdef'):
-                    self[item] = found[0].strip()
+            if find:
+                if self[item:'cdef'] in self.CDEF_FUNCS:
+                    self[item] = self.CDEF_FUNCS[self[item].cdef](self[item].native(i) for i in find)
                 else:
-                    self[item] = getattr(__builtin__, conf['cdef'])([int(i) for i in found])
+                    self[item] = self[item].native(self[item:'join':''].join(find))

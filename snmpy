@@ -6,7 +6,8 @@ import glob
 import importlib
 import logging
 import os
-import snmpy
+import snmpy.mibgen
+import snmpy.server
 import sys
 import yaml
 
@@ -122,8 +123,8 @@ if __name__ == '__main__':
     mods = initialize(conf)
 
     if conf['snmpy_global']['create_mib']:
-        conf['snmpy_global']['create_mib'].write(snmpy.create_mib(conf, mods))
+        conf['snmpy_global']['create_mib'].write(snmpy.mibgen.create_mib(conf, mods))
     else:
-        snmpy.SnmpyAgent(conf, mods)
+        snmpy.server.SnmpyAgent(conf, mods)
 
 # vim: sw=4 ts=4 sts=4 sta si et nu ruler cinwords=if,elif,else,for,while,try,except,finally,def,class

@@ -1,11 +1,24 @@
 import logging
 import sys
+import threading
 import traceback
-from snmpy.mibgen import *
-from snmpy.plugin import *
-from snmpy.server import *
 
 VERSION = '1.0.0'
+
+def task_func(func):
+    def decorated(*args, **kwargs):
+        t = threading.Thread(target=work_func, args=[func]+list(args), kwargs=kwargs)
+        t.daemon = True
+        t.start()
+
+    return decorated
+
+def work_func(func, *args, **kwargs):
+    try:
+        logging.info('starting background task: %s', func.__name__)
+        func(*args, **kwargs)
+    except Exception as e:
+        log_fatal(e)
 
 def log_error(e, msg=None):
     if msg:

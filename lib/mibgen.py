@@ -1,4 +1,5 @@
 import re
+import snmpy.plugin
 import time
 
 MIB_MODULE  = 'SNMPY-MIB'
@@ -12,31 +13,20 @@ def camel_case(key):
 def get_oidstr(*args):
     return '%s::%s%s' % (MIB_MODULE, KEY_PREFIX, camel_case('_'.join(args)))
 
-def get_syntax(key, default='DisplayString', type_map={}):
+def get_syntax(key, type_map={}):
     if not type_map:
         type_map.update({
-            'Integer32': re.compile(r'int(?:eger)?(?:32)?'),
-            'Counter32': re.compile(r'count(?:er)?(?:32)?'),
-            'Counter64': re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)'),
-            'DisplayString': re.compile(r'(?:display)?str(?:ing)?'),
+            'Integer32':     (re.compile(r'int(?:eger)?(?:32)?'),                     int, 0),
+            'Counter32':     (re.compile(r'count(?:er)?(?:32)?'),                     int, 0),
+            'Counter64':     (re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)'),  int, 0),
+#            'DisplayString': (re.compile(r'(?:display)?str(?:ing)?'),                 str, ''),
         })
 
-    for name, patt in type_map.items():
-        if patt.match(key):
-            return name
+    for name, info in type_map.items():
+        if info[0].match(key):
+            return name, info[1], info[2]
 
-    return default
-
-def get_default(key, type_map={}):
-    if not type_map:
-        type_map.update({
-            'Integer32':     0,
-            'Counter32':     0,
-            'Counter64':     0,
-            'DisplayString': '',
-        })
-
-    return type_map[get_syntax(key)]
+    return 'DisplayString', str, ''
 
 def config_mib(plugin):
     name = camel_case(plugin.name)
@@ -44,8 +34,8 @@ def config_mib(plugin):
         {prefix}{name} OBJECT IDENTIFIER ::= {{ {prefix}MIB {oid} }}
     '''.format(prefix=KEY_PREFIX, name=name, oid=plugin.conf['snmpy_index'])
 
-    if 'items' in plugin.conf:
-        for item, conf in plugin:
+    if isinstance(plugin, snmpy.plugin.ValuePlugin):
+        for item in plugin:
             part += '''
                 {prefix}{name}{part} OBJECT-TYPE
                     SYNTAX      {syntax}
@@ -53,7 +43,7 @@ def config_mib(plugin):
                     STATUS      current
                     DESCRIPTION "{prefix}{name}{part}"
                     ::= {{ {prefix}{name} {oid} }}
-            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=conf['syntax'], oid=conf['oidnum'])
+            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin[item].syntax, oid=plugin[item].oidnum)
     elif 'table' in plugin.conf:
         for oid in xrange(len(plugin.conf['table'])):
             item, conf = plugin.conf['table'][oid].items().pop()
@@ -66,7 +56,7 @@ def config_mib(plugin):
                 types.append(
                     '''
                         {prefix}{name}{part}{key} {syntax}
-                    '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val), name=name, part=camel_case(item), key=camel_case(col_key))
+                    '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val)[0], name=name, part=camel_case(item), key=camel_case(col_key))
                 )
                 parts += '''
                     {prefix}{name}{part}{key} OBJECT-TYPE
@@ -75,7 +65,7 @@ def config_mib(plugin):
                     STATUS      current
                     DESCRIPTION "{prefix}{name}{part}{key}"
                     ::= {{ {prefix}{name}{part}Entry {oid} }}
-                '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val), name=name, part=camel_case(item), key=camel_case(col_key), oid=col+2)
+                '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val)[0], name=name, part=camel_case(item), key=camel_case(col_key), oid=col+2)
 
             part += '''
                 {prefix}{name}{key} OBJECT IDENTIFIER ::= {{ {prefix}{name}Table {oid} }}
