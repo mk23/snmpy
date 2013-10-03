@@ -1,4 +1,4 @@
-module:  periodic_cmd
+module:  value_cmd
 period:  boot
 
 object: '/usr/sbin/dmidecode -t system'

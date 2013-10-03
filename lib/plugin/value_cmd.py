@@ -2,7 +2,7 @@ import re
 import snmpy.plugin
 import subprocess
 
-class periodic_cmd(snmpy.plugin.ValuePlugin):
+class value_cmd(snmpy.plugin.ValuePlugin):
     CDEF_FUNCS = {
         'min': min,
         'max': max,
