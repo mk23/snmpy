@@ -27,8 +27,8 @@ def parse_conf(parser):
     except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         parser.error('cannot parse configuration file: %s' % e)
 
-    if conf['snmpy_global']['config_path']:
-        for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['config_path']):
+    if conf['snmpy_global']['include_dir']:
+        for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['include_dir']):
             try:
                 indx, name = os.path.splitext(os.path.basename(item))[0].split('_', 1)
                 if name in conf:
