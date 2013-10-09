@@ -20,13 +20,13 @@ class SnmpyData(object):
             logging.debug('registering value %s/%s (%s)', oid, syn, val)
             self.data[oid] = getattr(self.snmp, syn)(oidstr=oid, initval=val)
 
-    def create_table(self, syn, oid, col):
+    def create_table(self, oid, col):
         if oid not in self.data:
-            logging.debug('registering table %s/%s (%d cols)]', oid, syn, len(col))
+            logging.debug('registering table %s (%d columns)]', oid, len(col))
             self.data[oid] = self.snmp.Table(
                 oidstr  = oid,
-                indexes = getattr(self.snmp, syn)(),
-                columns = [(i + 2, getattr(self.snmp, col[i]['syn'])(col[i]['val'])) for i in range(len(col))]
+                indexes = [self.snmp.Integer32()],
+                columns = [(i + 2, getattr(self.snmp, col[i].syntax)(col[i].value)) for i in range(len(col))]
             )
 
     def update_value(self, oid, val):
@@ -34,6 +34,10 @@ class SnmpyData(object):
 
     def update_table(self, oid, tbl):
         self.data[oid].clear()
+        for row in range(len(tbl)):
+            cur = self.data[oid].addRow([self.snmp.Integer32(row + 1)])
+            for col in tbl[row]:
+                cur.setRowCell(col[0], getattr(self.snmp, col[1])(col[2]))
 
 class SnmpyAgent(object):
     def __init__(self, conf, mods):
@@ -58,35 +62,40 @@ class SnmpyAgent(object):
         mtab = self.snmp.Table(
             oidstr  = snmpy.mibgen.get_oidstr(snmpy.mibgen.PLUGINS_KEY, 'table'),
             indexes = [self.snmp.Integer32()],
-            columns = [(2, self.snmp.DisplayString('plugin name'))]
+            columns = [(2, self.snmp.DisplayString())]
         )
-        for key, mod in self.mods.items():
+        for mod in self.mods:
             mod_row = mtab.addRow([self.snmp.Integer32(mod.conf['snmpy_index'])])
-            mod_row.setRowCell(2, self.snmp.DisplayString(key))
+            mod_row.setRowCell(2, self.snmp.DisplayString(mod.name))
 
-            mod.last_run = 0
             if isinstance(mod, snmpy.plugin.ValuePlugin):
                 for item in mod:
                     self.data.create_value(mod[item].syntax, mod[item].oidstr, mod[item].value)
+            elif isinstance(mod, snmpy.plugin.TablePlugin):
+                self.data.create_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), mod.cols.values())
+            self.start_gather(mod)
 
-        self.start_gather()
         self.start_server()
 
     @snmpy.task_func
-    def start_gather(self):
+    def start_gather(self, mod):
+        logging.info('began module update thread: %s', mod.name)
         while not self.done:
-            logging.debug('performing module updates')
-            for mod in self.mods.values():
-                if mod.conf['period'] in ('boot', 'once') and not mod.last_run or time.time() - mod.last_run > mod.conf['period']:
-                    logging.debug('updating module: %s', mod.name)
+            logging.debug('updating module: %s', mod.name)
 
-                    mod.update()
-                    mod.last_run = time.time()
-                    if isinstance(mod, snmpy.plugin.ValuePlugin):
-                        for item in mod:
-                            self.data.update_value(mod[item].oidstr, mod[item].value)
+            mod.update()
+            if isinstance(mod, snmpy.plugin.ValuePlugin):
+                for item in mod:
+                    self.data.update_value(mod[item].oidstr, mod[item].value)
+            elif isinstance(mod, snmpy.plugin.TablePlugin):
+                self.data.update_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), mod.rows)
 
-            time.sleep(60)
+            if mod.conf['period'] in ('boot', 'once', '0', 0):
+                logging.debug('run-once module complete: %s', mod.name)
+                break
+
+            time.sleep(mod.conf['period'] * 60)
+        logging.info('ended module update thread: %s', mod.name)
 
     def start_server(self):
         signal.signal(signal.SIGINT, self.end_agent)

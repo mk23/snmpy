@@ -44,63 +44,58 @@ def config_mib(plugin):
                     DESCRIPTION "{prefix}{name}{part}"
                     ::= {{ {prefix}{name} {oid} }}
             '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin[item].syntax, oid=plugin[item].oidnum)
-    elif 'table' in plugin.conf:
-        for oid in xrange(len(plugin.conf['table'])):
-            item, conf = plugin.conf['table'][oid].items().pop()
-            types = []
-            parts = ''
+    elif isinstance(plugin, snmpy.plugin.TablePlugin):
+        types = []
+        parts = ''
 
-            for col in xrange(len(conf)):
-                col_key, col_val = conf[col].items().pop()
+        for item in plugin.cols:
+            types.append(
+                '''
+                    {prefix}{name}{part} {syntax}
+                '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin.cols[item].syntax).rstrip()
+            )
+            parts += '''
+                {prefix}{name}{part} OBJECT-TYPE
+                SYNTAX      {syntax}
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION "{prefix}{name}{part}"
+                ::= {{ {prefix}{name}Entry {oid} }}
+            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin.cols[item].syntax, oid=plugin.cols[item].oidnum)
 
-                types.append(
-                    '''
-                        {prefix}{name}{part}{key} {syntax}
-                    '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val)[0], name=name, part=camel_case(item), key=camel_case(col_key))
-                )
-                parts += '''
-                    {prefix}{name}{part}{key} OBJECT-TYPE
-                    SYNTAX      {syntax}
-                    MAX-ACCESS  read-only
-                    STATUS      current
-                    DESCRIPTION "{prefix}{name}{part}{key}"
-                    ::= {{ {prefix}{name}{part}Entry {oid} }}
-                '''.format(prefix=KEY_PREFIX, syntax=get_syntax(col_val)[0], name=name, part=camel_case(item), key=camel_case(col_key), oid=col+2)
-
-            part += '''
-                {prefix}{name}{key} OBJECT IDENTIFIER ::= {{ {prefix}{name}Table {oid} }}
-                {Prefix}{name}{key}Entry ::= SEQUENCE {{
-                    {prefix}{name}{key}Index Integer32,
-                    {types}
-                }}
-                {prefix}{name}{key}Table OBJECT-TYPE
-                    SYNTAX      SEQUENCE OF {Prefix}{name}{key}Entry
-                    MAX-ACCESS  not-accessible
-                    STATUS      current
-                    DESCRIPTION "{prefix}{name}{key}Table"
-                    ::= {{ {prefix}{name}{key} 1 }}
-                {prefix}{name}{key}Entry OBJECT-TYPE
-                    SYNTAX      {Prefix}{name}{key}Entry
-                    MAX-ACCESS  not-accessible
-                    STATUS      current
-                    DESCRIPTION "{prefix}{name}{key}Entry"
-                    INDEX       {{ {prefix}{name}{key}Index }}
-                    ::= {{ {prefix}{name}{key}Table 1 }}
-                {prefix}{name}{key}Index OBJECT-TYPE
-                    SYNTAX      Integer32 (0..2147483647)
-                    MAX-ACCESS  not-accessible
-                    STATUS      current
-                    DESCRIPTION "{prefix}{name}{key}Index"
-                    ::= {{ {prefix}{name}{key}Entry 1 }}
-                {parts}
-            '''.format(prefix=KEY_PREFIX, Prefix=camel_case(KEY_PREFIX), name=name, key=camel_case(item), types=',\n'.join(types), parts=parts, oid=oid+1)
+        part += '''
+            {Prefix}{name}Entry ::= SEQUENCE {{
+                {prefix}{name}Index Integer32,
+                {types}
+            }}
+            {prefix}{name}Table OBJECT-TYPE
+                SYNTAX      SEQUENCE OF {Prefix}{name}Entry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION "{prefix}{name}Table"
+                ::= {{ {prefix}{name} 1 }}
+            {prefix}{name}Entry OBJECT-TYPE
+                SYNTAX      {Prefix}{name}Entry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION "{prefix}{name}Entry"
+                INDEX       {{ {prefix}{name}Index }}
+                ::= {{ {prefix}{name}Table 1 }}
+            {prefix}{name}Index OBJECT-TYPE
+                SYNTAX      Integer32 (0..2147483647)
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION "{prefix}{name}Index"
+                ::= {{ {prefix}{name}Entry 1 }}
+            {parts}
+        '''.format(prefix=KEY_PREFIX, Prefix=camel_case(KEY_PREFIX), name=name, types=',\n'.join(types), parts=parts)
 
     return part
 
 def create_mib(conf, plugins):
     mib_args = {
         'date':    time.strftime('%Y%m%d%H%MZ'),
-        'parts':   ''.join(config_mib(p) for p in plugins.values() if p.name != 'snmpy_info'),
+        'parts':   ''.join(config_mib(p) for p in plugins if p.name != 'snmpy_info'),
         'parent':  conf['snmpy_global']['parent_root'],
         'system':  conf['snmpy_global']['system_root'],
         'module':  MIB_MODULE,

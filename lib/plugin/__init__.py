@@ -1,4 +1,5 @@
 import collections
+import logging
 import snmpy.mibgen
 
 class Plugin(object):
@@ -9,36 +10,67 @@ class Plugin(object):
     def update(self):
         raise(NotImplementedError('plugin module is missing update() method'))
 
+
+class PluginItem(object):
+    def __init__(self, oidnum, oidstr, syntax, native, value, **kwargs):
+        self.__dict__.update(kwargs)
+        self.oidnum = oidnum
+        self.oidstr = oidstr
+        self.syntax = syntax
+        self.native = native
+        self.value  = value
+
+
 class ValuePlugin(Plugin):
-    class Item(object):
-        def __init__(self, oidnum, oidstr, syntax, native, value, **kwargs):
-            self.__dict__.update(kwargs)
-            self.oidnum = oidnum
-            self.oidstr = oidstr
-            self.syntax = syntax
-            self.native = native
-            self.value  = value
 
     def __init__(self, conf):
         Plugin.__init__(self, conf)
 
         self.items = collections.OrderedDict()
-        for oid in xrange(len(self.conf['items'])):
+        for oid in range(len(self.conf['items'])):
             obj, cfg = self.conf['items'][oid].items().pop()
-            self.items[obj] = ValuePlugin.Item(oid + 1, snmpy.mibgen.get_oidstr(conf['name'], obj), *snmpy.mibgen.get_syntax(cfg['type']), **cfg)
+
+            oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
+            syntax = snmpy.mibgen.get_syntax(cfg['type'])
+            config = getattr(self, 'item_attributes', {}).copy()
+            config.update(cfg)
+
+            self.items[obj] = PluginItem(oid + 1, oidstr, *syntax, **config)
+
+            logging.debug('initialized item: %s (%s)', oidstr, syntax[0])
 
     def __iter__(self):
-        return (obj for obj in self.items.keys())
+        return self.items.__iter__()
 
     def __getitem__(self, obj):
-        if type(obj) == slice:
-            return getattr(self.items[obj.start], obj.stop, obj.step)
-        else:
-            return self.items[obj]
+        return self.items[obj]
 
     def __setitem__(self, obj, val):
         self.items[obj].value = val
 
+
 class TablePlugin(Plugin):
+    def __init__(self, conf):
+        Plugin.__init__(self, conf)
+
+        self.rows = []
+        self.cols = collections.OrderedDict()
+        for oid in range(len(self.conf['table'])):
+            obj, cfg = self.conf['table'][oid].items().pop()
+
+            oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
+            syntax = snmpy.mibgen.get_syntax(cfg['type'])
+
+            self.cols[obj] = PluginItem(oid + 2, oidstr, *syntax, **cfg)
+            logging.debug('initialized column: %s (%s)', oidstr, syntax[0])
+
     def __iter__(self):
-        pass
+        return self.rows.__iter__()
+
+    def clear(self):
+        self.rows = []
+
+    def append(self, *args):
+        self.rows.append([])
+        for col in self.cols.values():
+            self.rows[-1].append((col.oidnum, col.syntax, col.native(args[col.oidnum - 2])))

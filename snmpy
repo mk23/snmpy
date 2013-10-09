@@ -96,7 +96,7 @@ def initialize(conf):
         snmpy.log_fatal(e, 'initialization failed')
 
     logging.info('initialization complete')
-    return plugins
+    return plugins.values()
 
 
 if __name__ == '__main__':
