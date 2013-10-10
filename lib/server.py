@@ -79,9 +79,9 @@ class SnmpyAgent(object):
 
     @snmpy.task_func
     def start_gather(self, mod):
-        logging.info('began module update thread: %s', mod.name)
+        logging.info('began plugin update thread: %s', mod.name)
         while not self.done:
-            logging.debug('updating module: %s', mod.name)
+            logging.debug('updating plugin: %s', mod.name)
 
             mod.update()
             if isinstance(mod, snmpy.plugin.ValuePlugin):
@@ -91,11 +91,11 @@ class SnmpyAgent(object):
                 self.data.update_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), mod.rows)
 
             if mod.conf['period'] in ('boot', 'once', '0', 0):
-                logging.debug('run-once module complete: %s', mod.name)
+                logging.debug('run-once plugin complete: %s', mod.name)
                 break
 
             time.sleep(mod.conf['period'] * 60)
-        logging.info('ended module update thread: %s', mod.name)
+        logging.info('ended plugin update thread: %s', mod.name)
 
     def start_server(self):
         signal.signal(signal.SIGINT, self.end_agent)
