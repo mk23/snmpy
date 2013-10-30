@@ -22,17 +22,20 @@ class PluginItem(object):
 
 
 class ValuePlugin(Plugin):
-
     def __init__(self, conf):
         Plugin.__init__(self, conf)
 
         self.items = collections.OrderedDict()
+        self.attrs = getattr(self, 'attrs', {})
+
+        self.attrs['cdef'] = self.attrs.get('cdef', None)
+        self.attrs['join'] = self.attrs.get('join', '')
         for oid in range(len(self.conf['items'])):
             obj, cfg = self.conf['items'][oid].items().pop()
 
             oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
             syntax = snmpy.mibgen.get_syntax(cfg['type'])
-            config = getattr(self, 'item_attributes', {}).copy()
+            config = self.attrs.copy()
             config.update(cfg)
 
             self.items[obj] = PluginItem(oid + 1, oidstr, *syntax, **config)
