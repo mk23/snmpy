@@ -73,7 +73,11 @@ class TablePlugin(Plugin):
     def clear(self):
         self.rows = []
 
-    def append(self, *args):
+    def append(self, data):
         self.rows.append([])
-        for col in self.cols.values():
-            self.rows[-1].append((col.oidnum, col.syntax, col.native(args[col.oidnum - 2])))
+        if type(data) in (list, tuple):
+            for col in self.cols.values():
+                self.rows[-1].append((col.oidnum, col.syntax, col.native(data[col.oidnum - 2])))
+        elif isinstance(data, dict):
+            for key, col in self.cols.items():
+                self.rows[-1].append((col.oidnum, col.syntax, col.native(data[key])))
