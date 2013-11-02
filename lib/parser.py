@@ -12,7 +12,7 @@ def parse_value(text, item, cdef={}):
             'avg': lambda l: 0 if len(l) == 0 else sum(l) / len(l),
         })
 
-    if hasattr('regex', item):
+    if hasattr(item, 'regex'):
         find = re.findall(item.regex, text)
 
         if find:
