@@ -7,9 +7,9 @@ import subprocess
 class disk_utilization(snmpy.plugin.TablePlugin):
     def __init__(self, conf):
         conf['table'] = [
-            {'dev':  {'type': 'string'}},
-            {'wait': {'type': 'integer'}},
-            {'util': {'type': 'integer'}},
+            {'dev':  'string'},
+            {'wait': 'integer'},
+            {'util': 'integer'},
         ]
 
         snmpy.plugin.TablePlugin.__init__(self, conf);

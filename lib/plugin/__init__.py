@@ -61,6 +61,9 @@ class TablePlugin(Plugin):
         for oid in range(len(self.conf['table'])):
             obj, cfg = self.conf['table'][oid].items().pop()
 
+            if not isinstance(cfg, dict):
+                cfg = {'type': cfg}
+
             oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
             syntax = snmpy.mibgen.get_syntax(cfg['type'])
 
