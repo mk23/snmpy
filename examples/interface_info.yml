@@ -4,7 +4,13 @@ period:  1
 object:  '/usr/sbin/lldpctl'
 parser:
     type: 'regex'
-    path: 'Interface:\s+(?P<interface>[^\n]+).*?SysName:\s+(?P<switch_name>[^\n]+).*?PortID:\s+(?P<switch_port>[^\s]+).*?Autoneg:\s+(?P<link_auto>[^\n]+).*?oper type:\s+(?P<link_speed>\d+).*?(?P<link_duplex>(?:full|half) duplex mode)'
+    path:
+        - 'Interface:\s+(?P<interface>[^\n]+)'
+        - 'SysName:\s+(?P<switch_name>[^\n]+)'
+        - 'PortID:\s+(?P<switch_port>[^\s]+)'
+        - 'Autoneg:\s+(?P<link_auto>[^\n]+)'
+        - 'oper type:\s+(?P<link_speed>\d+)'
+        - '(?P<link_duplex>(?:full|half) duplex mode)'
 
 table:
     - interface:   'string'
