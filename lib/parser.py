@@ -24,5 +24,7 @@ def parse_value(text, item, cdef={}):
     logging.warning('no new value found for %s', item.oidstr)
     return item.value
 
-def parse_table(text, cols):
-    pass
+def parse_table(parser, text):
+    if parser['type'] == 'regex':
+        for find in re.finditer(parser['path'], text, re.DOTALL):
+            yield find.groupdict()
