@@ -6,12 +6,12 @@ object: '/usr/sbin/dmidecode -t system'
 items:
     - uuid:
           type:  'string'
-          regex: 'UUID: (.+)'
+          regex: 'UUID: (.+?)$'
 
     - manufacturer:
           type:  'string'
-          regex: 'Manufacturer: (.+)'
+          regex: 'Manufacturer: (.+?)$'
 
     - product:
           type:  'string'
-          regex: 'Product Name: (.+)'
+          regex: 'Product Name: (.+?)$'
