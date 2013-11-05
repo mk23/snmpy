@@ -13,7 +13,7 @@ def parse_value(text, item, cdef={}):
         })
 
     if hasattr(item, 'regex'):
-        find = re.findall(item.regex, text)
+        find = re.findall(item.regex, text, re.DOTALL | re.MULTILINE)
 
         if find:
             if item.cdef in cdef:
