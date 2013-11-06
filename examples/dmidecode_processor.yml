@@ -1,0 +1,38 @@
+module:  value_cmd
+period:  once
+
+object: '/usr/sbin/dmidecode -t processor'
+
+items:
+    - count:
+        type:  'integer'
+        cdef:  'len'
+        regex: '^(Processor Information)$'
+
+    - manufacturer:
+        type:  'string'
+        regex: 'Manufacturer: (.+?)$.*'
+
+    - family:
+        type:  'string'
+        regex: 'Family: (.+?)$.*'
+
+    - version:
+        type:  'string'
+        regex: 'Version: (.+?)$.*'
+
+    - speed_max:
+        type:  'integer'
+        regex: 'Max Speed: (\d+) MHz.*'
+
+    - speed_current:
+        type:  'integer'
+        regex: 'Current Speed: (\d+) MHz.*'
+
+    - cores_available:
+        type:  'integer'
+        regex: 'Core Count: (\d+).*'
+
+    - cores_enabled:
+        type:  'integer'
+        regex: 'Core Enabled: (\d+).*'
