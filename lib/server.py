@@ -22,7 +22,7 @@ class SnmpyData(object):
 
     def create_table(self, oid, col):
         if oid not in self.data:
-            logging.debug('registering table %s (%d columns)]', oid, len(col))
+            logging.debug('registering table %s (%d columns)', oid, len(col))
             self.data[oid] = self.snmp.Table(
                 oidstr  = oid,
                 indexes = [self.snmp.Integer32()],
