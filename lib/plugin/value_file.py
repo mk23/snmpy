@@ -1,3 +1,4 @@
+import logging
 import os
 import snmpy.parser
 import snmpy.plugin
@@ -40,8 +41,10 @@ class value_file(snmpy.plugin.ValuePlugin):
         try:
             if self.conf.get('use_stat'):
                 info = os.lstat(self.conf['object'])
+                logging.debug('%s: %s', self.conf['object'], info)
             if self.conf.get('use_text'):
                 text = open(self.conf['object']).read()
+                logging.debug('%s: read %d bytes', self.conf['object'], len(text))
 
             for item in self:
                 if hasattr(self[item], 'func') and info:
