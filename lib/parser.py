@@ -4,12 +4,11 @@ import re
 def parse_value(text, item, cdef={}):
     if not cdef:
         cdef.update({
-            'min': min,
-            'max': max,
-            'len': len,
-            'sum': sum,
-            'len': len,
-            'avg': lambda l: 0 if len(l) == 0 else sum(l) / len(l),
+            'min': lambda l, t: min(t(i) for i in l),
+            'max': lambda l, t: max(t(i) for i in l),
+            'sum': lambda l, t: sum(t(i) for i in l),
+            'len': lambda l, t: len(l),
+            'avg': lambda l, t: 0 if len(l) == 0 else sum(t(i) for i in l) / len(l),
         })
 
     if hasattr(item, 'regex'):
@@ -17,7 +16,7 @@ def parse_value(text, item, cdef={}):
 
         if find:
             if item.cdef in cdef:
-                return cdef[item.cdef](item.native(i) for i in find)
+                return cdef[item.cdef](find, item.native)
             else:
                 return item.native(item.join.join(find))
 
