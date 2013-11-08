@@ -1,0 +1,17 @@
+module:  value_cmd
+period:  boot
+
+object: '/usr/sbin/dmidecode -t bios'
+
+items:
+    - vendor:
+          type:  'string'
+          regex: 'Vendor: (.+?)$'
+
+    - version:
+          type:  'string'
+          regex: 'Version: (.+?)$'
+
+    - release:
+          type:  'string'
+          regex: 'Release Date: (.+?)$'
