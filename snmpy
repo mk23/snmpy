@@ -4,7 +4,7 @@ import argparse
 import collections
 import glob
 import importlib
-import logging
+import logging.handlers
 import os
 import resource
 import snmpy.mibgen
@@ -60,7 +60,7 @@ def create_log(dest=None, debug=False):
         if dest and dest.startswith('syslog:'):
             hdlr = logging.handlers.SysLogHandler(facility=dest.split(':')[-1])
         elif dest and not dest.startswith('console:'):
-            hdlr = logging.FileHandler(dest)
+            hdlr = logging.handlers.WatchedFileHandler(dest)
         else:
             hdlr = logging.StreamHandler()
 
