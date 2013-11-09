@@ -6,6 +6,7 @@ import glob
 import importlib
 import logging
 import os
+import resource
 import snmpy.mibgen
 import snmpy.server
 import sys
@@ -21,9 +22,10 @@ def parse_conf(parser):
         args = parser.parse_args()
         conf['snmpy_global'].update(vars(args))
 
-        create_log(conf['snmpy_global']['logger_dest'], conf['snmpy_global']['debug'])
+        if conf['snmpy_global']['background']:
+            background()
 
-        logging.debug('starting system with merged args: %s', args)
+        create_log(conf['snmpy_global']['logger_dest'], conf['snmpy_global']['debug'])
     except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         parser.error('cannot parse configuration file: %s' % e)
 
@@ -73,6 +75,21 @@ def create_log(dest=None, debug=False):
 
     return logger
 
+def background():
+    if os.fork() == 0:
+        os.setsid()
+        if os.fork() != 0:
+            os._exit(0)
+    else:
+        os._exit(0)
+
+    fd_lim = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+    for fd_num in range(fd_lim if fd_lim != resource.RLIM_INFINITY else 1024):
+        try:
+            os.close(fd_num)
+        except OSError:
+            pass
+
 
 def initialize(conf):
     logging.info('initialization started')
@@ -101,6 +118,11 @@ def initialize(conf):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument('-b', '--background', default=False, action='store_true',
+                        help='become backgrounded daemon process')
+    action.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
+                        help='display generated mib file and exit')
     parser.add_argument('-p', '--parent-root', default='enterprises',
                         help='parent root class name')
     parser.add_argument('-o', '--system-root', type=int, default=1123,
@@ -113,8 +135,6 @@ if __name__ == '__main__':
                         help='agentx master socket path or host:port')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
-    parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
-                        help='display generated mib file and exit')
     parser.add_argument('-d', '--debug', default=False, action='store_true',
                         help='enable debug logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
