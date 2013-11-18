@@ -28,6 +28,7 @@ class HTTPForbiddenError(HTTPError):
 class HTTPNotFoundError(HTTPError):
     code = 404
 
+
 class Response():
     def __init__(self, **kwargs):
         self.__dict__.update({
@@ -58,27 +59,11 @@ class Server(BaseHTTPServer.HTTPServer):
     def __init__(self, port, addr='', **kwargs):
         BaseHTTPServer.HTTPServer.__init__(self, (addr, port), Handler)
 
-#        signal.signal(signal.SIGINT,  self.server_stop)
-#        signal.signal(signal.SIGTERM, self.server_stop)
-#        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
         Handler.log_message     = lambda *args: True
         Handler.extra_settings  = collections.namedtuple('extra_settings', kwargs.keys())(*kwargs.values())
         Handler.server_version += ' %s/%s' % (__name__, VERSION)
 
         self.serve_forever(poll_interval=None)
-
-    def server_stop(self, *args):
-        print
-        print
-        print
-        print args
-        print
-        print
-        print
-        print
-
-        sys.exit(0)
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_TCP, socket.TCP_DEFER_ACCEPT, True)
