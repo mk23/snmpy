@@ -118,23 +118,24 @@ def initialize(conf):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
-    action = parser.add_mutually_exclusive_group()
-    action.add_argument('-b', '--background', default=False, action='store_true',
-                        help='become backgrounded daemon process')
-    action.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
-                        help='display generated mib file and exit')
-    parser.add_argument('-p', '--parent-root', default='enterprises',
+    parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
+                        help='system configuration file')
+    parser.add_argument('-r', '--parent-root', default='enterprises',
                         help='parent root class name')
     parser.add_argument('-o', '--system-root', type=int, default=1123,
                         help='system root object id')
-    parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
-                        help='system configuration file')
     parser.add_argument('-i', '--include-dir',
                         help='system configuration path')
     parser.add_argument('-s', '--master-sock', default='/var/agentx/master',
                         help='agentx master socket path or host:port')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
+    parser.add_argument('-p', '--httpd-port', default=1123, type=int,
+                        help='httpd server listens on this port')
+    parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
+                        help='display generated mib file and exit')
+    parser.add_argument('-b', '--background', default=False, action='store_true',
+                        help='become backgrounded daemon process')
     parser.add_argument('-d', '--debug', default=False, action='store_true',
                         help='enable debug logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
