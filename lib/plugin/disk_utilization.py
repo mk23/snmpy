@@ -12,7 +12,7 @@ class disk_utilization(snmpy.plugin.TablePlugin):
             {'util': 'integer'},
         ]
 
-        snmpy.plugin.TablePlugin.__init__(self, conf);
+        snmpy.plugin.TablePlugin.__init__(self, conf)
 
     def update(self):
         os.environ['LC_TIME'] = 'POSIX'
