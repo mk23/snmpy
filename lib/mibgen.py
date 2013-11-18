@@ -93,6 +93,9 @@ def config_mib(plugin):
     return part
 
 def create_mib(conf, plugins):
+    if hasattr(create_mib, 'text'):
+        return create_mib.text
+
     mib_args = {
         'date':    time.strftime('%Y%m%d%H%MZ'),
         'parts':   ''.join(config_mib(p) for p in plugins if p.name != 'snmpy_info'),
@@ -183,4 +186,5 @@ def create_mib(conf, plugins):
         if line.strip().endswith('SEQUENCE {'):
             sect = True
 
-    return text
+    create_mib.text = text
+    return create_mib.text
