@@ -1,5 +1,7 @@
+import httpd
 import logging
 import netsnmpagent
+import os
 import signal
 import snmpy
 import snmpy.mibgen
@@ -41,16 +43,53 @@ class SnmpyData(object):
 
 class SnmpyAgent(object):
     def __init__(self, conf, mods):
-        temp = tempfile.NamedTemporaryFile()
-        temp.write(snmpy.mibgen.create_mib(conf, mods))
-        temp.flush()
-
+        self.text = snmpy.mibgen.create_mib(conf, mods)
         self.done = False
         self.conf = conf
         self.mods = mods
+
+        self.start_httpd()
+        self.start_agent()
+        self.start_snmpd()
+
+    @snmpy.task_func(snmpy.PROCESS_TASK)
+    def start_httpd(self):
+        @httpd.GET()
+        def mib(req, res):
+            res.body = self.text
+
+        logging.info('starting http server')
+        httpd.Server(self.conf['snmpy_global']['httpd_port'])
+        logging.info('WTF WTF WTF')
+
+    @snmpy.task_func(snmpy.THREAD_TASK)
+    def start_fetch(self, mod):
+        logging.info('began plugin update thread: %s', mod.name)
+        while not self.done:
+            logging.debug('updating plugin: %s', mod.name)
+
+            mod.update()
+            if isinstance(mod, snmpy.plugin.ValuePlugin):
+                for item in mod:
+                    self.data.update_value(mod[item].oidstr, mod[item].value)
+            elif isinstance(mod, snmpy.plugin.TablePlugin):
+                self.data.update_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), mod.rows)
+
+            if mod.conf['period'] in ('boot', 'once', '0', 0):
+                logging.debug('run-once plugin complete: %s', mod.name)
+                break
+
+            time.sleep(mod.conf['period'] * 60)
+        logging.info('ended plugin update thread: %s', mod.name)
+
+    def start_agent(self):
+        temp = tempfile.NamedTemporaryFile()
+        temp.write(self.text)
+        temp.flush()
+
         self.snmp = netsnmpagent.netsnmpAgent(
             AgentName    = self.__class__.__name__,
-            MasterSocket = conf['snmpy_global']['master_sock'],
+            MasterSocket = self.conf['snmpy_global']['master_sock'],
             MIBFiles     = [temp.name]
         )
 
@@ -73,39 +112,21 @@ class SnmpyAgent(object):
                     self.data.create_value(mod[item].syntax, mod[item].oidstr, mod[item].value)
             elif isinstance(mod, snmpy.plugin.TablePlugin):
                 self.data.create_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), mod.cols.values())
-            self.start_gather(mod)
+            self.start_fetch(mod)
 
-        self.start_server()
+    def start_snmpd(self):
+        signal.signal(signal.SIGINT,  self.end_agent)
+        signal.signal(signal.SIGTERM, self.end_agent)
+        signal.signal(signal.SIGCHLD, self.end_agent)
 
-    @snmpy.task_func
-    def start_gather(self, mod):
-        logging.info('began plugin update thread: %s', mod.name)
-        while not self.done:
-            logging.debug('updating plugin: %s', mod.name)
-
-            mod.update()
-            if isinstance(mod, snmpy.plugin.ValuePlugin):
-                for item in mod:
-                    self.data.update_value(mod[item].oidstr, mod[item].value)
-            elif isinstance(mod, snmpy.plugin.TablePlugin):
-                self.data.update_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), mod.rows)
-
-            if mod.conf['period'] in ('boot', 'once', '0', 0):
-                logging.debug('run-once plugin complete: %s', mod.name)
-                break
-
-            time.sleep(mod.conf['period'] * 60)
-        logging.info('ended plugin update thread: %s', mod.name)
-
-    def start_server(self):
-        signal.signal(signal.SIGINT, self.end_agent)
         logging.info('starting snmpy agent')
 
         self.snmp.start()
         while not self.done:
             self.snmp.check_and_process()
 
-        logging.info('stopping snmpy agent')
+        done = 'child process terminated' if self.done == signal.SIGCHLD else 'process terminated'
+        logging.info('stopping snmpy agent: %s', done)
 
-    def end_agent(self, *args):
-        self.done = True
+    def end_agent(self, signum, *args):
+        self.done = signum
