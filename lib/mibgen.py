@@ -1,3 +1,4 @@
+import collections
 import re
 import snmpy.plugin
 import time
@@ -13,14 +14,11 @@ def camel_case(key):
 def get_oidstr(*args):
     return '%s::%s%s' % (MIB_MODULE, KEY_PREFIX, camel_case('_'.join(args)))
 
-def get_syntax(key, type_map={}):
+def get_syntax(key, type_map=collections.OrderedDict()):
     if not type_map:
-        type_map.update({
-            'Integer32':     (re.compile(r'int(?:eger)?(?:32)?'),                     int, 0),
-            'Counter32':     (re.compile(r'count(?:er)?(?:32)?'),                     int, 0),
-            'Counter64':     (re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)'),  int, 0),
-#            'DisplayString': (re.compile(r'(?:display)?str(?:ing)?'),                 str, ''),
-        })
+        type_map['Counter64'] = re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)'),  int, 0
+        type_map['Counter32'] = re.compile(r'count(?:er)?(?:32)?'),                     int, 0
+        type_map['Integer32'] = re.compile(r'int(?:eger)?(?:32)?'),                     int, 0
 
     for name, info in type_map.items():
         if info[0].match(key):
