@@ -1,0 +1,10 @@
+module: log_processor
+period: 1
+
+object: /var/log/hbase/hbase-hbase-master-{hostname}.log
+
+items:
+    - enabled:
+        type:  'string'
+        regex: 'BalanceSwitch=(true|false)'
+
