@@ -1,7 +1,6 @@
 import httpd
 import logging
 import netsnmpagent
-import os
 import signal
 import snmpy
 import snmpy.mibgen
