@@ -1,7 +1,7 @@
 import logging
 import re
 
-def parse_value(text, item, cdef={}):
+def parse_value(text, item, cdef={}, ignore=False):
     if not cdef:
         cdef.update({
             'min': lambda l, t: min(t(i) for i in l),
@@ -15,12 +15,15 @@ def parse_value(text, item, cdef={}):
         find = re.findall(item.regex, text, re.DOTALL | re.MULTILINE)
 
         if find:
+            logging.debug('parsed item value: %s: %s', item.regex, find)
             if item.cdef in cdef:
                 return cdef[item.cdef](find, item.native)
             else:
                 return item.native(item.join.join(find))
 
-    logging.warning('no new value found for %s', item.oidstr)
+    if not ignore:
+        logging.warning('no new value found for %s', item.oidstr)
+
     return item.value
 
 def parse_table(parser, text):
