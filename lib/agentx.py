@@ -134,11 +134,13 @@ lib_nsh.netsnmp_handler_registration_create.argtypes = (
 )
 
 # From net-snmp/agent/snmp_agent.h
+lib_nsa.agent_check_and_process.restype  = ctypes.c_int
 lib_nsa.agent_check_and_process.argtypes = (
     ctypes.c_int,       # block
 )
 
 # From net-snmp/agent/snmp_vars.h
+lib_nsa.init_agent.restype  = ctypes.c_int
 lib_nsa.init_agent.argtypes = (
     ctypes.c_char_p,    # app
 )
@@ -168,6 +170,7 @@ lib_nsh.netsnmp_create_watcher_info.argtypes = (
     ctypes.c_int,       # flags
 )
 
+lib_nsh.netsnmp_register_watched_instance.restype  = ctypes.c_int
 lib_nsh.netsnmp_register_watched_instance.argtypes = (
     ctypes.POINTER(netsnmp_handler_registration),   # reginfo
     ctypes.POINTER(netsnmp_watcher_info),           # watchinfo
