@@ -100,9 +100,8 @@ netsnmp_mib_handler._fields_ = (
     ('handler_name',   ctypes.c_char_p),
     ('myvoid',         ctypes.c_void_p),
     ('flags',          ctypes.c_int),
-    ('access_method',  ctypes.c_void_p),
-    ('data_clone',     ctypes.c_void_p),
-    ('data_free',      ctypes.c_void_p),
+    ('access_method',  ctypes.c_void_p), # unused fun ptr: int (*access_method) (struct netsnmp_mib_handler_s *, struct netsnmp_handler_registration_s *, struct netsnmp_agent_request_info_s *, struct netsnmp_request_info_s *);
+    ('data_free',      ctypes.c_void_p), # unused fun ptr: void (*data_free)(void *myvoid);
     ('next',           ctypes.POINTER(netsnmp_mib_handler)),
     ('prev',           ctypes.POINTER(netsnmp_mib_handler)),
 )
@@ -127,8 +126,8 @@ netsnmp_handler_registration._fields_ = (
 lib_nsh.netsnmp_create_handler_registration.restype = ctypes.POINTER(netsnmp_handler_registration)
 lib_nsh.netsnmp_handler_registration_create.argtypes = (
     ctypes.c_char_p,    # name
-    ctypes.c_void_p,    # handler_access_method
-    ctypes.POINTER(ctypes.c_ulong),         # reg_oid
+    ctypes.c_void_p,    # unused arg ptr: netsnmp_mib_handler *handler
+    ctypes.POINTER(ctypes.c_ulong), # reg_oid
     ctypes.c_size_t,    # reg_oid_len
     ctypes.c_int,       # modes
 )
