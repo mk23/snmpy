@@ -1,5 +1,5 @@
-module:  value_cmd
-period:  once
+module: value_cmd
+period: once
 
 object: '/usr/sbin/dmidecode -t memory'
 

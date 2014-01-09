@@ -1,5 +1,5 @@
-module:  value_cmd
-period:  boot
+module: value_cmd
+period: boot
 
 object: '/usr/sbin/dmidecode -t system'
 

@@ -7,4 +7,3 @@ items:
     - enabled:
         type:  'string'
         regex: 'BalanceSwitch=(true|false)'
-

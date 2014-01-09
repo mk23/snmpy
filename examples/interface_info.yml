@@ -1,5 +1,5 @@
-module:  table_command
-period:  1
+module: table_command
+period: 1
 
 object:  '/usr/sbin/lldpctl'
 parser:

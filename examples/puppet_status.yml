@@ -1,5 +1,5 @@
-module:  value_file
-period:  1
+module: value_file
+period: 1
 
 object:   '/var/lib/puppet/state/last_run_summary.yaml'
 use_stat: True
@@ -9,9 +9,11 @@ items:
     - runtime:
         type:  'integer'
         regex: 'time:.*?total:\s*(\d+)'
+
     - success:
         type:  'integer'
         regex: 'events:.*?success:\s*(\d+)'
+
     - failure:
         type:  'integer'
         regex: 'events:.*?failure:\s*(\d+)'
