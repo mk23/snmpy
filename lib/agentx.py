@@ -261,12 +261,12 @@ if __name__ == '__main__':
     a = AgentX('agentx')
 
     s = OctetString('foo')
-    i = Integer32(23)
-    c = Counter64((1 << 32) + 2)
+    i = Integer32(1)
+    c = Counter64(1)
 
-    a.register_instance(s, '.1.3.6.1.4.1.2021.1123.1')
-    a.register_instance(i, '.1.3.6.1.4.1.2021.1123.2')
-    a.register_instance(c, '.1.3.6.1.4.1.2021.1123.3')
+    a.register_value(s, '.1.3.6.1.4.1.2021.1123.1')
+    a.register_value(i, '.1.3.6.1.4.1.2021.1123.2')
+    a.register_value(c, '.1.3.6.1.4.1.2021.1123.3')
 
     s.set_value('blah')
 
@@ -274,6 +274,8 @@ if __name__ == '__main__':
     while not stop:
         try:
             a.check_and_process()
+            i.set_value(i.get_value() + 1)
+            c.set_value(c.get_value() + 1000)
         except KeyboardInterrupt:
             stop = True
 
