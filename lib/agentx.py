@@ -6,6 +6,92 @@ lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmphelpers'))
 lib_nsa = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmpagent'))
 lib_ns  = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmp'))
 
+# From net-snmp/library/asn1.h and net-snmp/snmp_impl.h
+ASN_BOOLEAN     = 0x01
+ASN_INTEGER     = 0x02
+ASN_BIT_STR     = 0x03
+ASN_OCTET_STR   = 0x04
+ASN_NULL        = 0x05
+ASN_OBJECT_ID   = 0x06
+ASN_SEQUENCE    = 0x10
+ASN_SET         = 0x11
+
+ASN_UNIVERSAL   = 0x00
+ASN_APPLICATION = 0x40
+ASN_CONTEXT     = 0x80
+ASN_PRIVATE     = 0xC0
+
+ASN_IPADDRESS   = ASN_APPLICATION | 0
+ASN_COUNTER     = ASN_APPLICATION | 1
+ASN_GAUGE       = ASN_APPLICATION | 2
+ASN_UNSIGNED    = ASN_APPLICATION | 2
+ASN_TIMETICKS   = ASN_APPLICATION | 3
+ASN_OPAQUE      = ASN_APPLICATION | 4
+ASN_COUNTER64   = ASN_APPLICATION | 6
+ASN_FLOAT       = ASN_APPLICATION | 8
+ASN_DOUBLE      = ASN_APPLICATION | 9
+ASN_INTEGER64   = ASN_APPLICATION | 10
+ASN_UNSIGNED64  = ASN_APPLICATION | 11
+
+MAX_OID_LEN     = 128
+
+class counter64(ctypes.Structure):
+    pass
+counter64._fields_ = (
+    ('high', ctypes.c_ulong),
+    ('low',  ctypes.c_ulong),
+)
+
+# From net-snmp/library/mib_api.h
+lib_nsh.read_objid.restype  = ctypes.c_int
+lib_nsh.read_objid.argtypes = (
+    ctypes.c_char_p,    # argv
+    ctypes.POINTER(ctypes.c_ulong),     # root
+    ctypes.POINTER(ctypes.c_size_t),    # rootlen
+)
+
+# From net-snmp/library/snmp_api.h
+class netsnmp_vardata(ctypes.Union):
+    pass
+netsnmp_vardata._fields_ = (
+    ('voidp',     ctypes.c_void_p),
+    ('integer',   ctypes.POINTER(ctypes.c_long)),
+    ('string',    ctypes.POINTER(ctypes.c_ubyte)),
+    ('objid',     ctypes.POINTER(ctypes.c_ulong)),
+    ('bitstring', ctypes.POINTER(ctypes.c_ubyte)),
+    ('counter64', ctypes.POINTER(counter64)),
+)
+
+class netsnmp_variable_list(ctypes.Structure):
+    pass
+netsnmp_variable_list._fields_ = (
+   ('next_variable', ctypes.POINTER(netsnmp_variable_list)),
+   ('name',          ctypes.POINTER(ctypes.c_ulong)),
+   ('name_length',   ctypes.c_size_t),
+   ('type',          ctypes.c_ubyte),
+   ('val',           netsnmp_vardata),
+   ('val_len',       ctypes.c_size_t),
+   ('oid',           ctypes.c_ulong * MAX_OID_LEN),
+   ('buf',           ctypes.c_ubyte * 40),
+   ('data',          ctypes.c_void_p),
+   ('dataFreeHook',  ctypes.c_void_p), # unused fun ptr: void (*dataFreeHook)(void *)
+   ('index',         ctypes.c_int),
+)
+
+lib_ns.init_snmp.restype  = ctypes.c_int
+lib_ns.init_snmp.argtypes = (
+    ctypes.c_char_p,    # type
+)
+
+lib_ns.snmp_varlist_add_variable.restype  = ctypes.POINTER(netsnmp_variable_list)
+lib_ns.snmp_varlist_add_variable.argtypes = (
+    ctypes.POINTER(ctypes.POINTER(netsnmp_variable_list)),  # varlist
+    ctypes.POINTER(ctypes.c_ulong),                         # name
+    ctypes.c_size_t,    # name_length
+    ctypes.c_ubyte,     # type
+    ctypes.c_void_p,    # value
+    ctypes.c_size_t,    # len
+)
 
 # From net-snmp/agent/agent_handler.h
 class netsnmp_mib_handler(ctypes.Structure):
@@ -85,54 +171,6 @@ lib_nsh.netsnmp_create_watcher_info.argtypes = (
 lib_nsh.netsnmp_register_watched_instance.argtypes = (
     ctypes.POINTER(netsnmp_handler_registration),   # reginfo
     ctypes.POINTER(netsnmp_watcher_info),           # watchinfo
-)
-
-# From net-snmp/library/asn1.h and net-snmp/snmp_impl.h
-ASN_BOOLEAN     = 0x01
-ASN_INTEGER     = 0x02
-ASN_BIT_STR     = 0x03
-ASN_OCTET_STR   = 0x04
-ASN_NULL        = 0x05
-ASN_OBJECT_ID   = 0x06
-ASN_SEQUENCE    = 0x10
-ASN_SET         = 0x11
-
-ASN_UNIVERSAL   = 0x00
-ASN_APPLICATION = 0x40
-ASN_CONTEXT     = 0x80
-ASN_PRIVATE     = 0xC0
-
-ASN_IPADDRESS   = ASN_APPLICATION | 0
-ASN_COUNTER     = ASN_APPLICATION | 1
-ASN_GAUGE       = ASN_APPLICATION | 2
-ASN_UNSIGNED    = ASN_APPLICATION | 2
-ASN_TIMETICKS   = ASN_APPLICATION | 3
-ASN_OPAQUE      = ASN_APPLICATION | 4
-ASN_COUNTER64   = ASN_APPLICATION | 6
-ASN_FLOAT       = ASN_APPLICATION | 8
-ASN_DOUBLE      = ASN_APPLICATION | 9
-ASN_INTEGER64   = ASN_APPLICATION | 10
-ASN_UNSIGNED64  = ASN_APPLICATION | 11
-
-MAX_OID_LEN     = 128
-
-class counter64(ctypes.Structure):
-    pass
-counter64._fields_ = (
-    ('high', ctypes.c_ulong),
-    ('low',  ctypes.c_ulong),
-)
-
-# From net-snmp/library/mib_api.h
-lib_nsh.read_objid.argtypes = (
-    ctypes.c_char_p,    # argv
-    ctypes.POINTER(ctypes.c_ulong),     # root
-    ctypes.POINTER(ctypes.c_size_t),    # rootlen
-)
-
-# From net-snmp/library/snmp_api.h
-lib_ns.init_snmp.argtypes = (
-    ctypes.c_char_p,    # type
 )
 
 # agentx.py constants
