@@ -192,6 +192,9 @@ class WatchedInstance(object):
     def data_size(self):
         return ctypes.sizeof(self._data)
 
+    def get_value(self):
+        return self._data.value
+
     def set_value(self, data):
         self._data.value = data
         self.watcher.contents.data_size = self.data_size()
@@ -214,6 +217,9 @@ class Counter64(WatchedInstance):
         self._flags    = WATCHER_FIXED_SIZE
         self._max_size = ctypes.sizeof(counter64)
         super(self.__class__, self).__init__()
+
+    def get_value(self):
+        return (self._data.high << 32) + self._data.low
 
     def set_value(self, data):
         self._data.high, self._data.low = self.split_int(data)
