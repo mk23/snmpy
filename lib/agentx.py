@@ -238,6 +238,12 @@ lib_nsh.netsnmp_set_row_column.argtypes = (
     ctypes.c_size_t,    # value_len
 )
 
+lib_nsh.netsnmp_table_dataset_remove_and_delete_row.restype  = None
+lib_nsh.netsnmp_table_dataset_remove_and_delete_row.argtypes = (
+    ctypes.POINTER(netsnmp_table_data_set),         # data_set
+    ctypes.POINTER(netsnmp_table_row),  # row
+)
+
 # From net-snmp/agent/watcher.h
 WATCHER_FIXED_SIZE  = 0x01
 WATCHER_MAX_SIZE    = 0x02
@@ -351,6 +357,15 @@ class Table(object):
 
         lib_nsh.netsnmp_table_dataset_add_row(self.table, tmp_table_row)
 
+    def clear(self):
+        self.index.set_value(0)
+
+        row_iter = self.table.contents.table.contents.first_row
+        while bool(row_iter):
+            row_next = row_iter.contents.next
+            lib_nsh.netsnmp_table_dataset_remove_and_delete_row(self.table, row_iter)
+            row_iter = row_next
+
 class AgentX(object):
     def __init__(self, name):
         lib_nsa.netsnmp_enable_subagent()
@@ -391,6 +406,9 @@ if __name__ == '__main__':
     a.register_table(t, '.1.3.6.1.4.1.2021.1123.4')
 
     s.set_value('blah')
+
+    t.clear()
+    t.append(OctetString('one'), Integer32(77), Integer32(11), Counter64(23))
 
     stop = False
     while not stop:
