@@ -243,13 +243,15 @@ class AgentX(object):
         lib_nsa.init_agent(name)
         lib_ns.init_snmp(name)
 
-    def register_instance(self, obj, oid):
+    def create_handler(self, oid):
         root_len = ctypes.c_size_t(MAX_OID_LEN)
         root_oid = (ctypes.c_ulong * MAX_OID_LEN)()
         lib_nsh.read_objid(oid, root_oid, ctypes.byref(root_len))
 
-        reg_info = lib_nsh.netsnmp_create_handler_registration(oid, None, root_oid, root_len, 0)
-        lib_nsh.netsnmp_register_watched_instance(reg_info, obj.watcher)
+        return lib_nsh.netsnmp_create_handler_registration(oid, None, root_oid, root_len, 0)
+
+    def register_value(self, obj, oid):
+        lib_nsh.netsnmp_register_watched_instance(self.create_handler(oid), obj.watcher)
 
     def check_and_process(self):
         lib_nsa.agent_check_and_process(1)
