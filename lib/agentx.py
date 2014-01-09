@@ -144,6 +144,100 @@ lib_nsa.init_agent.argtypes = (
     ctypes.c_char_p,    # app
 )
 
+# From net-snmp/agent/table_data.h
+class netsnmp_table_row(ctypes.Structure):
+    pass
+netsnmp_table_row._fields_ = (
+    ('indexes',       ctypes.POINTER(netsnmp_variable_list)),
+    ('index_oid',     ctypes.POINTER(ctypes.c_ulong)),
+    ('index_oid_len', ctypes.c_size_t),
+    ('data',          ctypes.c_void_p),
+    ('next',          ctypes.POINTER(netsnmp_table_row)),
+    ('prev',          ctypes.POINTER(netsnmp_table_row)),
+)
+
+class netsnmp_table_data(ctypes.Structure):
+    pass
+netsnmp_table_data._fields_ = (
+    ('indexes_template', ctypes.POINTER(netsnmp_variable_list)),
+    ('name',             ctypes.c_char_p),
+    ('flags',            ctypes.c_int),
+    ('store_indexes',    ctypes.c_int),
+    ('first_row',        ctypes.POINTER(netsnmp_table_row)),
+    ('last_row',         ctypes.POINTER(netsnmp_table_row)),
+)
+
+# From net-snmp/agent/table_dataset.h
+class netsnmp_table_data_storage(ctypes.Structure):
+    pass
+netsnmp_table_data_storage._fields_ = (
+    ('column',         ctypes.c_uint),
+    ('writable',       ctypes.c_char),
+    ('change_ok_fn',   ctypes.c_void_p), # unused fun ptr: typedef int (Netsnmp_Value_Change_Ok) (char *old_value, size_t old_value_len, char *new_value, size_t new_value_len, void *mydata);
+    ('my_change_data', ctypes.c_void_p),
+    ('type',           ctypes.c_ubyte),
+    ('data',           netsnmp_vardata),
+    ('data_len',       ctypes.c_ulong),
+    ('next',           ctypes.POINTER(netsnmp_table_data_storage)),
+)
+
+class netsnmp_table_data_set(ctypes.Structure):
+    pass
+netsnmp_table_data_set._fields_ = (
+    ('table',            ctypes.POINTER(netsnmp_table_data)),
+    ('default_row',      ctypes.POINTER(netsnmp_table_data_storage)),
+    ('allow_creation',   ctypes.c_int),
+    ('rowstatus_column', ctypes.c_uint),
+)
+
+lib_nsh.netsnmp_create_table_data_set.restype  = ctypes.POINTER(netsnmp_table_data_set)
+lib_nsh.netsnmp_create_table_data_set.argtypes = (
+    ctypes.c_char_p,    # table_name
+)
+
+lib_nsh.netsnmp_table_dataset_add_index.restype  = None
+lib_nsh.netsnmp_table_dataset_add_index.argtypes = (
+    ctypes.POINTER(netsnmp_table_data_set), # table
+    ctypes.c_ubyte,     # type
+)
+
+lib_nsh.netsnmp_table_dataset_add_row.restype  = None
+lib_nsh.netsnmp_table_dataset_add_row.argtypes = (
+    ctypes.POINTER(netsnmp_table_data_set), # table
+    ctypes.POINTER(netsnmp_table_row),      # row
+)
+
+lib_nsh.netsnmp_table_set_add_default_row.restype  = ctypes.c_int
+lib_nsh.netsnmp_table_set_add_default_row.argtypes = (
+    ctypes.POINTER(netsnmp_table_data_set), # table_set
+    ctypes.c_uint,      # column
+    ctypes.c_int,       # type
+    ctypes.c_int,       # writable
+    ctypes.c_void_p,    # default_value
+    ctypes.c_size_t,    # default_value_len
+)
+
+lib_nsh.netsnmp_register_table_data_set.restype  = ctypes.c_int
+lib_nsh.netsnmp_register_table_data_set.argtypes = (
+    ctypes.POINTER(netsnmp_handler_registration),   # reginfo
+    ctypes.POINTER(netsnmp_table_data_set),         # data_set
+    ctypes.c_void_p,    # unused arg ptr: netsnmp_table_registration_info * table_info
+)
+
+lib_nsh.netsnmp_table_data_set_create_row_from_defaults.restype  = ctypes.POINTER(netsnmp_table_row)
+lib_nsh.netsnmp_table_data_set_create_row_from_defaults.argtypes = (
+    ctypes.POINTER(netsnmp_table_data_storage), # defrow
+)
+
+lib_nsh.netsnmp_set_row_column.restype  = ctypes.c_int
+lib_nsh.netsnmp_set_row_column.argtypes = (
+    ctypes.POINTER(netsnmp_table_row),  # row
+    ctypes.c_uint,      # column
+    ctypes.c_int,       # type
+    ctypes.c_void_p,    # value
+    ctypes.c_size_t,    # value_len
+)
+
 # From net-snmp/agent/watcher.h
 WATCHER_FIXED_SIZE  = 0x01
 WATCHER_MAX_SIZE    = 0x02
@@ -237,6 +331,26 @@ class Integer32(WatchedInstance):
         self._max_size = ctypes.sizeof(ctypes.c_int)
         super(self.__class__, self).__init__()
 
+class Table(object):
+    def __init__(self, *cols):
+        self.index = Integer32()
+        self.table = lib_nsh.netsnmp_create_table_data_set(None)
+        lib_nsh.netsnmp_table_dataset_add_index(self.table, self.index._type)
+
+        for c in range(len(cols)):
+            lib_nsh.netsnmp_table_set_add_default_row(self.table, c + 1, cols[c]._type, 0, cols[c].reference(), cols[c].data_size())
+
+    def append(self, *vals):
+        self.index.set_value(self.index.get_value() + 1)
+        tmp_table_row = lib_nsh.netsnmp_table_data_set_create_row_from_defaults(self.table.contents.default_row)
+
+        lib_ns.snmp_varlist_add_variable(ctypes.byref(tmp_table_row.contents.indexes), None, 0, self.index._type, self.index.reference(), self.index.data_size())
+
+        for v in range(len(vals)):
+            lib_nsh.netsnmp_set_row_column(tmp_table_row, v + 1, vals[v]._type, vals[v].reference(), vals[v].data_size())
+
+        lib_nsh.netsnmp_table_dataset_add_row(self.table, tmp_table_row)
+
 class AgentX(object):
     def __init__(self, name):
         lib_nsa.netsnmp_enable_subagent()
@@ -253,6 +367,9 @@ class AgentX(object):
     def register_value(self, obj, oid):
         lib_nsh.netsnmp_register_watched_instance(self.create_handler(oid), obj.watcher)
 
+    def register_table(self, tbl, oid):
+        lib_nsh.netsnmp_register_table_data_set(self.create_handler(oid), tbl.table, None)
+
     def check_and_process(self):
         lib_nsa.agent_check_and_process(1)
 
@@ -263,10 +380,15 @@ if __name__ == '__main__':
     s = OctetString('foo')
     i = Integer32(1)
     c = Counter64(1)
+    t = Table(OctetString(), Integer32(), Integer32(), Counter64())
+
+    t.append(OctetString('bar'), Integer32(1), Integer32(2), Counter64(3))
+    t.append(OctetString('baz'), Integer32(11), Integer32(12), Counter64(13))
 
     a.register_value(s, '.1.3.6.1.4.1.2021.1123.1')
     a.register_value(i, '.1.3.6.1.4.1.2021.1123.2')
     a.register_value(c, '.1.3.6.1.4.1.2021.1123.3')
+    a.register_table(t, '.1.3.6.1.4.1.2021.1123.4')
 
     s.set_value('blah')
 
