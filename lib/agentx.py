@@ -385,14 +385,20 @@ class AgentX(object):
             setattr(self, func, self.ObjectFactory(func))
 
     def ObjectFactory(self, name):
-        def wrapped(oid=None, *args):
-            obj = getattr(sys.modules[__name__], name)(*args)
-            if oid is not None:
-                if name == 'Table':
-                    self.register_table(obj, oid)
-                else:
-                    self.register_value(obj, oid)
-            return obj
+        if name == 'Table':
+            def wrapped(oid=None, *args):
+                item = Table(*args)
+                if oid is not None:
+                    self.register_value(item, oid)
+                return item
+        else:
+            def wrapped(val=None, oid=None):
+                item = getattr(sys.modules[__name__], name)()
+                if val is not None:
+                    item.set_value(val)
+                if oid is not None:
+                    self.register_value(item, oid)
+                return item
         return wrapped
 
     def create_handler(self, oid):
@@ -420,7 +426,7 @@ if __name__ == '__main__':
     c = Counter64(1)
     t = Table(OctetString(), Integer32(), Integer32(), Counter64())
 
-    q = a.OctetString('.1.3.6.1.4.1.2021.1123.5', 'a')
+    q = a.OctetString('a', '.1.3.6.1.4.1.2021.1123.5')
 
     t.append(OctetString('bar'), Integer32(1), Integer32(2), Counter64(3))
     t.append(OctetString('baz'), Integer32(11), Integer32(12), Counter64(13))
@@ -444,4 +450,3 @@ if __name__ == '__main__':
             q.set_value(chr(ord('a') + (ord(q.get_value()) - ord('a') + 1) % 26))
         except KeyboardInterrupt:
             stop = True
-
