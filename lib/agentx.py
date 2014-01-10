@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import ctypes.util
+import sys
 
 lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmphelpers'))
 lib_nsa = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmpagent'))
@@ -380,6 +381,20 @@ class AgentX(object):
         lib_nsa.init_agent(name)
         lib_ns.init_snmp(name)
 
+        for func in 'OctetString', 'Counter64', 'Integer32', 'Table':
+            setattr(self, func, self.ObjectFactory(func))
+
+    def ObjectFactory(self, name):
+        def wrapped(oid=None, *args):
+            obj = getattr(sys.modules[__name__], name)(*args)
+            if oid is not None:
+                if name == 'Table':
+                    self.register_table(obj, oid)
+                else:
+                    self.register_value(obj, oid)
+            return obj
+        return wrapped
+
     def create_handler(self, oid):
         root_len = ctypes.c_size_t(MAX_OID_LEN)
         root_oid = (ctypes.c_ulong * MAX_OID_LEN)()
@@ -405,6 +420,8 @@ if __name__ == '__main__':
     c = Counter64(1)
     t = Table(OctetString(), Integer32(), Integer32(), Counter64())
 
+    q = a.OctetString('.1.3.6.1.4.1.2021.1123.5', 'a')
+
     t.append(OctetString('bar'), Integer32(1), Integer32(2), Counter64(3))
     t.append(OctetString('baz'), Integer32(11), Integer32(12), Counter64(13))
 
@@ -423,7 +440,8 @@ if __name__ == '__main__':
         try:
             a.check_and_process()
             i.set_value(i.get_value() + 1)
-            c.set_value(c.get_value() + 1000)
+            c.set_value(c.get_value() + c.get_value())
+            q.set_value(chr(ord('a') + (ord(q.get_value()) - ord('a') + 1) % 26))
         except KeyboardInterrupt:
             stop = True
 
