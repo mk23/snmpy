@@ -281,8 +281,8 @@ MAX_STR_LEN = 1024
 
 class ASNType(object):
     def __init__(self):
-        if self.__class__ == ASNType:
-            raise RuntimeError('%s: pure abstract class' % self.__class__.__name__)
+        if object in self.__class__.__bases__:
+            raise TypeError('%s is a pure abstract class' % self.__class__.__name__)
 
     def reference(self):
         return ctypes.byref(self._data)
