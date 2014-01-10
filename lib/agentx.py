@@ -278,15 +278,10 @@ lib_nsh.netsnmp_register_watched_instance.argtypes = (
 # agentx.py constants
 MAX_STR_LEN = 1024
 
-class WatchedInstance(object):
+class ASNType(object):
     def __init__(self):
-        self.watcher = lib_nsh.netsnmp_create_watcher_info(
-            self.reference(),
-            self.data_size(),
-            self._type,
-            self._flags
-        )
-        self.watcher.contents.max_size = self._max_size
+        if self.__class__ == ASNType:
+            raise RuntimeError('%s: pure abstract class' % self.__class__.__name__)
 
     def reference(self):
         return ctypes.byref(self._data)
@@ -299,9 +294,22 @@ class WatchedInstance(object):
 
     def set_value(self, data):
         self._data.value = data
-        self.watcher.contents.data_size = self.data_size()
+        if hasattr(self, '_watcher'):
+            self._watcher.contents.data_size = self.data_size()
 
-class OctetString(WatchedInstance):
+    def get_watch(self):
+        if not hasattr(self, '_watcher'):
+            self._watcher = lib_nsh.netsnmp_create_watcher_info(
+                self.reference(),
+                self.data_size(),
+                self._type,
+                self._flags
+            )
+            self._watcher.contents.max_size = self._max_size
+
+        return self._watcher
+
+class OctetString(ASNType):
     def __init__(self, data=''):
         self._data     = ctypes.create_string_buffer(data, MAX_STR_LEN)
         self._type     = ASN_OCTET_STR
@@ -312,7 +320,7 @@ class OctetString(WatchedInstance):
     def data_size(self):
         return len(self._data.value)
 
-class Counter64(WatchedInstance):
+class Counter64(ASNType):
     def __init__(self, data=0):
         self._data     = counter64(*self.split_int(data))
         self._type     = ASN_COUNTER64
@@ -329,7 +337,7 @@ class Counter64(WatchedInstance):
     def split_int(self, data):
         return data >> 32, data & 0xFFFFFFFF
 
-class Integer32(WatchedInstance):
+class Integer32(ASNType):
     def __init__(self, data=0):
         self._data     = ctypes.c_int(data)
         self._type     = ASN_INTEGER
@@ -380,7 +388,7 @@ class AgentX(object):
         return lib_nsh.netsnmp_create_handler_registration(oid, None, root_oid, root_len, 0)
 
     def register_value(self, obj, oid):
-        lib_nsh.netsnmp_register_watched_instance(self.create_handler(oid), obj.watcher)
+        lib_nsh.netsnmp_register_watched_instance(self.create_handler(oid), obj.get_watch())
 
     def register_table(self, tbl, oid):
         lib_nsh.netsnmp_register_table_data_set(self.create_handler(oid), tbl.table, None)
