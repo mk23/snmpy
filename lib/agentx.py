@@ -442,36 +442,30 @@ class AgentX(object):
     def check_and_process(self):
         lib_nsa.agent_check_and_process(1)
 
-
 if __name__ == '__main__':
-    a = AgentX('agentx')
+    import os
+    a = AgentX('agentx', '%s/agentx.mib' % os.path.dirname(os.path.realpath(sys.argv[0])))
 
-    s = OctetString('foo')
-    i = Integer32(1)
-    c = Counter64(1)
-    t = Table(OctetString(), Integer32(), Integer32(), Counter64())
+    s = a.OctetString('foo', 'AGENTX-TEST-MIB::agentxTestString')
+    i = a.Integer32(1, 'AGENTX-TEST-MIB::agentxTestInteger')
+    c = a.Counter64(1, 'AGENTX-TEST-MIB::agentxTestCounter')
+    t = a.Table('AGENTX-TEST-MIB::agentxTestTable', OctetString(), Integer32(), Counter64())
 
-    q = a.OctetString('a', '.1.3.6.1.4.1.2021.1123.5')
+    t.append(OctetString('clr'), Integer32(77), Integer32(11), Counter64(23))
 
-    t.append(OctetString('bar'), Integer32(1), Integer32(2), Counter64(3))
-    t.append(OctetString('baz'), Integer32(11), Integer32(12), Counter64(13))
-
-    a.register_value(s, '.1.3.6.1.4.1.2021.1123.1')
-    a.register_value(i, '.1.3.6.1.4.1.2021.1123.2')
-    a.register_value(c, '.1.3.6.1.4.1.2021.1123.3')
-    a.register_table(t, '.1.3.6.1.4.1.2021.1123.4')
-
-    s.set_value('blah')
+    s.set_value('fum')
 
     t.clear()
-    t.append(OctetString('one'), Integer32(77), Integer32(11), Counter64(23))
+    t.append(OctetString('bar'), Integer32(1), Counter64(2))
+    t.append(OctetString('baz'), Integer32(11), Counter64(12))
+
+    a.start_subagent()
 
     stop = False
     while not stop:
         try:
             a.check_and_process()
             i.set_value(i.get_value() + 1)
-            c.set_value(c.get_value() + c.get_value())
-            q.set_value(chr(ord('a') + (ord(q.get_value()) - ord('a') + 1) % 26))
+            c.set_value(c.get_value() + 100)
         except KeyboardInterrupt:
             stop = True
