@@ -375,10 +375,11 @@ class Table(object):
             row_iter = row_next
 
 class AgentX(object):
-    def __init__(self, name):
+    def __init__(self, name=None):
+        self.name = name if name is not None else self.__class__.__name__
+
         lib_nsa.netsnmp_enable_subagent()
-        lib_nsa.init_agent(name)
-        lib_nsa.init_snmp(name)
+        lib_nsa.init_agent(self.name)
 
     def ObjectFactory(func):
         def wrapped(self, val=None, oid=None):
@@ -407,6 +408,9 @@ class AgentX(object):
         if oid is not None:
             self.register_table(tbl, oid)
         return tbl
+
+    def start_subagent(self):
+        lib_nsa.init_snmp(self.name)
 
     def create_handler(self, oid):
         root_len = ctypes.c_size_t(MAX_OID_LEN)
