@@ -42,6 +42,16 @@ counter64._fields_ = (
     ('low',  ctypes.c_ulong),
 )
 
+# From net-snmp/library/parse.h
+lib_nsa.netsnmp_init_mib.restype  = None
+lib_nsa.netsnmp_init_mib.argtypes = (
+)
+
+lib_nsa.read_mib.restype  = ctypes.c_void_p  # unsed ret val: struct tree *
+lib_nsa.read_mib.argtypes = (
+    ctypes.c_char_p,    # filename
+)
+
 # From net-snmp/library/mib_api.h
 lib_nsh.read_objid.restype  = ctypes.c_int
 lib_nsh.read_objid.argtypes = (
@@ -375,11 +385,15 @@ class Table(object):
             row_iter = row_next
 
 class AgentX(object):
-    def __init__(self, name=None):
+    def __init__(self, name=None, mib=None):
         self.name = name if name is not None else self.__class__.__name__
 
         lib_nsa.netsnmp_enable_subagent()
         lib_nsa.init_agent(self.name)
+
+        lib_nsa.netsnmp_init_mib()
+        if mib is not None:
+            lib_nsa.read_mib(mib)
 
     def ObjectFactory(func):
         def wrapped(self, val=None, oid=None):
