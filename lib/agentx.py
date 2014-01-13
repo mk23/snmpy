@@ -5,7 +5,6 @@ import sys
 
 lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmphelpers'))
 lib_nsa = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmpagent'))
-lib_ns  = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmp'))
 
 # From net-snmp/library/asn1.h and net-snmp/snmp_impl.h
 ASN_BOOLEAN     = 0x01
@@ -79,13 +78,13 @@ netsnmp_variable_list._fields_ = (
    ('index',         ctypes.c_int),
 )
 
-lib_ns.init_snmp.restype  = ctypes.c_int
-lib_ns.init_snmp.argtypes = (
+lib_nsa.init_snmp.restype  = ctypes.c_int
+lib_nsa.init_snmp.argtypes = (
     ctypes.c_char_p,    # type
 )
 
-lib_ns.snmp_varlist_add_variable.restype  = ctypes.POINTER(netsnmp_variable_list)
-lib_ns.snmp_varlist_add_variable.argtypes = (
+lib_nsa.snmp_varlist_add_variable.restype  = ctypes.POINTER(netsnmp_variable_list)
+lib_nsa.snmp_varlist_add_variable.argtypes = (
     ctypes.POINTER(ctypes.POINTER(netsnmp_variable_list)),  # varlist
     ctypes.POINTER(ctypes.c_ulong),                         # name
     ctypes.c_size_t,    # name_length
@@ -359,7 +358,7 @@ class Table(object):
         self.index.set_value(self.index.get_value() + 1)
         tmp_table_row = lib_nsh.netsnmp_table_data_set_create_row_from_defaults(self.table.contents.default_row)
 
-        lib_ns.snmp_varlist_add_variable(ctypes.byref(tmp_table_row.contents.indexes), None, 0, self.index._type, self.index.reference(), self.index.data_size())
+        lib_nsa.snmp_varlist_add_variable(ctypes.byref(tmp_table_row.contents.indexes), None, 0, self.index._type, self.index.reference(), self.index.data_size())
 
         for v in range(len(vals)):
             lib_nsh.netsnmp_set_row_column(tmp_table_row, v + 1, vals[v]._type, vals[v].reference(), vals[v].data_size())
@@ -379,7 +378,7 @@ class AgentX(object):
     def __init__(self, name):
         lib_nsa.netsnmp_enable_subagent()
         lib_nsa.init_agent(name)
-        lib_ns.init_snmp(name)
+        lib_nsa.init_snmp(name)
 
     def ObjectFactory(func):
         def wrapped(self, val=None, oid=None):
