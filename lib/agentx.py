@@ -381,25 +381,33 @@ class AgentX(object):
         lib_nsa.init_agent(name)
         lib_ns.init_snmp(name)
 
-        for func in 'OctetString', 'Counter64', 'Integer32', 'Table':
-            setattr(self, func, self.ObjectFactory(func))
-
-    def ObjectFactory(self, name):
-        if name == 'Table':
-            def wrapped(oid=None, *args):
-                item = Table(*args)
-                if oid is not None:
-                    self.register_value(item, oid)
-                return item
-        else:
-            def wrapped(val=None, oid=None):
-                item = getattr(sys.modules[__name__], name)()
-                if val is not None:
-                    item.set_value(val)
-                if oid is not None:
-                    self.register_value(item, oid)
-                return item
+    def ObjectFactory(func):
+        def wrapped(self, val=None, oid=None):
+            obj = getattr(sys.modules[__name__], func.__name__)()
+            if val is not None:
+                obj.set_value(val)
+            if oid is not None:
+                self.register_value(obj, oid)
+            return obj
         return wrapped
+
+    @ObjectFactory
+    def OctetString(self, val=None, oid=None):
+        pass
+
+    @ObjectFactory
+    def Integer32(self, val=None, oid=None):
+        pass
+
+    @ObjectFactory
+    def Counter64(self, val=None, oid=None):
+        pass
+
+    def Table(self, oid=None, *cols):
+        tbl = Table(*cols)
+        if oid is not None:
+            self.register_table(tbl, oid)
+        return tbl
 
     def create_handler(self, oid):
         root_len = ctypes.c_size_t(MAX_OID_LEN)
