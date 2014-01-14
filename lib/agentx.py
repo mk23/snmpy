@@ -357,11 +357,13 @@ class Integer32(ASNType):
 
 class Table(object):
     def __init__(self, *cols):
+        self.types = []
         self.index = Integer32()
         self.table = lib_nsh.netsnmp_create_table_data_set(None)
         lib_nsh.netsnmp_table_dataset_add_index(self.table, self.index._type)
 
         for c in range(len(cols)):
+            self.types.append(cols[c].__class__)
             lib_nsh.netsnmp_table_set_add_default_row(self.table, c + 1, cols[c]._type, 0, cols[c].reference(), cols[c].data_size())
 
     def append(self, *vals):
@@ -371,7 +373,8 @@ class Table(object):
         lib_nsa.snmp_varlist_add_variable(ctypes.byref(tmp_table_row.contents.indexes), None, 0, self.index._type, self.index.reference(), self.index.data_size())
 
         for v in range(len(vals)):
-            lib_nsh.netsnmp_set_row_column(tmp_table_row, v + 1, vals[v]._type, vals[v].reference(), vals[v].data_size())
+            i = self.types[v](vals[v])
+            lib_nsh.netsnmp_set_row_column(tmp_table_row, v + 1, i._type, i.reference(), i.data_size())
 
         lib_nsh.netsnmp_table_dataset_add_row(self.table, tmp_table_row)
 
@@ -387,6 +390,7 @@ class Table(object):
 class AgentX(object):
     def __init__(self, name=None, mib=None):
         self.name = name if name is not None else self.__class__.__name__
+        self.data = {}
 
         lib_nsa.netsnmp_enable_subagent()
         lib_nsa.init_agent(self.name)
@@ -434,10 +438,32 @@ class AgentX(object):
         return lib_nsh.netsnmp_create_handler_registration(oid, None, root_oid, root_len, 0)
 
     def register_value(self, obj, oid):
-        lib_nsh.netsnmp_register_watched_instance(self.create_handler(oid), obj.get_watch())
+        if oid not in self.data:
+            self.data[oid] = obj
+            lib_nsh.netsnmp_register_watched_instance(self.create_handler(oid), obj.get_watch())
+        else:
+            raise ValueError('%s: already registered' % oid)
 
     def register_table(self, tbl, oid):
-        lib_nsh.netsnmp_register_table_data_set(self.create_handler(oid), tbl.table, None)
+        if oid not in self.data:
+            self.data[oid] = tbl
+            lib_nsh.netsnmp_register_table_data_set(self.create_handler(oid), tbl.table, None)
+        else:
+            raise ValueError('%s: already registered' % oid)
+
+    def replace_value(self, oid, val):
+        if oid in self.data:
+            self.data[oid].set_value(val)
+        else:
+            raise ValueError('%s: not registered' % oid)
+
+    def replace_table(self, oid, *rows):
+        if oid in self.data:
+            self.data[oid].clear()
+            for row in rows:
+                self.data[oid].append(*row)
+        else:
+            raise ValueError('%s: not registered' % oid)
 
     def check_and_process(self):
         lib_nsa.agent_check_and_process(1)
@@ -450,14 +476,10 @@ if __name__ == '__main__':
     i = a.Integer32(1, 'AGENTX-TEST-MIB::agentxTestInteger')
     c = a.Counter64(1, 'AGENTX-TEST-MIB::agentxTestCounter')
     t = a.Table('AGENTX-TEST-MIB::agentxTestTable', OctetString(), Integer32(), Counter64())
+    t.append('clr', 77, 23)
 
-    t.append(OctetString('clr'), Integer32(77), Integer32(11), Counter64(23))
-
-    s.set_value('fum')
-
-    t.clear()
-    t.append(OctetString('bar'), Integer32(1), Counter64(2))
-    t.append(OctetString('baz'), Integer32(11), Counter64(12))
+    a.replace_value('AGENTX-TEST-MIB::agentxTestString', 'fum')
+    a.replace_table('AGENTX-TEST-MIB::agentxTestTable', ('boo', 1, 2), ('bee', 11, 12))
 
     a.start_subagent()
 
