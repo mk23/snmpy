@@ -455,7 +455,7 @@ class AgentX(object):
         if oid in self.data:
             self.data[oid].set_value(val)
         else:
-            raise ValueError('%s: not registered' % oid)
+            raise ValueError('%s is not a registered value oid' % oid)
 
     def replace_table(self, oid, *rows):
         if oid in self.data:
@@ -463,7 +463,7 @@ class AgentX(object):
             for row in rows:
                 self.data[oid].append(*row)
         else:
-            raise ValueError('%s: not registered' % oid)
+            raise ValueError('%s is not a registered table oid' % oid)
 
     def check_and_process(self):
         lib_nsa.agent_check_and_process(1)
