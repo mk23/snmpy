@@ -3,6 +3,7 @@
 import BaseHTTPServer
 
 import collections
+import logging
 import os
 import re
 import socket
@@ -63,7 +64,10 @@ class Server(BaseHTTPServer.HTTPServer):
         Handler.extra_settings  = collections.namedtuple('extra_settings', kwargs.keys())(*kwargs.values())
         Handler.server_version += ' %s/%s' % (__name__, VERSION)
 
-        self.serve_forever(poll_interval=None)
+        try:
+            self.serve_forever(poll_interval=None)
+        except KeyboardInterrupt:
+            logging.info('stopping snmpy httpd')
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_TCP, socket.TCP_DEFER_ACCEPT, True)
