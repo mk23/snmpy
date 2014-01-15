@@ -12,13 +12,12 @@ class Plugin(object):
 
 
 class PluginItem(object):
-    def __init__(self, oidnum, oidstr, syntax, native, value, **kwargs):
+    def __init__(self, oidnum, oidstr, syntax, **kwargs):
         self.__dict__.update(kwargs)
         self.oidnum = oidnum
         self.oidstr = oidstr
         self.syntax = syntax
-        self.native = native
-        self.value  = value
+        self.value  = None
 
 
 class ValuePlugin(Plugin):
@@ -38,7 +37,7 @@ class ValuePlugin(Plugin):
             config = self.attrs.copy()
             config.update(cfg)
 
-            self.items[obj] = PluginItem(oid + 1, oidstr, *syntax, **config)
+            self.items[obj] = PluginItem(oid + 1, oidstr, syntax, **config)
 
             logging.debug('initialized item: %s (%s)', oidstr, syntax[0])
 
@@ -67,7 +66,7 @@ class TablePlugin(Plugin):
             oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
             syntax = snmpy.mibgen.get_syntax(cfg['type'])
 
-            self.cols[obj] = PluginItem(oid + 2, oidstr, *syntax, **cfg)
+            self.cols[obj] = PluginItem(oid + 1, oidstr, syntax, **cfg)
             logging.debug('initialized column: %s (%s)', oidstr, syntax[0])
 
     def __iter__(self):
@@ -80,7 +79,7 @@ class TablePlugin(Plugin):
         self.rows.append([])
         if type(data) in (list, tuple):
             for col in self.cols.values():
-                self.rows[-1].append((col.oidnum, col.syntax, col.native(data[col.oidnum - 2])))
+                self.rows[-1].append(col.syntax.native_type(data[col.oidnum - 1]))
         elif isinstance(data, dict):
             for key, col in self.cols.items():
-                self.rows[-1].append((col.oidnum, col.syntax, col.native(data[key])))
+                self.rows[-1].append(col.syntax.native_type(data[key]))

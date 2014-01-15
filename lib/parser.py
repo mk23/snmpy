@@ -17,9 +17,9 @@ def parse_value(text, item, cdef={}, ignore=False):
         if find:
             logging.debug('parsed item value: %s: %s', item.regex, find)
             if item.cdef in cdef:
-                return cdef[item.cdef](find, item.native)
+                return cdef[item.cdef](find, item.syntax.native_type)
             else:
-                return item.native(item.join.join(find))
+                return item.syntax.native_type(item.join.join(find))
 
     if not ignore:
         logging.warning('no new value found for %s', item.oidstr)

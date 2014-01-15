@@ -8,6 +8,8 @@ KEY_PREFIX  = 'snmpy'
 VERSION_KEY = 'info_version'
 PLUGINS_KEY = 'info_plugins'
 
+object_syntax = collections.namedtuple('object_syntax', ('mib_type', 'object_type', 'native_type'))
+
 def camel_case(key):
     return ''.join(i[0].upper() + i[1:].lower() for i in key.split('_'))
 
@@ -16,15 +18,14 @@ def get_oidstr(*args):
 
 def get_syntax(key, type_map=collections.OrderedDict()):
     if not type_map:
-        type_map['Counter64'] = re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)'),  int, 0
-        type_map['Counter32'] = re.compile(r'count(?:er)?(?:32)?'),                     int, 0
-        type_map['Integer32'] = re.compile(r'int(?:eger)?(?:32)?'),                     int, 0
+        type_map['Counter64'] = re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)')
+        type_map['Integer32'] = re.compile(r'(?:int(?:eger)?|count)(?:32)?')
 
     for name, info in type_map.items():
-        if info[0].match(key):
-            return name, info[1], info[2]
+        if info.match(key):
+            return object_syntax(name, name, int)
 
-    return 'DisplayString', str, ''
+    return object_syntax('OCTET STRING', 'OctetString', str)
 
 def config_mib(plugin):
     name = camel_case(plugin.name)
@@ -41,7 +42,7 @@ def config_mib(plugin):
                     STATUS      current
                     DESCRIPTION "{prefix}{name}{part}"
                     ::= {{ {prefix}{name} {oid} }}
-            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin[item].syntax, oid=plugin[item].oidnum)
+            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin[item].syntax.mib_type, oid=plugin[item].oidnum)
     elif isinstance(plugin, snmpy.plugin.TablePlugin):
         types = []
         parts = ''
@@ -50,7 +51,7 @@ def config_mib(plugin):
             types.append(
                 '''
                     {prefix}{name}{part} {syntax}
-                '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin.cols[item].syntax).rstrip()
+                '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin.cols[item].syntax.mib_type).rstrip()
             )
             parts += '''
                 {prefix}{name}{part} OBJECT-TYPE
@@ -59,7 +60,7 @@ def config_mib(plugin):
                 STATUS      current
                 DESCRIPTION "{prefix}{name}{part}"
                 ::= {{ {prefix}{name}Entry {oid} }}
-            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin.cols[item].syntax, oid=plugin.cols[item].oidnum)
+            '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin.cols[item].syntax.mib_type, oid=plugin.cols[item].oidnum)
 
         part += '''
             {Prefix}{name}Entry ::= SEQUENCE {{
@@ -79,12 +80,6 @@ def config_mib(plugin):
                 DESCRIPTION "{prefix}{name}Entry"
                 INDEX       {{ {prefix}{name}Index }}
                 ::= {{ {prefix}{name}Table 1 }}
-            {prefix}{name}Index OBJECT-TYPE
-                SYNTAX      Integer32 (0..2147483647)
-                MAX-ACCESS  not-accessible
-                STATUS      current
-                DESCRIPTION "{prefix}{name}Index"
-                ::= {{ {prefix}{name}Entry 1 }}
             {parts}
         '''.format(prefix=KEY_PREFIX, Prefix=camel_case(KEY_PREFIX), name=name, types=',\n'.join(types), parts=parts)
 
@@ -109,11 +104,10 @@ def create_mib(conf, plugins):
         {module} DEFINITIONS ::= BEGIN
 
         IMPORTS
-            MODULE-IDENTITY, OBJECT-TYPE, Integer32, Counter32, Counter64   FROM SNMPv2-SMI
-            DisplayString                                                   FROM SNMPv2-TC
-            enterprises                                                     FROM SNMPv2-SMI
-            agentxObjects                                                   FROM AGENTX-MIB
-            ucdavis                                                         FROM UCD-SNMP-MIB
+            MODULE-IDENTITY, OBJECT-TYPE, Integer32, Counter64   FROM SNMPv2-SMI
+            enterprises                                          FROM SNMPv2-SMI
+            agentxObjects                                        FROM AGENTX-MIB
+            ucdavis                                              FROM UCD-SNMP-MIB
             ;
 
         {prefix}MIB MODULE-IDENTITY
@@ -128,7 +122,7 @@ def create_mib(conf, plugins):
         {prefix}Info OBJECT IDENTIFIER ::= {{ {prefix}MIB 0 }}
 
         {prefix}{version} OBJECT-TYPE
-            SYNTAX      DisplayString
+            SYNTAX      OCTET STRING
             MAX-ACCESS  read-only
             STATUS      current
             DESCRIPTION "{prefix}{version}"
@@ -136,7 +130,7 @@ def create_mib(conf, plugins):
 
         {Prefix}{plugins}Entry ::= SEQUENCE {{
             {prefix}{plugins}Index Integer32,
-            {prefix}{plugins}Name  DisplayString
+            {prefix}{plugins}Name  OCTET STRING
         }}
 
         {prefix}{plugins}Table OBJECT-TYPE
@@ -154,19 +148,12 @@ def create_mib(conf, plugins):
             INDEX       {{ {prefix}{plugins}Index }}
             ::= {{ {prefix}{plugins}Table 1 }}
 
-        {prefix}{plugins}Index OBJECT-TYPE
-            SYNTAX      Integer32 (0..2147483647)
-            MAX-ACCESS  not-accessible
-            STATUS      current
-            DESCRIPTION "{prefix}{plugins}Index"
-            ::= {{ {prefix}{plugins}Entry 1 }}
-
         {prefix}{plugins}Name OBJECT-TYPE
-            SYNTAX      DisplayString
+            SYNTAX      OCTET STRING
             MAX-ACCESS  read-only
             STATUS      current
             DESCRIPTION "{prefix}{plugins}Name"
-            ::= {{ {prefix}{plugins}Entry 2 }}
+            ::= {{ {prefix}{plugins}Entry 1 }}
         {parts}
 
         END
