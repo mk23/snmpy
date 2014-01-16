@@ -35,7 +35,11 @@ class SnmpyAgent(object):
         while not self.done:
             logging.debug('updating plugin: %s', mod.name)
 
-            mod.update()
+            try:
+                mod.update()
+            except Exception as e:
+                snmpy.log_error(e)
+
             if isinstance(mod, snmpy.plugin.ValuePlugin):
                 for item in mod:
                     self.snmp.replace_value(mod[item].oidstr, mod[item].value)
