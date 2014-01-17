@@ -126,8 +126,6 @@ if __name__ == '__main__':
                         help='system root object id')
     parser.add_argument('-i', '--include-dir',
                         help='system configuration path')
-    parser.add_argument('-s', '--master-sock', default='/var/agentx/master',
-                        help='agentx master socket path or host:port')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
     parser.add_argument('-p', '--httpd-port', default=1123, type=int,
