@@ -2,7 +2,7 @@ import snmpy.parser
 import snmpy.plugin
 import subprocess
 
-class table_cmd(snmpy.plugin.TablePlugin):
+class exec_table(snmpy.plugin.TablePlugin):
     def update(self):
         self.clear()
 
