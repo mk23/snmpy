@@ -1,4 +1,4 @@
-module: value_file
+module: file_value
 period: 1
 
 object:   '/var/lib/puppet/state/last_run_summary.yaml'

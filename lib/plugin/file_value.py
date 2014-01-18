@@ -5,7 +5,7 @@ import snmpy.plugin
 import stat
 import time
 
-class value_file(snmpy.plugin.ValuePlugin):
+class file_value(snmpy.plugin.ValuePlugin):
     kind = {
         stat.S_IFDIR:  'directory',
         stat.S_IFCHR:  'character device',
@@ -15,7 +15,6 @@ class value_file(snmpy.plugin.ValuePlugin):
         stat.S_IFLNK:  'symbolic link',
         stat.S_IFSOCK: 'socket',
     }
-
 
     def __init__(self, conf):
         if conf.get('use_stat'):

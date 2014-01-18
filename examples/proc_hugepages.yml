@@ -1,7 +1,7 @@
-module: value_file
+module: file_value
 period: 10
 
-object: /proc/meminfo
+object:   /proc/meminfo
 use_stat: False
 use_text: True
 
