@@ -22,8 +22,8 @@ def parse_conf(parser):
         args = parser.parse_args()
         conf['snmpy_global'].update(vars(args))
 
-        if conf['snmpy_global']['background']:
-            background()
+        if conf['snmpy_global']['create_pid']:
+            background(conf['snmpy_global']['create_pid'])
 
         create_log(conf['snmpy_global']['logger_dest'], conf['snmpy_global']['debug'])
     except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
@@ -75,10 +75,15 @@ def create_log(dest=None, debug=False):
 
     return logger
 
-def background():
+def background(path):
     if os.fork() == 0:
         os.setsid()
-        if os.fork() != 0:
+
+        pid = os.fork()
+        if pid != 0:
+            path.write('%d\n' % pid)
+            path.flush()
+            path.close()
             os._exit(0)
     else:
         os._exit(0)
@@ -122,18 +127,18 @@ if __name__ == '__main__':
                         help='system configuration file')
     parser.add_argument('-r', '--parent-root', default='enterprises',
                         help='parent root class name')
-    parser.add_argument('-o', '--system-root', type=int, default=1123,
+    parser.add_argument('-s', '--system-root', type=int, default=1123,
                         help='system root object id')
     parser.add_argument('-i', '--include-dir',
                         help='system configuration path')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
-    parser.add_argument('-p', '--httpd-port', default=1123, type=int,
+    parser.add_argument('-w', '--httpd-port', default=1123, type=int,
                         help='httpd server listens on this port')
-    parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'),
+    parser.add_argument('-p', '--create-pid', nargs='?', const='/var/run/snmpy.pid', type=argparse.FileType('w'), metavar='PID_FILE',
+                        help='daemonize and write pidfile')
+    parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'), metavar='MIB_FILE',
                         help='display generated mib file and exit')
-    parser.add_argument('-b', '--background', default=False, action='store_true',
-                        help='become backgrounded daemon process')
     parser.add_argument('-d', '--debug', default=False, action='store_true',
                         help='enable debug logging')
     parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
