@@ -23,5 +23,6 @@ if __name__ == '__main__':
         packages=['snmpy', 'snmpy.plugin'],
         package_dir={'snmpy': 'lib'},
         data_files=confs.items(),
+        license='LICENSE.txt',
         install_requires=['yaml', 'setuptools']
     )
