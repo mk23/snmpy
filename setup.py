@@ -20,7 +20,7 @@ if __name__ == '__main__':
         name='snmpy',
         version=VERSION,
         scripts=['snmpy'],
-        packages=['snmpy'],
+        packages=['snmpy', 'snmpy.plugin'],
         package_dir={'snmpy': 'lib'},
         data_files=confs.items(),
         install_requires=['yaml', 'setuptools']
