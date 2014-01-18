@@ -2,7 +2,7 @@ import snmpy.parser
 import snmpy.plugin
 import subprocess
 
-class value_cmd(snmpy.plugin.ValuePlugin):
+class exec_value(snmpy.plugin.ValuePlugin):
     def __init__(self, conf):
         self.item_attributes = {
             'cdef': None,
