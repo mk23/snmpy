@@ -1,7 +1,7 @@
 import snmpy.parser
 import snmpy.plugin
 
-class table_file(snmpy.plugin.TablePlugin):
+class file_table(snmpy.plugin.TablePlugin):
     def update(self):
         self.clear()
 
