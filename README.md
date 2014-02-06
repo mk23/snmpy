@@ -123,6 +123,9 @@ SNMPy ships with several plugins ready for use, some of which are generic and ca
 The `exec_table` plugin provides tabular data from the output results of an executable command. Configuration items which must be specified are:
 
 ```yaml
+module: exec_table
+period: 5
+
 object: '/path/to/command'
 parser:
     type: 'regex'
@@ -165,6 +168,9 @@ See [`interface_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/in
 The `exec_value` plugin provides simple key-value data from the output results of an executable command.  Configuration items which must be specified are:
 
 ```yaml
+module: exec_value
+period: 5
+
 object: '/path/to/command'
 
 items:
@@ -197,6 +203,9 @@ See [`dmidecode_bios.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/dm
 The `file_table` plugin provides tabular data from the contents of a file and behaves just like the `exec_table` plugin except the object parameter refers to a file instead of a command.  Configuration items which must be specified are:
 
 ```yaml
+module: file_table
+period: 5
+
 object: '/path/to/file'
 parser:
     type: 'regex'
@@ -222,6 +231,9 @@ table:
 The `file_value` plugin provides simple key-value data from the contents of a file and behaves similar to the `exec_value` plugin except the object parameter refs to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
 
 ```yaml
+module: file_value
+period: 5
+
 object: '/path/to/file'
 use_stat: True # or False
 use_text: True # or False
