@@ -69,10 +69,10 @@ The system starts by reading the global configuration file. Any options provided
 Configuration
 -------------
 
-SNMPy configuration is [yaml](http://yaml.org) formatted.  It consists of one main file, specified by `-f | --config-file` on the command-line parameter, and many module configuration files located in the directory specified by `-i | --include-dir` command-line parameter or `include_dir` global setting.  These are explained below.
+SNMPy configuration is [yaml](http://yaml.org) formatted.  It consists of one main file, specified by `-f | --config-file` on the command-line parameter, and many module configuration files located in the directory specified by `-i | --include-dir` command-line parameter or `include\_dir` global setting.  These are explained below.
 
 ### global settings ###
-All command-line parameters, shown above in the help screenshot, have a corresponding global setting.  For example `--parent-root` command-line parameter is `parent_root` global setting and so on.  The main configuration file must have any global settings under the `snmpy_global` top-level item in order to be recognized. i.e.
+All command-line parameters, shown above in the help screenshot, have a corresponding global setting.  For example `--parent-root` command-line parameter is `parent\_root` global setting and so on.  The main configuration file must have any global settings under the `snmpy\_global` top-level item in order to be recognized. i.e.
 
 ```yaml
 snmpy_global:
@@ -85,13 +85,13 @@ snmpy_global:
     debug:       False
 ```
 
-* `include_dir`: location for module configuration files (see module settings below).
-* `parent_root`: SNMP object under which to install the SNMPy subtree.
-* `system_root`: SNMP OID where the SNMPy subtree starts. `SNMPY-MIB::snmpyMIB` is rooted here, which can be walked to retreive all data that it manages.
-* `logger_dest`: Destination for the SNMPy log.  It can be a `/path/to/file`, `console:` for stdout, or `syslog:<facility>`.
-* `httpd_port`: Port to listen for http requests.  This is also used to make sure only one SNMPy process is running on a system.
-* `create_pid`: Location of the PID file.  If this is specified, SNMPy will daemonize and run in the background.
-* `create_mib`: This shouldn't be speicified in the config file because SNMPy will just write a MIB file and exit.  If a MIB file is needed, use the `-m | --create-mib` command-line parameter, or simply download from a running agent via HTTP.
+* `include\_dir`: location for module configuration files (see module settings below).
+* `parent\_root`: SNMP object under which to install the SNMPy subtree.
+* `system\_root`: SNMP OID where the SNMPy subtree starts. `SNMPY-MIB::snmpyMIB` is rooted here, which can be walked to retreive all data that it manages.
+* `logger\_dest`: Destination for the SNMPy log.  It can be a `/path/to/file`, `console:` for stdout, or `syslog:<facility>`.
+* `httpd\_port`: Port to listen for http requests.  This is also used to make sure only one SNMPy process is running on a system.
+* `create\_pid`: Location of the PID file.  If this is specified, SNMPy will daemonize and run in the background.
+* `create\_mib`: This shouldn't be speicified in the config file because SNMPy will just write a MIB file and exit.  If a MIB file is needed, use the `-m | --create-mib` command-line parameter, or simply download from a running agent via HTTP.
 
         curl -s http://localhost:1123/mib # where 1123 is the configured httpd_port
 
@@ -102,7 +102,7 @@ SNMPy module configuration begins with the filename which must meet these criter
 1. config file names are used for subtree MIB object names
 1. config file names end with `.yml` or `.yaml`
 
-For example, with a global config above and a module file `/etc/snmpy/conf.d/0023_dmidecode_system.yml`, SNMP data will be made available via:
+For example, with a global config above and a module file `/etc/snmpy/conf.d/0023\_dmidecode\_system.yml`, SNMP data will be made available via:
 
 * Numeric OID: `.1.3.6.1.4.1.2021.1123.23`
 * Symbolic OID: `SNMPY-MIB::snmpyDmidecodeSystem`
@@ -119,8 +119,8 @@ Plugins
 
 SNMPy ships with several plugins ready for use, some of which are generic and can be applied toward many different use cases.  Several example configuration modules are available to demonstrate functionality.
 
-### exec_table ###
-The `exec_table` plugin provides tabluar data from the output results of an executable command. Configuration items which must be specified are:
+### exec\_table ###
+The `exec\_table` plugin provides tabular data from the output results of an executable command. Configuration items which must be specified are:
 
 ```yaml
 object: '/path/to/command'
@@ -144,10 +144,10 @@ table:
 * `table`: defines the columns for this plugin.
     * item names: List of one or more columns each, specifying its type.
 
-See [`interface_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/interface_info.yml) example plugin:
+See [`interface\_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/interface_info.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
-    $ snmpwalk -m +snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyInterfaceInfo
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyInterfaceInfo
     SNMPY-MIB::snmpyInterfaceInfoInterface.1 = STRING: "eth0"
     SNMPY-MIB::snmpyInterfaceInfoInterface.2 = STRING: "eth1"
     SNMPY-MIB::snmpyInterfaceInfoSwitchName.1 = STRING: "sw-r07-03c"
@@ -161,8 +161,8 @@ See [`interface_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/in
     SNMPY-MIB::snmpyInterfaceInfoLinkDuplex.1 = STRING: "full duplex mode"
     SNMPY-MIB::snmpyInterfaceInfoLinkDuplex.2 = STRING: "full duplex mode"
 
-### exec_value ###
-The `exec_value` plugin provides simple key-value data from the output results of an executable command.  Configuration items which must be specified are:
+### exec\_value ###
+The `exec\_value` plugin provides simple key-value data from the output results of an executable command.  Configuration items which must be specified are:
 
 ```yaml
 object: '/path/to/command'
@@ -185,19 +185,89 @@ items:
         * `type`: SNMP type for this item
         * `regex`: Python [regular expressions](http://docs.python.org/3/library/re.html) that captures a group for this item.
 
-See [`dmidecode_bios.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/dmidecode_bios.yml) example plugin:
+See [`dmidecode\_bios.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/dmidecode_bios.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
-    $ snmpwalk -m +snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyDmidecodeBios
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyDmidecodeBios
     SNMPY-MIB::snmpyDmidecodeBiosVendor = STRING: "innotek GmbH"
     SNMPY-MIB::snmpyDmidecodeBiosVersion = STRING: "VirtualBox"
     SNMPY-MIB::snmpyDmidecodeBiosRelease = STRING: "12/01/2006"
 
-#### `file_table` ####
-#### `file_value` ####
-#### `log_processor` ####
-#### `process_info` ####
-#### `disk_utilization` ####
+#### `file\_table` ####
+The `file\_table` plugin provides tabular data from the contents of a file and behaves just like the `exec\_table` plugin except the object parameter refers to a file instead of a command.  Configuration items which must be specified are:
+
+```yaml
+object: '/path/to/file'
+parser:
+    type: 'regex'
+    path:
+        - 'First Item Pattern:\s+(?P<item_one>[^\n]+)'
+        - 'Second Item Pattern:\s+(?P<item_two>[^\n]+)'
+        - '(?P<other_item>(?:true|false) other item)'
+
+table:
+    - item_one:   'integer'
+    - item_two:   'string'
+    - other_item: 'string'
+```
+
+* `object`: Full path to a file to read and parse.
+* `parser`: Text parser to invoke for this plugin.
+    * `type`: Currently the only type supported is `regex`, but `xml` and `json` may be supported in the future.
+    * `path`: List of one or more Python [regular expressions](http://docs.python.org/3/library/re.html) that capture named groups which match column definitions (described below). Multiple matches become rows in the resulting SNMP table.
+* `table`: defines the columns for this plugin.
+    * item names: List of one or more columns each, specifying its type.
+
+#### `file\_value` ####
+The `file\_value` plugin provides simple key-value data from the contents of a file and behaves similar to the `exec\_value` plugin except the object parameter refs to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
+
+```yaml
+object: '/path/to/file'
+use_stat: True # or False
+use_text: True # or False
+
+items:
+    - item_one:
+          type:  'integer'
+          regex: 'First Item Pattern:\s+(.+?)$'
+    - item_two:
+          type:  'string'
+          regex: 'Second Item Pattern:\s+(.+?)$'
+    - other_item:
+          type:  'string'
+          regex: '((?:true|false) other item)
+```
+
+* `object`: Full path to executable command to run and parse output from.
+* `use_stat`: Toggles file metadata (size, dates, permissions) in the results
+* `use_text`: Toggles content parsing. If disabled, `items` section below is ignored.
+* `items`: defines key-value pairs for this plugin.
+    * item names: List of one or more item definitions.
+        * `type`: SNMP type for this item
+        * `regex`: Python [regular expressions](http://docs.python.org/3/library/re.html) that captures a group for this item.
+
+See [`puppet\_status.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/puppet_status.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyPuppetStatus
+    SNMPY-MIB::snmpyPuppetStatusFileName = STRING: "/var/lib/puppet/state/last_run_summary.yaml"
+    SNMPY-MIB::snmpyPuppetStatusFileType = STRING: "regular file"
+    SNMPY-MIB::snmpyPuppetStatusFileMode = STRING: "0644"
+    SNMPY-MIB::snmpyPuppetStatusFileAtime = INTEGER: 200
+    SNMPY-MIB::snmpyPuppetStatusFileMtime = INTEGER: 32074
+    SNMPY-MIB::snmpyPuppetStatusFileCtime = INTEGER: 32074
+    SNMPY-MIB::snmpyPuppetStatusFileNlink = INTEGER: 1
+    SNMPY-MIB::snmpyPuppetStatusFileSize = INTEGER: 574
+    SNMPY-MIB::snmpyPuppetStatusFileIno = INTEGER: 279301
+    SNMPY-MIB::snmpyPuppetStatusFileUid = INTEGER: 0
+    SNMPY-MIB::snmpyPuppetStatusFileGid = INTEGER: 0
+    SNMPY-MIB::snmpyPuppetStatusRuntime = INTEGER: 27
+    SNMPY-MIB::snmpyPuppetStatusSuccess = INTEGER: 1
+    SNMPY-MIB::snmpyPuppetStatusFailure = INTEGER: 0
+
+#### `log\_processor` ####
+#### `process\_info` ####
+#### `disk\_utilization` ####
 
 
 Development
