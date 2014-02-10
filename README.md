@@ -40,12 +40,12 @@ optional arguments:
   -h, --help            show this help message and exit
   -f CONFIG_FILE, --config-file CONFIG_FILE
                         system configuration file
+  -i INCLUDE_DIR, --include-dir INCLUDE_DIR
+                        plugin configuration path
   -r PARENT_ROOT, --parent-root PARENT_ROOT
                         parent root class name
   -s SYSTEM_ROOT, --system-root SYSTEM_ROOT
                         system root object id
-  -i INCLUDE_DIR, --include-dir INCLUDE_DIR
-                        system configuration path
   -l LOGGER_DEST, --logger-dest LOGGER_DEST
                         filename, syslog:<facility>, or console:
   -w HTTPD_PORT, --httpd-port HTTPD_PORT

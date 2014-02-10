@@ -125,12 +125,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
     parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
                         help='system configuration file')
+    parser.add_argument('-i', '--include-dir',
+                        help='plugin configuration path')
     parser.add_argument('-r', '--parent-root', default='enterprises',
                         help='parent root class name')
     parser.add_argument('-s', '--system-root', type=int, default=1123,
                         help='system root object id')
-    parser.add_argument('-i', '--include-dir',
-                        help='system configuration path')
     parser.add_argument('-l', '--logger-dest', default='console:',
                         help='filename, syslog:<facility>, or console:')
     parser.add_argument('-w', '--httpd-port', default=1123, type=int,
