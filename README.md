@@ -199,7 +199,7 @@ See [`dmidecode_bios.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/dm
     SNMPY-MIB::snmpyDmidecodeBiosVersion = STRING: "VirtualBox"
     SNMPY-MIB::snmpyDmidecodeBiosRelease = STRING: "12/01/2006"
 
-#### `file_table` ####
+### file_table ###
 The `file_table` plugin provides tabular data from the contents of a file and behaves just like the `exec_table` plugin except the object parameter refers to a file instead of a command.  Configuration items which must be specified are:
 
 ```yaml
@@ -227,8 +227,8 @@ table:
 * `table`: defines the columns for this plugin.
     * item names: List of one or more columns each, specifying its type.
 
-#### `file_value` ####
-The `file_value` plugin provides simple key-value data from the contents of a file and behaves similar to the `exec_value` plugin except the object parameter refs to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
+### file_value ###
+The `file_value` plugin provides simple key-value data from the contents of a file and behaves similarly to the `exec_value` plugin except the object parameter refers to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
 
 ```yaml
 module: file_value
@@ -250,7 +250,7 @@ items:
           regex: '((?:true|false) other item)
 ```
 
-* `object`: Full path to executable command to run and parse output from.
+* `object`: Full path to a file to read and parse.
 * `use_stat`: Toggles file metadata (size, dates, permissions) in the results
 * `use_text`: Toggles content parsing. If disabled, `items` section below is ignored.
 * `items`: defines key-value pairs for this plugin.
@@ -277,8 +277,66 @@ See [`puppet_status.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/pup
     SNMPY-MIB::snmpyPuppetStatusSuccess = INTEGER: 1
     SNMPY-MIB::snmpyPuppetStatusFailure = INTEGER: 0
 
-#### `log_processor` ####
-#### `process_info` ####
+### log_processor ###
+The `log_processor` plugin provides simple key-value data from the contents of a constantly-appended log file, and behaves similarly to the `file_value` plugin except it is able to immediately react to new data as well as rotation events.  Configuration items which must be specified are:
+
+```yaml
+module: log_processor
+period: 1
+
+object: '/path/to/file'
+
+items:
+    - item_one:
+          type:  'integer'
+          regex: 'First Item Pattern:\s+(.+?)$'
+    - item_two:
+          type:  'string'
+          regex: 'Second Item Pattern:\s+(.+?)$'
+    - other_item:
+          type:  'string'
+          regex: '((?:true|false) other item)
+```
+
+* `object`: Full path to a file to tail and parse.
+* `items`: defines key-value pairs for this plugin.
+    * item names: List of one or more item definitions.
+        * `type`: SNMP type for this item
+        * `regex`: Python [regular expressions](http://docs.python.org/3/library/re.html) that captures a group for this item.
+
+See [`hbase_balancer.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/hbase_balancer.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyHbaseBalancer
+    SNMPY-MIB::snmpyHbaseBalancerEnabled = "true"
+    $ echo '[ignored text] BalanceSwitch=false [ignored text]' >> /var/log/hbase/hbase-hbase-master-localhost.log
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyHbaseBalancer
+    SNMPY-MIB::snmpyHbaseBalancerEnabled = STRING: "false"
+
+### process_info ###
+The `process_info` plugin provides per-process information (open files, running threads, consumed memory) on the running system.  It does not need any extra configuration other than module name and refresh period:
+
+```yaml
+module: process_info
+period: 1
+```
+
+See [`process_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/process_info.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyProcessInfo | grep '\.1 ='
+    SNMPY-MIB::snmpyProcessInfoPid.1 = INTEGER: 4593
+    SNMPY-MIB::snmpyProcessInfoPpid.1 = INTEGER: 4592
+    SNMPY-MIB::snmpyProcessInfoName.1 = STRING: "python2.7"
+    SNMPY-MIB::snmpyProcessInfoFdOpen.1 = INTEGER: 10
+    SNMPY-MIB::snmpyProcessInfoFdLimitSoft.1 = INTEGER: 1024
+    SNMPY-MIB::snmpyProcessInfoFdLimitHard.1 = INTEGER: 4096
+    SNMPY-MIB::snmpyProcessInfoThrRunning.1 = INTEGER: 7
+    SNMPY-MIB::snmpyProcessInfoMemResident.1 = Counter64: 15052
+    SNMPY-MIB::snmpyProcessInfoMemSwap.1 = Counter64: 0
+    SNMPY-MIB::snmpyProcessInfoCtxVoluntary.1 = Counter64: 817
+    SNMPY-MIB::snmpyProcessInfoCtxInvoluntary.1 = Counter64: 143
+
 #### `disk_utilization` ####
 
 
