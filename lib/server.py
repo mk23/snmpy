@@ -37,14 +37,14 @@ class SnmpyAgent(object):
 
             try:
                 mod.update()
+
+                if isinstance(mod, snmpy.plugin.ValuePlugin):
+                    for item in mod:
+                        self.snmp.replace_value(mod[item].oidstr, mod[item].value)
+                elif isinstance(mod, snmpy.plugin.TablePlugin):
+                    self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
             except Exception as e:
                 snmpy.log_error(e)
-
-            if isinstance(mod, snmpy.plugin.ValuePlugin):
-                for item in mod:
-                    self.snmp.replace_value(mod[item].oidstr, mod[item].value)
-            elif isinstance(mod, snmpy.plugin.TablePlugin):
-                self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
 
             if mod.conf['period'] in ('boot', 'once', '0', 0):
                 logging.debug('run-once plugin complete: %s', mod.name)
