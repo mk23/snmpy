@@ -182,7 +182,7 @@ items:
           regex: 'Second Item Pattern:\s+(.+?)$'
     - other_item:
           type:  'string'
-          regex: '((?:true|false) other item)
+          regex: '((?:true|false) other item)'
 ```
 
 * `object`: Full path to executable command to run and parse output from.
@@ -247,7 +247,7 @@ items:
           regex: 'Second Item Pattern:\s+(.+?)$'
     - other_item:
           type:  'string'
-          regex: '((?:true|false) other item)
+          regex: '((?:true|false) other item)'
 ```
 
 * `object`: Full path to a file to read and parse.
@@ -295,7 +295,7 @@ items:
           regex: 'Second Item Pattern:\s+(.+?)$'
     - other_item:
           type:  'string'
-          regex: '((?:true|false) other item)
+          regex: '((?:true|false) other item)'
 ```
 
 * `object`: Full path to a file to tail and parse.
