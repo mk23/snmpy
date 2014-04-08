@@ -8,5 +8,5 @@ XS-Python-Version: 2.7
 
 Package: snmpy
 Architecture: any
-Depends: ${misc:Depends}, python (>= 2.7), python-yaml, libsnmp15, snmp-mibs-downloader
+Depends: ${misc:Depends}, python (>= 2.7), python-yaml, libsnmp15 | libsnmp30, snmp-mibs-downloader
 Description: SNMPy is a modular system for extending net-snmp through its agentx mechanism.
