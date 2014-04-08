@@ -2,4 +2,4 @@
 
 PIDFILE='/var/run/snmpy.pid'
 
-DAEMON_ARGS="--config-file /etc/snmpy/snmp.yml --create-pid $PIDFILE"
+DAEMON_ARGS="--config-file /etc/snmpy/snmpy.yml --create-pid $PIDFILE"
