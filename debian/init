@@ -13,7 +13,7 @@
 
 # Do NOT "set -e"
 
-PATH=/bin:/usr/bin
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
 DESC="SNMPy Agent"
 NAME=snmpy
 DAEMON=/usr/bin/$NAME
