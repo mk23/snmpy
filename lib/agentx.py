@@ -153,8 +153,8 @@ netsnmp_handler_registration._fields_ = (
     ('my_reg_void',    ctypes.c_void_p),
 )
 
-lib_nsa.netsnmp_create_handler_registration.restype = ctypes.POINTER(netsnmp_handler_registration)
-lib_nsa.netsnmp_create_handler_registration.argtypes = (
+lib_nsh.netsnmp_create_handler_registration.restype = ctypes.POINTER(netsnmp_handler_registration)
+lib_nsh.netsnmp_create_handler_registration.argtypes = (
     ctypes.c_char_p,    # name
     ctypes.c_void_p,    # unused arg ptr: Netsnmp_Node_Handler *handler_access_method
     ctypes.POINTER(ctypes.c_ulong), # reg_oid
