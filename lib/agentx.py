@@ -5,6 +5,31 @@ import sys
 
 lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmphelpers'))
 lib_nsa = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmpagent'))
+chk_fun = [
+    'netsnmp_create_watcher_info',
+    'netsnmp_register_watched_instance',
+    'netsnmp_create_handler_registration',
+    'netsnmp_create_table_data_set',
+    'netsnmp_table_dataset_add_index',
+    'netsnmp_table_dataset_add_row',
+    'netsnmp_table_set_add_default_row',
+    'netsnmp_register_table_data_set',
+    'netsnmp_table_data_set_create_row_from_defaults',
+    'netsnmp_set_row_column',
+    'netsnmp_table_dataset_remove_and_delete_row',
+]
+
+try:
+    lib_nsh.read_objid()
+except AttributeError:
+    lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmp'))
+
+for f in chk_fun:
+    try:
+        getattr(lib_nsh, f)()
+    except AttributeError:
+        setattr(lib_nsh, f, getattr(lib_nsa, f))
+
 
 # From net-snmp/library/asn1.h and net-snmp/snmp_impl.h
 ASN_BOOLEAN     = 0x01
@@ -133,10 +158,10 @@ netsnmp_handler_registration._fields_ = (
     ('my_reg_void',    ctypes.c_void_p),
 )
 
-lib_nsh.netsnmp_create_handler_registration.restype = ctypes.POINTER(netsnmp_handler_registration)
-lib_nsh.netsnmp_handler_registration_create.argtypes = (
+lib_nsa.netsnmp_create_handler_registration.restype = ctypes.POINTER(netsnmp_handler_registration)
+lib_nsa.netsnmp_create_handler_registration.argtypes = (
     ctypes.c_char_p,    # name
-    ctypes.c_void_p,    # unused arg ptr: netsnmp_mib_handler *handler
+    ctypes.c_void_p,    # unused arg ptr: Netsnmp_Node_Handler *handler_access_method
     ctypes.POINTER(ctypes.c_ulong), # reg_oid
     ctypes.c_size_t,    # reg_oid_len
     ctypes.c_int,       # modes
