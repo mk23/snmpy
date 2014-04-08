@@ -19,17 +19,12 @@ chk_fun = [
     'netsnmp_table_dataset_remove_and_delete_row',
 ]
 
-try:
-    lib_nsh.read_objid()
-except AttributeError:
+if not hasattr(lib_nsh, 'read_objid'):
     lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmp'))
 
 for f in chk_fun:
-    try:
-        getattr(lib_nsh, f)()
-    except AttributeError:
-        setattr(lib_nsh, f, getattr(lib_nsa, f))
-
+    if not hasattr(lib_nsh, f):
+            setattr(lib_nsh, f, getattr(lib_nsa, f))
 
 # From net-snmp/library/asn1.h and net-snmp/snmp_impl.h
 ASN_BOOLEAN     = 0x01
