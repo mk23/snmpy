@@ -350,7 +350,23 @@ See [`process_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/proc
     SNMPY-MIB::snmpyProcessInfoCtxInvoluntary.1 = Counter64: 143
 
 #### `disk_utilization` ####
+The `disk_utilization` plugin provides per-disk device utilization as a percentage as reported by the [`sar`](http://sebastien.godard.pagesperso-orange.fr/man_sar.html) command from the [`sysstat`](http://sebastien.godard.pagesperso-orange.fr) package and requires collections to be operational.  It has two optional parameters that specify the location of the command and the path to the database:
 
+```yaml
+module: disk_utilization
+period: 15
+
+sar_command: '/usr/bin/sar'
+sysstat_log: '/var/log/sysstat/sa%02d'
+```
+
+See [`disk_utilization.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/disk_utilization.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyDiskUtilization | grep '\.3 ='
+    SNMPY-MIB::snmpyDiskUtilizationDev.3 = STRING: "sda1"
+    SNMPY-MIB::snmpyDiskUtilizationWait.3 = INTEGER: 0
+    SNMPY-MIB::snmpyDiskUtilizationUtil.3 = INTEGER: 0
 
 Development
 -----------
