@@ -1,8 +1,27 @@
 import collections
 import logging
+import pickle
 import snmpy.mibgen
 
+class Meta(type):
+    @staticmethod
+    def wrapper(func):
+        def wrapped(self):
+            func(self)
+            self.dump()
+
+        return wrapped
+
+    def __new__(cls, name, bases, attrs):
+        if 'update' in attrs:
+            attrs['update'] = cls.wrapper(attrs['update'])
+
+        return super(Meta, cls).__new__(cls, name, bases, attrs)
+
+
 class Plugin(object):
+    __metaclass__ = Meta
+
     def __init__(self, conf):
         self.conf = conf
         self.name = conf['name']
@@ -41,6 +60,8 @@ class ValuePlugin(Plugin):
 
             logging.debug('initialized item: %s (%s)', oidstr, syntax[0])
 
+        self.load()
+
     def __iter__(self):
         return self.items.__iter__()
 
@@ -49,6 +70,28 @@ class ValuePlugin(Plugin):
 
     def __setitem__(self, obj, val):
         self.items[obj].value = val
+
+
+    def load(self):
+        if not self.conf['save']:
+            return
+
+        try:
+            for key, val in pickle.load(open(self.conf['save'])):
+                self[key] = val
+                logging.debug('%s: loaded from %s: %s', self.name, self.conf['save'], key)
+        except IOError as e:
+            snmpy.log_error(e)
+
+    def dump(self):
+        if not self.conf['save']:
+            return
+
+        try:
+            pickle.dump([(k, self[k].value) for k in self], open(self.conf['save'], 'w'))
+            logging.debug('%s: dumped to %s', self.name, self.conf['save'])
+        except IOError as e:
+            snmpy.log_error(e)
 
 
 class TablePlugin(Plugin):
@@ -69,6 +112,8 @@ class TablePlugin(Plugin):
             self.cols[obj] = PluginItem(oid + 1, oidstr, syntax, **cfg)
             logging.debug('initialized column: %s (%s)', oidstr, syntax[0])
 
+        self.load()
+
     def __iter__(self):
         return self.rows.__iter__()
 
@@ -83,3 +128,23 @@ class TablePlugin(Plugin):
         elif isinstance(data, dict):
             for key, col in self.cols.items():
                 self.rows[-1].append(col.syntax.native_type(data[key]))
+
+    def load(self):
+        if not self.conf['save']:
+            return
+
+        try:
+            self.rows = pickle.load(open(self.conf['save']))
+            logging.debug('%s: loaded from %s', self.name, self.conf['save'])
+        except IOError as e:
+            snmpy.log_error(e)
+
+    def dump(self):
+        if not self.conf['save']:
+            return
+
+        try:
+            pickle.dump(self.rows, open(self.conf['save'], 'w'))
+            logging.debug('%s: saved state to %s', self.name, self.conf['save'])
+        except IOError as e:
+            snmpy.log_error(e)

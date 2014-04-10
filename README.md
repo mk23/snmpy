@@ -30,9 +30,9 @@ Administration
 SNMPy can be run in foreground or as a backgrounded daemon.  It supports logging directly to console, file, or syslog.
 
 ```
-usage: snmpy [-h] [-f CONFIG_FILE] [-r PARENT_ROOT] [-s SYSTEM_ROOT]
-           [-i INCLUDE_DIR] [-l LOGGER_DEST] [-w HTTPD_PORT] [-p [PID_FILE]]
-           [-m [MIB_FILE]] [-d] [-e EXTRA EXTRA]
+usage: snmpy [-h] [-f CONFIG_FILE] [-i INCLUDE_DIR] [-t PERSIST_DIR]
+           [-r PARENT_ROOT] [-s SYSTEM_ROOT] [-l LOGGER_DEST] [-w HTTPD_PORT]
+           [-p [PID_FILE]] [-m [MIB_FILE]] [-d] [-e EXTRA EXTRA]
 
 Modular SNMP AgentX system
 
@@ -42,6 +42,8 @@ optional arguments:
                         system configuration file
   -i INCLUDE_DIR, --include-dir INCLUDE_DIR
                         plugin configuration path
+  -t PERSIST_DIR, --persist-dir PERSIST_DIR
+                        plugin state persistence path
   -r PARENT_ROOT, --parent-root PARENT_ROOT
                         parent root class name
   -s SYSTEM_ROOT, --system-root SYSTEM_ROOT
@@ -77,6 +79,7 @@ All command-line parameters, shown above in the help screenshot, have a correspo
 ```yaml
 snmpy_global:
     include_dir: '/etc/snmpy/conf.d'
+    persist_dir: '/var/lib/snmpy'
     parent_root: 'ucdavis'          # .1.3.6.1.4.1.2021
     system_root: '1123'             # .1.3.6.1.4.1.2021.1123
     logger_dest: 'syslog:local1'
@@ -86,6 +89,7 @@ snmpy_global:
 ```
 
 * `include_dir`: location for module configuration files (see module settings below).
+* `persist_dir`: location for module persistence data files.
 * `parent_root`: SNMP object under which to install the SNMPy subtree.
 * `system_root`: SNMP OID where the SNMPy subtree starts. `SNMPY-MIB::snmpyMIB` is rooted here, which can be walked to retreive all data that it manages.
 * `logger_dest`: Destination for the SNMPy log.  It can be a `/path/to/file`, `console:` for stdout, or `syslog:<facility>`.
@@ -113,6 +117,14 @@ Every module configuration file must specify which plugin to use and how often, 
 module: # one of the plugins described below
 period: # refresh time in minutes or "once" for startup collection only
 ```
+
+Optionally every module may request its state be saved between SNMPy restarts by adding a top-level `retain` boolean key:
+
+```yaml
+retain: # true | false
+```
+
+Note: retain setting is ignored if `-r | --persist-dir` command-line parameter or `persist_dir` global configuration item is disabled.
 
 Plugins
 -------

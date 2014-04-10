@@ -43,10 +43,15 @@ def parse_conf(parser):
                 conf[name] = {
                     'name':        name,
                     'time':        0,
+                    'save':        False,
                     'snmpy_index': int(indx),
                     'snmpy_extra': dict(args.extra),
                 }
                 conf[name].update(yaml.load(open(item)) or {})
+
+                if conf['snmpy_global']['persist_dir'] and conf[name].get('retain', False):
+                    conf[name]['save'] = '%s/%s.dat' % (conf['snmpy_global']['persist_dir'], name)
+
             except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
                 parser.error('cannot parse configuration file: %s' % e)
 
@@ -127,6 +132,8 @@ if __name__ == '__main__':
                         help='system configuration file')
     parser.add_argument('-i', '--include-dir',
                         help='plugin configuration path')
+    parser.add_argument('-t', '--persist-dir',
+                        help='plugin state persistence path')
     parser.add_argument('-r', '--parent-root', default='enterprises',
                         help='parent root class name')
     parser.add_argument('-s', '--system-root', type=int, default=1123,
