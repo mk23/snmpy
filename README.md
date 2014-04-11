@@ -371,9 +371,129 @@ See [`disk_utilization.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/
 Development
 -----------
 
-### table plugins ###
+Custom module development requires subclassing either `snmpy.plugin.ValuePlugin` or `snmpy.plugin.TablePlugin` and, at a minimum, implementing the `update()` method.  There are several provided utilities for logging and text parsing that are also available to use. Both table and value classes inherit from a base `snmpy.plugin.Plugin` class that handles saving plugin state on update if requested by configuration.  They also handle all the low-level SNMP and AgentX object tracking so the higher level modules can focus on simply collecting the requisite data.
 
 ### value plugins ###
+
+The most basic value plugin module, must start with this skeleton named `example_plugin.py` in the system's `plugin` directory:
+
+```python
+import snmpy.plugin
+
+class example_plugin(snmpy.plugin.ValuePlugin): # class name must match file name
+    def update(self):
+        pass
+```
+
+This starting point will allow a MIB to be generated and the system to start, but otherwise, no data will be collected or returned.  The module may define its own items or allow the end user to specify them in the config (see [`exec_value`](#exec_value) documentation above for example of config-specified items).
+
+For this example, lets implement a module that simply counts the number of times it has been updated, and also calculates the estimated runtime as an integer and as a human-readable string.  The configuration for this plugin will be very simple since items will be defined in code rather than config and no retention is needed:
+
+```yaml
+module: example_plugin
+period: 1
+```
+
+First we need to override the `__init__()` method to define our items and start the counter.  The system initializer passes the plugin configuration as the only parameter when instantiating the plugin class.  Our method must extend the plugin configuration with items we want the system to expose, call the superclass initializer, and start the counter.  The parent class handles creating all the necessary SNMP hooks and implements methods that allow us to just assign values to `self` by using the standard `dict` key accessors.
+
+```python
+    def __init__(self, conf):
+        conf['items'] = [
+            {'update_counter': {'type': 'integer'}},
+            {'uptime_minutes': {'type': 'integer'}},
+            {'uptime_verbose': {'type': 'string'}},
+        ]
+
+    snmpy.plugin.ValuePlugin.__init__(self, conf)
+
+    self['update_counter'] = 0
+```
+
+Next we implement the `update()` method to update our internal data for the system to expose to SNMP requests. There is a call to `self.format()` which is implemented in the full example below.
+
+```python
+    def update(self):
+        self['update_counter'] = self['update_counter'].value + 1
+        self['uptime_minutes'] = self['update_counter'].value * self.conf['period']
+        self['uptime_verbose'] = self.format()
+```
+
+Once the module is created and the configuration file installed, we can see it in action.
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExamplePlugin
+    SNMPY-MIB::snmpyExamplePluginUpdateCounter = INTEGER: 1
+    SNMPY-MIB::snmpyExamplePluginUptimeMinutes = INTEGER: 1
+    SNMPY-MIB::snmpyExamplePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 1 minute"
+
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExamplePlugin
+    SNMPY-MIB::snmpyExamplePluginUpdateCounter = INTEGER: 4
+    SNMPY-MIB::snmpyExamplePluginUptimeMinutes = INTEGER: 4
+    SNMPY-MIB::snmpyExamplePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 4 minutes"
+
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExamplePlugin
+    SNMPY-MIB::snmpyExamplePluginUpdateCounter = INTEGER: 36
+    SNMPY-MIB::snmpyExamplePluginUptimeMinutes = INTEGER: 36
+    SNMPY-MIB::snmpyExamplePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 36 minutes"
+
+And here's the final full version of our new example plugin.
+
+```python
+import snmpy.plugin
+
+class example_plugin(snmpy.plugin.ValuePlugin):
+    def __init__(self, conf):
+        conf['items'] = [
+            {'update_counter': {'type': 'integer'}},
+            {'uptime_minutes': {'type': 'integer'}},
+            {'uptime_verbose': {'type': 'string'}},
+        ]
+
+        snmpy.plugin.ValuePlugin.__init__(self, conf)
+        self['update_counter'] = 0
+
+    def update(self):
+        self['update_counter'] = self['update_counter'].value + 1
+        self['uptime_minutes'] = self['update_counter'].value * self.conf['period']
+        self['uptime_verbose'] = self.format()
+
+    def format(self):
+        m = self['uptime_minutes'].value
+
+        y, m = divmod(m, 525949)
+        d, m = divmod(m, 1440)
+        h, m = divmod(m, 60)
+
+        return '%d year%s, %d day%s, %d hour%s, %d minute%s' % (
+            y, 's' if y != 1 else '',
+            d, 's' if d != 1 else '',
+            h, 's' if h != 1 else '',
+            m, 's' if m != 1 else ''
+        )
+```
+
+### table plugins ###
+
+### parser ###
+
+The `snmpy.parser` module is a collection of two utility functions to make text parsing into native values easier.  Based on standard configuration for values and tables, custom modules make calls to `parse_value` or `parse_table` to extract configured elements into internal data representation. Examples of these standard configuration items are described above in [`exec_value`](#exec_value) and [`exec_table`](#exec_table) built-in module documentation.
+
+#### `parse_value(text, item, ignore=False)` ####
+
+Method for extracting and returning a single element from `text`.  The `item` to be extracted, an instance of `snmpy.plugin.PluginItem` class, has attributes describing its identifying regex, its native type to convert to, and optionally a consolidation function (cdef) if more than one result is found in text.  If multiple results are found, but no cdef is specified, the results are joined using the value of the item's join attribute.
+
+Supported cdefs:
+
+* min: return minimum of extracted results
+* max: return maximum of extracted results
+* len: return number of extracted results
+* sum: return summation of extracted results
+* avg: return average of extracted results
+
+#### `parse_table(parser, text)` ####
+
+Generator for extracting and yielding dictionaries from `text`, one per row where the keys are the associated column names.  The `parser` itself is a dictionary that specifies the type and path of the elements to extract.  Currently the only type supported is `regex`, but `xml` and `json` may be supported in the future.  The path is either a single regex string containing patterns of all columns to extract, or a list of regexes that are used together.
 
 License
 -------
