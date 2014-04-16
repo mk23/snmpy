@@ -7,6 +7,7 @@ class Meta(type):
     @staticmethod
     def wrapper(func):
         def wrapped(self):
+            self.clear()
             func(self)
             self.dump()
 
@@ -25,6 +26,9 @@ class Plugin(object):
     def __init__(self, conf):
         self.conf = conf
         self.name = conf['name']
+
+    def clear(self):
+        pass
 
     def update(self):
         raise(NotImplementedError('plugin module is missing update() method'))
