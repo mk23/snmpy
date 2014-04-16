@@ -375,22 +375,22 @@ Custom module development requires subclassing either `snmpy.plugin.ValuePlugin`
 
 ### value plugins ###
 
-The most basic value plugin module, must start with this skeleton named `example_plugin.py` in the system's `plugin` directory:
+The most basic value plugin module, must start with this skeleton named `example_value_plugin.py` in the system's `plugin` directory:
 
 ```python
 import snmpy.plugin
 
-class example_plugin(snmpy.plugin.ValuePlugin): # class name must match file name
+class example_value_plugin(snmpy.plugin.ValuePlugin): # class name must match file name
     def update(self):
         pass
 ```
 
-This starting point will allow a MIB to be generated and the system to start, but otherwise, no data will be collected or returned.  The module may define its own items or allow the end user to specify them in the config (see [`exec_value`](#exec_value) documentation above for example of config-specified items).
+This starting point will allow a MIB to be generated and the system to start, but otherwise, no data will be collected or returned.  The module may define its own items or allow the end user to specify them in the config (see [`exec_value`](#exec_value) documentation above for example of config-supplied items).
 
 For this example, lets implement a module that simply counts the number of times it has been updated, and also calculates the estimated runtime as an integer and as a human-readable string.  The configuration for this plugin will be very simple since items will be defined in code rather than config and no retention is needed:
 
 ```yaml
-module: example_plugin
+module: example_value_plugin
 period: 1
 ```
 
@@ -422,27 +422,27 @@ Once the module is created and the configuration file installed, we can see it i
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExamplePlugin
-    SNMPY-MIB::snmpyExamplePluginUpdateCounter = INTEGER: 1
-    SNMPY-MIB::snmpyExamplePluginUptimeMinutes = INTEGER: 1
-    SNMPY-MIB::snmpyExamplePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 1 minute"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValuePlugin
+    SNMPY-MIB::snmpyExampleValuePluginUpdateCounter = INTEGER: 1
+    SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 1
+    SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 1 minute"
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExamplePlugin
-    SNMPY-MIB::snmpyExamplePluginUpdateCounter = INTEGER: 4
-    SNMPY-MIB::snmpyExamplePluginUptimeMinutes = INTEGER: 4
-    SNMPY-MIB::snmpyExamplePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 4 minutes"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValuePlugin
+    SNMPY-MIB::snmpyExampleValuePluginUpdateCounter = INTEGER: 4
+    SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 4
+    SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 4 minutes"
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExamplePlugin
-    SNMPY-MIB::snmpyExamplePluginUpdateCounter = INTEGER: 36
-    SNMPY-MIB::snmpyExamplePluginUptimeMinutes = INTEGER: 36
-    SNMPY-MIB::snmpyExamplePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 36 minutes"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValuePlugin
+    SNMPY-MIB::snmpyExampleValuePluginUpdateCounter = INTEGER: 36
+    SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 36
+    SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 36 minutes"
 
 And here's the final full version of our new example plugin.
 
 ```python
 import snmpy.plugin
 
-class example_plugin(snmpy.plugin.ValuePlugin):
+class example_value_plugin(snmpy.plugin.ValuePlugin):
     def __init__(self, conf):
         conf['items'] = [
             {'update_counter': {'type': 'integer'}},
