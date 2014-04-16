@@ -1,0 +1,23 @@
+module: file_table
+period: 15
+
+object:  '/var/lib/dpkg/status'
+parser:
+    type: 'regex'
+    path:
+        - 'Package:\s+(?P<package>[^\n]+)'
+        - 'Status:\s+(?P<status>[^\s]+)[^\n]+'
+        - 'Installed-Size:\s+(?P<size>[\d]+)'
+        - 'Architecture:\s+(?P<arch>[^\n]+)'
+        - 'Version:\s+(?P<version>[^\n]+)'
+        - 'Depends:\s+(?P<depends>[^\n]+)'
+        - 'Description:\s+(?P<description>[^\n]+)'
+
+table:
+    - package:     'string'
+    - status:      'string'
+    - size:        'integer'
+    - arch:        'string'
+    - version:     'string'
+    - depends:     'string'
+    - description: 'string'
