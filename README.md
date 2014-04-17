@@ -552,7 +552,7 @@ Once the module is created and the configuration file installed, we can see it i
 
 And here is the final full version of our new example table plugin.
 
-```
+```python
 import collections
 import re
 import requests
