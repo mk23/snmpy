@@ -1,3 +1,193 @@
+snmpy (2.0.0) precise; urgency=low
+
+  * Tagging 2.0.0
+  * [4810be5] Merge pull request #37 from mk23/agentx
+  * [aa3ba16] Issue #4: Document table plugins.
+  * [6180749] Issue #35: Remove self.clear() call from plugin modules.
+  * [6fdf28c] Issue #35: Handle table clearing in the update wrapper,
+    saving plugin modules a call that may be inadvertently forgotten.
+  * [fd16b55] Issue #36: Add debian packages example plugin.
+  * [bcc0e7b] Issue #4: Rename contrived module to example_value_plugin
+    in anticipation of an example_table_plugin.
+  * [e09e7f2] Issue #4: Add documentation for value plugins and parser.
+  * [2ca9f8c] Issue #4: Add disk_utilization module documentation.
+  * [2e2fee1] Issue #31: Add persist_dir config/cli flag and support for
+    retain: true|false in plugin modules.
+  * [0b0d497] Simplify debian rules file.
+  * [76839dd] Reference netsnmp_create_handler_registration from
+    helpers, assuming relocation properly happens earlier, if necessary.
+  * [ad72c56] Better (non-crashing) check for existence of functions in
+    libraries.
+  * [1f0f361] Issue #34: Remap some functions that were moved from
+    libsnmphelpers to libsnmpagent.
+  * [39c20d4] Issue #34: Depend on libsnmp15 or libsnmp30.
+  * [17f1bee] Issue #33: Fix default config file path.
+  * [e904b95] Issue #33: Fix PATH to include /sbin and /usr/sbin for
+    start-stop-daemon to work.
+  * [a8b7b07] Fix up doc example yaml syntax.
+  * [95d24ee] Tweak the help screen a bit.
+  * [5a9691e] Issue #4: Add log_processor and process_info module
+    documentation.
+  * [04e4637] Issue #32: Fix bad data plugin crashes preventing system
+    startup.
+  * [a40eb38] Issue #4: More complete plugin configuration examples.
+  * [2029d1d] Issue #4: Undo underscore escaping in the doc.
+  * [f727ad0] Issue #4: Document file_value and file_table plugins. Also
+    clean up underscores and typos.
+  * [51a4fcc] Issue #4: Fill out administration and configuration
+    section in the doc and start on plugin info.
+  * [7ba9cbb] Issue #14: table_command got renamed to exec_table.
+  * [e64416a] Issue #4: Stub out the rest of the documentation outline.
+  * [022e2f0] Issue #4: Start documentation and add license.
+  * [4066146] Issue #30: Fix setup.py to include plugins in the archive.
+  * [6be5fd9] Issue #14: Rename plugin: value_cmd to exec_value.
+  * [6b9a6cd] Issue #14: Rename plugin: table_cmd to exec_table.
+  * [101bda5] No need to handle and log exceptions in the plugin as the
+    server will do that now itself.
+  * [9bb3bc6] Issue #14: Rename plugin: table_file to file_table.
+  * [09e1778] Issue #14: Rename plugin: value_file to file_value.
+  * [fbc6ed4] Issue #20: Add startup and default scripts to the debian
+    package.
+  * [6f74c2b] Update to a more sensible default configuration.
+  * [47f6198] Issue #29: change --background to --create-pid which
+    implies running in the background, but now also creates the
+    specified pid.
+  * [50b5c3c] The --master-sock param is no longer necessary as of Issue
+    #23 and #25.
+  * [2599f69] Issue #11: Also add snmp-mibs-downloader as a required
+    dependency.
+  * [7f34594] Issue #11: Add required dependencies to the packaging
+    systems.
+  * [0afab0b] Issue #22: Catch and log plugin update errors.
+  * [423da64] Issue #25: Convert snmpy to use internal agentx module.
+  * [25c9a92] Friendlier exit message in httpd module.
+  * [0f103df] Friendlier exception messages in agentx module.
+  * [0ebff51] Issue #28: AgentX module now tracks registered objects and
+    allows data replacement.
+  * [a2e9d6e] Issue #24: Update agentx test example with a real working
+    MIB.
+  * [61dd3cc] Issue #24: Add MIB file support to agentx module.
+  * [db97710] Move agent start to an on-demand method to allow variable
+    registration ahead of time.
+  * [9e7585d] No need to import libnetsnmp because of magical runtime
+    linking.
+  * [a9f9d87] Make the ObjectFactory a bit less convoluted.
+  * [a278f7d] Swap oid and val parameters for scalars in the object
+    factory method of the agent for easier use.
+  * [2200293] A better abstract class check.
+  * [921a375] Issue #27: Create factory method for ASN types in the
+    agent class.
+  * [6df93c5] Issue #26: Move watcher logic to an on-demand (at
+    registration) method.
+  * [e60c263] Consistant spacing/newlines in examples.
+  * [8162850] Issue #23: Add support for clearing tables.
+  * [cd88a8d] Issue #23: Add table support to custom agentx module.
+  * [77ba7cd] Issue #23: Update example agent with latest
+    register_value() changes and demonstrate changing values.
+  * [a0d1162] Issue #23: Split handler registration creation into its
+    own method.
+  * [9f43347] Issue #23: Document unused pointer members.
+  * [3d15b5a] Issue #23: Explicitely specify library return types even
+    if int (default).
+  * [90c1d14] Issue #23: Add generic and Counter64-specific get_value()
+    methods.
+  * [f1f087d] Issue #23: Move library definitions to the beginning of
+    the module.
+  * [4e90647] Issue #23: Make agentx.py module executable for testing.
+  * [e6acc7e] Issue #23: Support Counter64 types in custom agentx
+    module.
+  * [838c840] Fix puppet plugin example path to state file.
+  * [7ba269d] Remove unnecessary import.
+  * [53b1104] Issue #12: Convert hbase_balancer example to agentx
+    log_processor plugin module.
+  * [76fdabd] Issue #12: Convert log_processor plugin module to agentx.
+  * [7c778c2] Add ignore option to value parser to supress warning on no
+    match.
+  * [8bd3b6f] This ancient test is no longer necessary.
+  * [62f5e9f] Issue #16: Add process_info plugin module.
+  * [008ddfc] Issue #21: use ordered dict for type map in get_syntax().
+  * [e83be59] Fix personal brain damage.
+  * [35bca96] Remove debug code.
+  * [bd55dcb] Issue #15: Add httpd server endpoint to deliver mib
+    contents on demand.
+  * [dc0c570] Issue #15: Restructure config/params to accomodate
+    httpd_port setting.
+  * [489bc2a] Issue #15: Cache mib file contents for delivery over http.
+  * [97db482] Issue #19: Use WatchedFileHandler to support log rotation.
+  * [8174adf] Issue #18: Add --background option to daemonize process.
+    Cannot be used with --create-mib option.
+  * [6a687be] Issue #17: Add dmidecode_bios example plugin.
+  * [cafe754] Fix len() and avg() cdefs.
+  * [e51ead7] Add thread name to logging.
+  * [ffe544a] Issue #12: Convert dmidecode processor example to agentx
+    plugin.
+  * [f60ceb1] Issue #12: Add table cmd plugin module.
+  * [2f73b17] Add debug logging to value_file plugin module.
+  * [582756c] Issue #12: Convert dmidecode memory example to agentx
+    plugin.
+  * [216af29] Remove obsolete stat_wtmp example.
+  * [8f5c8fc] Fix log string.
+  * [6a4458b] Issue #12: network_cdpr and network_link have been
+    obsoleted by interface_info example.
+  * [9d9e36a] Issue #12: Add puppet status example plugin.
+  * [a3b12e8] Issue #12: Convert proc_hugepages example to value_file
+    module for agentx.
+  * [af5fc0f] Issue #12: Update dmidecode_system example config for
+    multiline parsing change.
+  * [c92bce4] Issue #12: Convert filesystem_stat plugin to agentx and
+    add support for parsing. This makes proc_query plugin obsolete and
+    unnecessary.
+  * [9453631] Issue #12: Allow multi-line regex matches in the value
+    parser.
+  * [fab6317] Change the interface_info example to use array as a path
+    for better readability.
+  * [2024229] Allow the path to be an array that, for the regex parser,
+    gets joined with '.*?' to make the full pattern.
+  * [06b5e5e] Issue #12: Replace old network_cdpr and network_link
+    example configs with new interface_info lldp based config that
+    supports all attached links and accessible via one table.
+  * [da62340] Issue #12: Add generic table_file that takes data from a
+    text file in sequential blocks.
+  * [730663c] Issue #12: Add regex table pattern expecting
+    parser['type']: regex and parser['path']: expression to iterate over
+    the text with.
+  * [14f59ad] Issue #12: Simplify column type specification.
+  * [5aac4d9] Issue #12: Update disk_utilization plugin to the latest
+    TablePlugin api.
+  * [4e6ddc1] Issue #12: Allow TablePlugin to add rows of dict()s as
+    well as list()s.
+  * [1405e4f] Fix hasattr() arg order.
+  * [9c9e496] Issue #13: Consolidate text parsing into a new parser
+    library.
+  * [07f04a7] Configuration objects are plugins, not modules.
+  * [d2342e2] Issue #12: Convert disk_utilization plugin to AgentX
+    snmpy.
+  * [4b5b85d] Convert value_cmd to new plugin data model.
+  * [a91dfda] Issue #12: Implement snmp tables.
+  * [2d71832] Shorten the log line a bit by using module name instead of
+    filename.
+  * [2b41ca4] Fix include_dir config key.
+  * [883da6c] Get rid of stubs.
+  * [763fd5d] Rename periodic_cmd to value_cmd in preparation of
+    creating a table_cmd plugin.
+  * [1840458] Issue #12: Add background collection task and rework the
+    value plugin a bit more.
+  * [7db3264] Issue #12: Rework the data model for value-type plugins.
+  * [d8a013a] Better logging.
+  * [051a230] Issue #12: port periodic_cmd module to agentx-compatible
+    snmpy.
+  * [6cb8746] Issue #12: create value initializer system. Plugins with
+    items-only configurations are now immediately queryable at system
+    start.
+  * [2f27519] Issue #12: stub initial working agentx version based on
+    https://github.com/pief/python-netsnmpagent
+  * [a2b4b94] Issue #12: add mib generator.
+  * [b2e5342] AGENTX: stub out initial plugins.
+  * [dab3d1f] AGENTX: reduce library code to bare essentials for now.
+  * [b2dfc7e] AGENTX: start on agentx support.
+
+ -- Max Kalika <max@mklinbox-debian.vm-zone>  Wed, 16 Apr 2014 22:23:07 -0700
+
 snmpy (1.0.0) precise; urgency=low
 
   * Tagging 1.0.0
