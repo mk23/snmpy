@@ -385,7 +385,7 @@ class example_value_plugin(snmpy.plugin.ValuePlugin): # class name must match fi
         pass
 ```
 
-This starting point will allow a MIB to be generated and the system to start, but otherwise, no data will be collected or returned.  The module may define its own items or allow the end user to specify them in the config (see [`exec_value`](#exec_value) documentation above for example of config-supplied items).
+This starting point will allow a MIB to be generated and the system to start, but otherwise, no data will be collected or returned.  The module may define its own items or allow the end user to specify them in the config (see [`exec_value`](#exec_value) documentation above for an example of config-supplied items).
 
 For this example, lets implement a module that simply counts the number of times it has been updated, and also calculates the estimated runtime as an integer and as a human-readable string.  The configuration for this plugin will be very simple since items will be defined in code rather than config and no retention is needed:
 
@@ -394,7 +394,7 @@ module: example_value_plugin
 period: 1
 ```
 
-First we need to override the `__init__()` method to define our items and start the counter.  The system initializer passes the plugin configuration as the only parameter when instantiating the plugin class.  Our method must extend the plugin configuration with items we want the system to expose, call the superclass initializer, and start the counter.  The parent class handles creating all the necessary SNMP hooks and implements methods that allow us to just assign values to `self` by using the standard `dict` key accessors.
+First, we need to override the `__init__()` method to define our items and start the counter.  The system initializer passes the plugin configuration as the only parameter when instantiating the plugin class.  Our method must extend the plugin configuration with items we want the system to expose, call the superclass initializer, and start the counter.  The parent class handles creating all the necessary SNMP hooks and implements methods that allow us to just assign values to `self` by using the standard `dict` key accessors.
 
 ```python
     def __init__(self, conf):
@@ -437,7 +437,7 @@ Once the module is created and the configuration file installed, we can see it i
     SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 36
     SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 36 minutes"
 
-And here's the final full version of our new example plugin.
+And here is the final full version of our new example value plugin.
 
 ```python
 import snmpy.plugin
@@ -474,6 +474,108 @@ class example_value_plugin(snmpy.plugin.ValuePlugin):
 ```
 
 ### table plugins ###
+
+The most basic table plugin module, must start with this skeleton named `example_table_plugin.py` in the system's `plugin` directory:
+
+```python
+import snmpy.plugin
+
+class example_table_plugin(snmpy.plugin.TablePlugin): # class name must match file name
+    def update(self):
+        pass
+```
+
+This starting point will allow a MIB to be generated and the system to start, but otherwise no data will be collected or returned.  The module may define its own column types or allow the end user to specify them in the config (see [`exec_table`](#exec_table) documenation above for an example of config-supplied table).
+
+For this example, lets implement a module that reaches out to a url, collects all HTML tag names as column one and their occurance counts on the page as column two.  The configuration for this plugin will be mostly basic, but also allow the user to specify a URL to fetch and parse.
+
+```yaml
+module: example_table_plugin
+period: 1
+
+object: http://github.com/mk23/snmpy
+```
+
+Besides the basic import we'll need a few extra utilities for fetching, parsing, and counting:
+
+```python
+import collections
+import re
+import requests
+```
+
+On to actual code.  First, we need to override the `__init__()` method to define our table.  The system initializer passes the plugin configuration as the only parameter when instantiating the plugin class.  Our method must extend the plugin configuration with the table we want to expose and call the superclass initializer.  The parent class handles creating all necessary SNMP hooks and implements methods that allow us to call `self.append(row)` where row is a list of values corresponding to the columns defined in the initializer.  There are two ways to define a table
+
+1. A list of dictionaries specifying a mapping of column name to column type.  i.e. `[ {'col': 'integer'} ]`
+2. A list of dictionaries specifying a mapping of column name to a dictionary of attributes, one of which is `type`.  i.e. `[ {'col': {'type': 'string', 'attr': 'info'}} ]`
+
+For this plugin we'll choose the simple method:
+
+```python
+    def __init__(self, conf):
+        conf['table'] = [
+            {'tag':   'string'},
+            {'count': 'integer'},
+        ]
+
+        snmpy.plugin.TablePlugin.__init__(self, conf)
+```
+
+Next we implement the `update()` method to update our internal data for the system to expose to SNMP requests.  In this method, we fetch the contents of the configured URL, parse it via simple regex, and count using a python `collections.Counter` library.  The results are then appended as rows one at a time.
+
+```python
+    def update(self):
+        data = requests.get(self.conf['object'])
+        data.raise_for_status()
+
+        find = re.findall(r'<(?P<tag>[a-z]+).+?>', data.content, re.I)
+        if find:
+            for item in sorted(collections.Counter(find).items()):
+                self.append(item)
+```
+
+Once the module is created and the configuration file installed, we can see it in action.
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleTablePlugin | grep '\.[1-5] ='
+    SNMPY-MIB::snmpyExampleTablePluginTag.1 = STRING: "a"
+    SNMPY-MIB::snmpyExampleTablePluginTag.2 = STRING: "body"
+    SNMPY-MIB::snmpyExampleTablePluginTag.3 = STRING: "div"
+    SNMPY-MIB::snmpyExampleTablePluginTag.4 = STRING: "form"
+    SNMPY-MIB::snmpyExampleTablePluginTag.5 = STRING: "h"
+    SNMPY-MIB::snmpyExampleTablePluginCount.1 = INTEGER: 44
+    SNMPY-MIB::snmpyExampleTablePluginCount.2 = INTEGER: 1
+    SNMPY-MIB::snmpyExampleTablePluginCount.3 = INTEGER: 80
+    SNMPY-MIB::snmpyExampleTablePluginCount.4 = INTEGER: 2
+    SNMPY-MIB::snmpyExampleTablePluginCount.5 = INTEGER: 3
+
+And here is the final full version of our new example table plugin.
+
+```
+import collections
+import re
+import requests
+import snmpy.plugin
+
+class example_table_plugin(snmpy.plugin.TablePlugin):
+    def __init__(self, conf):
+        conf['table'] = [
+            {'tag':   'string'},
+            {'count': 'integer'},
+        ]
+
+        snmpy.plugin.TablePlugin.__init__(self, conf)
+
+    def update(self):
+        data = requests.get(self.conf['object'])
+        data.raise_for_status()
+
+        find = re.findall(r'<(?P<tag>[a-z]+).+?>', data.content, re.I)
+        if find:
+            for item in sorted(collections.Counter(find).items()):
+                self.append(item)
+```
 
 ### parser ###
 
