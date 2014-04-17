@@ -29,7 +29,6 @@ class disk_utilization(snmpy.plugin.TablePlugin):
             if part and part[0] != 'Average:' and part[1].startswith('dev'):
                 disk[part[-9]] = [int(float(part[-3])), int(float(part[-1]))]
 
-        self.clear()
         for line in open('/proc/diskstats'):
             name = 'dev{}-{}'.format(*line.split()[0:2])
             self.append([line.split()[2]] + disk.get(name, [0, 0]))

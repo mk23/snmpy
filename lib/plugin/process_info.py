@@ -21,8 +21,6 @@ class process_info(snmpy.plugin.TablePlugin):
         snmpy.plugin.TablePlugin.__init__(self, conf)
 
     def update(self):
-        self.clear()
-
         for pid in os.listdir('/proc'):
             try:
                 s = open('/proc/%s/status' % pid).readlines()
