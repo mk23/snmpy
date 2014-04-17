@@ -8,16 +8,5 @@
 
 export DH_VERBOSE=1
 
-PYVERS ?= $(shell pyversions -r)
-
 %:
 	dh $@ --with python2
-
-
-override_dh_auto_clean:
-	dh_auto_clean
-	for python in $(PYVERS) ; do $$python setup.py clean ; done
-
-override_dh_auto_install:
-	dh_auto_install
-	for python in $(PYVERS) ; do $$python setup.py install --install-layout=deb --root=$(CURDIR)/debian/snmpy ; done

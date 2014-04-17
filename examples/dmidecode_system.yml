@@ -1,0 +1,17 @@
+module: exec_value
+period: boot
+
+object: '/usr/sbin/dmidecode -t system'
+
+items:
+    - uuid:
+          type:  'string'
+          regex: 'UUID: (.+?)$'
+
+    - manufacturer:
+          type:  'string'
+          regex: 'Manufacturer: (.+?)$'
+
+    - product:
+          type:  'string'
+          regex: 'Product Name: (.+?)$'

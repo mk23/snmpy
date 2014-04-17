@@ -1,0 +1,28 @@
+module: exec_value
+period: once
+
+object: '/usr/sbin/dmidecode -t memory'
+
+items:
+    - ecc:
+        type:  'string'
+        regex: 'Error Correction Type: (.+?)$'
+
+    - speed:
+        type:  'string'
+        regex: 'Speed: (\d+ MHz).*'
+
+    - devices:
+        type:  'integer'
+        cdef:  'sum'
+        regex: 'Number Of Devices: (\d+)'
+
+    - maximum:
+        type:  'integer'
+        cdef:  'sum'
+        regex: 'Maximum Capacity: (\d+) GB'
+
+    - current:
+        type:  'integer'
+        cdef:  'sum'
+        regex: 'Size: (\d+) MB'

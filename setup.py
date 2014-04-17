@@ -2,7 +2,7 @@
 
 import glob
 
-from distutils.core import setup
+from setuptools import setup
 from lib import VERSION
 
 if __name__ == '__main__':
@@ -20,7 +20,9 @@ if __name__ == '__main__':
         name='snmpy',
         version=VERSION,
         scripts=['snmpy'],
-        packages=['snmpy'],
+        packages=['snmpy', 'snmpy.plugin'],
         package_dir={'snmpy': 'lib'},
-        data_files=confs.items()
+        data_files=confs.items(),
+        license='LICENSE.txt',
+        install_requires=['yaml', 'setuptools']
     )

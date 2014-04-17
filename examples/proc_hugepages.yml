@@ -1,0 +1,23 @@
+module: file_value
+period: 10
+
+object:   /proc/meminfo
+use_stat: False
+use_text: True
+
+items:
+    - total:
+        type:  'integer'
+        regex: 'HugePages_Total:\s+(\d+)'
+
+    - free:
+        type:  'integer'
+        regex: 'HugePages_Free:\s+(\d+)'
+
+    - reserved:
+        type:  'integer'
+        regex: 'HugePages_Rsvd:\s+(\d+)'
+
+    - surplus:
+        type:  'integer'
+        regex: 'HugePages_Surp:\s+(\d+)'

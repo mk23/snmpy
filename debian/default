@@ -1,0 +1,5 @@
+# This file controls the startup behavior of snmpy
+
+PIDFILE='/var/run/snmpy.pid'
+
+DAEMON_ARGS="--config-file /etc/snmpy/snmpy.yml --create-pid $PIDFILE"
