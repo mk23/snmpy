@@ -159,7 +159,7 @@ table:
 * `table`: defines the columns for this plugin.
     * item names: List of one or more columns each, specifying its type.
 
-See [`interface_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/interface_info.yml) example plugin:
+See [`interface_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/interface_info.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyInterfaceInfo
@@ -203,7 +203,7 @@ items:
         * `type`: SNMP type for this item
         * `regex`: Python [regular expressions](http://docs.python.org/3/library/re.html) that captures a group for this item.
 
-See [`dmidecode_bios.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/dmidecode_bios.yml) example plugin:
+See [`dmidecode_bios.yml`](https://github.com/mk23/snmpy/blob/master/examples/dmidecode_bios.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyDmidecodeBios
@@ -270,7 +270,7 @@ items:
         * `type`: SNMP type for this item
         * `regex`: Python [regular expressions](http://docs.python.org/3/library/re.html) that captures a group for this item.
 
-See [`puppet_status.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/puppet_status.yml) example plugin:
+See [`puppet_status.yml`](https://github.com/mk23/snmpy/blob/master/examples/puppet_status.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyPuppetStatus
@@ -316,7 +316,7 @@ items:
         * `type`: SNMP type for this item
         * `regex`: Python [regular expressions](http://docs.python.org/3/library/re.html) that captures a group for this item.
 
-See [`hbase_balancer.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/hbase_balancer.yml) example plugin:
+See [`hbase_balancer.yml`](https://github.com/mk23/snmpy/blob/master/examples/hbase_balancer.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyHbaseBalancer
@@ -333,7 +333,7 @@ module: process_info
 period: 1
 ```
 
-See [`process_info.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/process_info.yml) example plugin:
+See [`process_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/process_info.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyProcessInfo | grep '\.1 ='
@@ -360,7 +360,7 @@ sar_command: '/usr/bin/sar'
 sysstat_log: '/var/log/sysstat/sa%02d'
 ```
 
-See [`disk_utilization.yml`](https://github.com/mk23/snmpy/blob/agentx/examples/disk_utilization.yml) example plugin:
+See [`disk_utilization.yml`](https://github.com/mk23/snmpy/blob/master/examples/disk_utilization.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyDiskUtilization | grep '\.3 ='
