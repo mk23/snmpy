@@ -13,7 +13,7 @@ if [[ $REPLY =~ ^[Yy]$ ]] ; then
 fi
 
 echo
-/usr/bin/curl -s https://raw.github.com/mk23/sandbox/master/misc/release.py | exec /usr/bin/env python2.7 - ${COMMIT} --release stable -e lib/__init__.py "VERSION = '{version}'" $@
+/usr/bin/curl -L -s https://raw.github.com/mk23/sandbox/master/misc/release.py | exec /usr/bin/env python2.7 - ${COMMIT} --release stable -e lib/__init__.py "VERSION = '{version}'" $@
 
 if [ -n "${COMMIT}" ] ; then
 	echo
