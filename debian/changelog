@@ -1,3 +1,17 @@
+snmpy (2.0.1) stable; urgency=low
+
+  * Tagging 2.0.1
+  * [9545105] Allow curl to redirect if necessary in the release system.
+  * [f878964] Update maintainer.
+  * [84304cb] Issue #39: Rework release system and change debian
+    distribution to 'stable'
+  * [479104b] Issue #38:  Add initial raid_info plugin with mdadm
+    support.
+  * [6adb0d8] Fix docs after branch merge.
+  * [36e27aa] Colorize python syntax in table plugin example.
+
+ -- Max Kalika <max@mklinbox-debian.vm-zone>  Sat, 31 May 2014 12:49:06 -0700
+
 snmpy (2.0.0) precise; urgency=low
 
   * Tagging 2.0.0

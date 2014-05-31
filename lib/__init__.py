@@ -6,7 +6,7 @@ import signal
 import threading
 import traceback
 
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 THREAD_TASK  = threading.Thread
 PROCESS_TASK = multiprocessing.Process
