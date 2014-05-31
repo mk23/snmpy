@@ -1,0 +1,5 @@
+module: raid_info
+period: 1
+
+type:
+    - mdadm

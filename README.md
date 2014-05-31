@@ -349,7 +349,33 @@ See [`process_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/proc
     SNMPY-MIB::snmpyProcessInfoCtxVoluntary.1 = Counter64: 817
     SNMPY-MIB::snmpyProcessInfoCtxInvoluntary.1 = Counter64: 143
 
-#### `disk_utilization` ####
+### raid_info ###
+The `raid_info` plugin provides per-disk information on attached RAID devices.  Besides the module name and refresh period, it requires specification for the types of RAID controllers to probe:
+
+```yaml
+module: raid_info
+period: 1
+
+type:
+    - mdadm
+```
+
+Currently, only `mdadm` RAID type is supported, but `megaraid` and others may be implemented in the future.
+
+See [`raid_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/raid_info.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyRaidInfo | grep '\.1 ='
+    SNMPY-MIB::snmpyRaidInfoType.1 = STRING: "mdadm"
+    SNMPY-MIB::snmpyRaidInfoController.1 = STRING: "-"
+    SNMPY-MIB::snmpyRaidInfoDevice.1 = STRING: "md0"
+    SNMPY-MIB::snmpyRaidInfoLevel.1 = INTEGER: 1
+    SNMPY-MIB::snmpyRaidInfoState.1 = STRING: "active"
+    SNMPY-MIB::snmpyRaidInfoExtra.1 = STRING: "-"
+    SNMPY-MIB::snmpyRaidInfoMember.1 = STRING: "sda2"
+    SNMPY-MIB::snmpyRaidInfoStatus.1 = STRING: "OPTIMAL"
+
+### disk_utilization ###
 The `disk_utilization` plugin provides per-disk device utilization as a percentage as reported by the [`sar`](http://sebastien.godard.pagesperso-orange.fr/man_sar.html) command from the [`sysstat`](http://sebastien.godard.pagesperso-orange.fr) package and requires collections to be operational.  It has two optional parameters that specify the location of the command and the path to the database:
 
 ```yaml
