@@ -9,7 +9,9 @@ import os
 import resource
 import snmpy.mibgen
 import snmpy.server
+import socket
 import sys
+import urlparse
 import yaml
 
 def parse_conf(parser):
@@ -60,16 +62,38 @@ def parse_conf(parser):
 
 def create_log(dest=None, debug=False):
     logger = logging.getLogger()
+    formatter = logging.Formatter('%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s', '%Y-%m-%d %H:%M:%S')
 
     if dest or debug:
-        if dest and dest.startswith('syslog:'):
-            hdlr = logging.handlers.SysLogHandler(facility=dest.split(':')[-1])
-        elif dest and not dest.startswith('console:'):
-            hdlr = logging.handlers.WatchedFileHandler(dest)
+        if dest:
+            log = urlparse.urlparse(dest)
+            if log.scheme == 'file':
+                hdlr = logging.handlers.WatchedFileHandler(log.path)
+            elif log.scheme.startswith('syslog'):
+                formatter = logging.Formatter('snmpy[%(process)d]: %(message)s')
+                netloc = log.netloc.split(':')
+                facility = urlparse.parse_qs(log.query)['facility'][0]
+                if len(netloc) == 1 or not netloc[1]:
+                    netloc.insert(1, 514)
+                if log.scheme == 'syslog+tcp':
+                    hdlr = logging.handlers.SysLogHandler(
+                                           address=(netloc[0], int(netloc[1])),
+                                           facility=facility,
+                                           socktype=socket.SOCK_STREAM)
+                elif log.scheme == 'syslog+udp':
+                    hdlr = logging.handlers.SysLogHandler(
+                                           address=(netloc[0], int(netloc[1])),
+                                           facility=facility)
+                else:
+                    hdlr = logging.handlers.SysLogHandler(
+                              address='/dev/log' if not log.path else log.path,
+                              facility=facility)
+            else:
+                hdlr = logging.StreamHandler()
         else:
             hdlr = logging.StreamHandler()
 
-        hdlr.setFormatter(logging.Formatter('%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s', '%Y-%m-%d %H:%M:%S'))
+        hdlr.setFormatter(formatter)
 
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
         logger.addHandler(hdlr)
