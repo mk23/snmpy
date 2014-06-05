@@ -77,21 +77,21 @@ def create_log(dest=None, debug=False):
                     netloc.insert(1, 514)
                 if log.scheme == 'syslog+tcp':
                     hdlr = logging.handlers.SysLogHandler(
-                                         address=(netloc[0], int(netloc[1])),
-                                         facility=facility,
-                                         socktype=socket.SOCK_STREAM)
+                                           address=(netloc[0], int(netloc[1])),
+                                           facility=facility,
+                                           socktype=socket.SOCK_STREAM)
                 elif log.scheme == 'syslog+udp':
                     hdlr = logging.handlers.SysLogHandler(
-                                         address=(netloc[0], int(netloc[1])),
-                                         facility=facility)
+                                           address=(netloc[0], int(netloc[1])),
+                                           facility=facility)
                 else:
                     hdlr = logging.handlers.SysLogHandler(
-                            address='/dev/log' if not log.path else log.path,
-                            facility=facility)
+                              address='/dev/log' if not log.path else log.path,
+                              facility=facility)
             else:
                 hdlr = logging.StreamHandler()
         else:
-           logger.addHandler(logging.NullHandler())
+            hdlr = logging.StreamHandler()
 
         hdlr.setFormatter(formatter)
 
