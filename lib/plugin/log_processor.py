@@ -4,6 +4,9 @@ import snmpy.parser
 import snmpy.plugin
 import time
 
+LOG = logging.getLogger()
+
+
 class log_processor(snmpy.plugin.ValuePlugin):
     def __init__(self, conf):
         snmpy.plugin.ValuePlugin.__init__(self, conf)
@@ -19,10 +22,10 @@ class log_processor(snmpy.plugin.ValuePlugin):
             try:
                 data = open(name)
                 data.seek(0, 2) # start at the end
-                logging.debug('%s: opened file for tail', name)
+                LOG.debug('%s: opened file for tail', name)
                 break
             except IOError as e:
-                logging.info('%s: cannot open for tail: %s', name, e)
+                LOG.info('%s: cannot open for tail: %s', name, e)
                 time.sleep(5)
             except Exception as e:
                 snmpy.log_error(e)
@@ -34,9 +37,9 @@ class log_processor(snmpy.plugin.ValuePlugin):
             if os.stat(name).st_ino != stat.st_ino or stat.st_nlink == 0 or spot > stat.st_size:
                 try:
                     data = open(name)
-                    logging.info('%s: repopened for tail: moved, truncated, or removed', name)
+                    LOG.info('%s: repopened for tail: moved, truncated, or removed', name)
                 except IOError as e:
-                    logging.info('%s: cannot open for tail: %s', name, e)
+                    LOG.info('%s: cannot open for tail: %s', name, e)
             elif spot != stat.st_size:
                 text = data.read(stat.st_size - spot)
                 while True:

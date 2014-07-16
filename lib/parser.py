@@ -1,6 +1,9 @@
 import logging
 import re
 
+LOG = logging.getLogger()
+
+
 def parse_value(text, item, cdef={}, ignore=False):
     if not cdef:
         cdef.update({
@@ -15,23 +18,23 @@ def parse_value(text, item, cdef={}, ignore=False):
         find = re.findall(item.regex, text, re.DOTALL | re.MULTILINE)
 
         if find:
-            logging.debug('parsed item value: %s: %s', item.regex, find)
+            LOG.debug('parsed item value: %s: %s', item.regex, find)
             if item.cdef in cdef:
                 return cdef[item.cdef](find, item.syntax.native_type)
             else:
                 return item.syntax.native_type(item.join.join(find))
 
     if not ignore:
-        logging.warning('no new value found for %s', item.oidstr)
+        LOG.warning('no new value found for %s', item.oidstr)
 
     return item.value
 
 def parse_table(parser, text):
     if 'type' not in parser or parser['type'] not in ['regex']:
-        logging.warn('invalid or missing parser type: %s', parser.get('path'))
+        LOG.warn('invalid or missing parser type: %s', parser.get('path'))
         yield
     if 'path' not in parser or type(parser['path']) not in (str, unicode, list, tuple):
-        logging.warn('invalid or missing parser path: %s', parser.get('path'))
+        LOG.warn('invalid or missing parser path: %s', parser.get('path'))
         yield
 
     if parser['type'] == 'regex':

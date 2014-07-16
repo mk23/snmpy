@@ -9,6 +9,9 @@ import snmpy.plugin
 import tempfile
 import time
 
+LOG = logging.getLogger()
+
+
 class SnmpyAgent(object):
     def __init__(self, conf, mods):
         self.text = snmpy.mibgen.create_mib(conf, mods)
@@ -26,14 +29,14 @@ class SnmpyAgent(object):
         def mib(req, res):
             res.body = self.text
 
-        logging.info('starting http server')
+        LOG.info('starting http server')
         httpd.Server(self.conf['snmpy_global']['httpd_port'])
 
     @snmpy.task_func(snmpy.THREAD_TASK)
     def start_fetch(self, mod):
-        logging.info('began plugin update thread: %s', mod.name)
+        LOG.info('began plugin update thread: %s', mod.name)
         while not self.done:
-            logging.debug('updating plugin: %s', mod.name)
+            LOG.debug('updating plugin: %s', mod.name)
 
             try:
                 mod.update()
@@ -47,11 +50,11 @@ class SnmpyAgent(object):
                 snmpy.log_error(e)
 
             if mod.conf['period'] in ('boot', 'once', '0', 0):
-                logging.debug('run-once plugin complete: %s', mod.name)
+                LOG.debug('run-once plugin complete: %s', mod.name)
                 break
 
             time.sleep(mod.conf['period'] * 60)
-        logging.info('ended plugin update thread: %s', mod.name)
+        LOG.info('ended plugin update thread: %s', mod.name)
 
     def start_agent(self):
         temp = tempfile.NamedTemporaryFile()
@@ -85,13 +88,13 @@ class SnmpyAgent(object):
         signal.signal(signal.SIGINT,  self.end_agent)
         signal.signal(signal.SIGTERM, self.end_agent)
 
-        logging.info('starting snmpy agent')
+        LOG.info('starting snmpy agent')
 
         self.snmp.start_subagent()
         while not self.done and multiprocessing.active_children():
             self.snmp.check_and_process()
 
-        logging.info('stopping snmpy agent: %sprocess terminated', 'httpd ' if not multiprocessing.active_children() else '')
+        LOG.info('stopping snmpy agent: %sprocess terminated', 'httpd ' if not multiprocessing.active_children() else '')
 
     def end_agent(self, signum, *args):
         self.done = True

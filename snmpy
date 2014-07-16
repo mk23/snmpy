@@ -9,8 +9,14 @@ import os
 import resource
 import snmpy.mibgen
 import snmpy.server
+import socket
 import sys
+import textwrap
+import urlparse
 import yaml
+
+LOG = logging.getLogger()
+
 
 def parse_conf(parser):
     try:
@@ -25,7 +31,7 @@ def parse_conf(parser):
         if conf['snmpy_global']['create_pid']:
             background(conf['snmpy_global']['create_pid'])
 
-        create_log(conf['snmpy_global']['logger_dest'], conf['snmpy_global']['debug'])
+        create_log(conf['snmpy_global']['logger_dest'])
     except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
         parser.error('cannot parse configuration file: %s' % e)
 
@@ -45,7 +51,7 @@ def parse_conf(parser):
                     'time':        0,
                     'save':        False,
                     'snmpy_index': int(indx),
-                    'snmpy_extra': dict(args.extra),
+                    'snmpy_extra': dict(args.extra_data),
                 }
                 conf[name].update(yaml.load(open(item)) or {})
 
@@ -58,27 +64,34 @@ def parse_conf(parser):
     return conf
 
 
-def create_log(dest=None, debug=False):
-    logger = logging.getLogger()
+def create_log(logger=None):
+    log = logging.NullHandler()
+    fmt = '%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s'
 
-    if dest or debug:
-        if dest and dest.startswith('syslog:'):
-            hdlr = logging.handlers.SysLogHandler(facility=dest.split(':')[-1])
-        elif dest and not dest.startswith('console:'):
-            hdlr = logging.handlers.WatchedFileHandler(dest)
-        else:
-            hdlr = logging.StreamHandler()
+    if logger:
+        url = urlparse.urlparse(logger)
+        arg = urlparse.parse_qs(url.query)
 
-        hdlr.setFormatter(logging.Formatter('%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s', '%Y-%m-%d %H:%M:%S'))
+        if url.scheme in ('file', '') and url.path:
+            log = logging.handlers.WatchedFileHandler(url.path)
+        elif url.scheme.startswith('syslog'):
+            fmt = '%(module)s:%(lineno)d - %(threadName)s - %(message)s'
+            if url.scheme == 'syslog+tcp':
+                log = logging.handlers.SysLogHandler(address=(url.hostname or 'localhost', url.port or logging.handlers.SYSLOG_TCP_PORT), facility=arg.get('facility', ['user'])[0].lower(), socktype=socket.SOCK_STREAM)
+            elif url.scheme == 'syslog+udp':
+                log = logging.handlers.SysLogHandler(address=(url.hostname or 'localhost', url.port or logging.handlers.SYSLOG_UDP_PORT), facility=arg.get('facility', ['user'])[0].lower(), socktype=socket.SOCK_DGRAM)
+            elif url.scheme == 'syslog+unix':
+                log = logging.handlers.SysLogHandler(address=url.path or '/dev/log', facility=arg.get('facility', ['user'])[0].lower())
+        elif url.scheme == 'console':
+            log = logging.StreamHandler()
 
-        logger.setLevel(logging.DEBUG if debug else logging.INFO)
-        logger.addHandler(hdlr)
+    log.setFormatter(logging.Formatter(fmt, '%Y-%m-%d %H:%M:%S'))
 
-        logger.info('logging started')
-    else:
-        logger.addHandler(logging.NullHandler())
+    LOG.addHandler(log)
+    LOG.setLevel(getattr(logging, arg.get('level', ['info'])[0].upper()))
 
-    return logger
+    LOG.info('logging started')
+
 
 def background(path):
     if os.fork() == 0:
@@ -102,32 +115,32 @@ def background(path):
 
 
 def initialize(conf):
-    logging.info('initialization started')
+    LOG.info('initialization started')
 
     plugins = collections.OrderedDict()
 
     try:
         keys = [i for i in sorted(conf.keys()) if i != 'snmpy_global']
-        logging.info('configuring %d plugin(s): %s', len(keys), ', '.join(keys))
+        LOG.info('configuring %d plugin(s): %s', len(keys), ', '.join(keys))
 
         for name in keys:
-            logging.debug('%s: creating plugin instance', name)
+            LOG.debug('%s: creating plugin instance', name)
 
             base = conf[name]['module']
             full = 'snmpy.plugin.%s' % base
             code = importlib.import_module(full)
             plugins[name] = getattr(code, base)(conf[name])
 
-            logging.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
+            LOG.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
     except Exception as e:
         snmpy.log_fatal(e, 'initialization failed')
 
-    logging.info('initialization complete')
+    LOG.info('initialization complete')
     return plugins.values()
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system')
+    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
                         help='system configuration file')
     parser.add_argument('-i', '--include-dir',
@@ -138,18 +151,28 @@ if __name__ == '__main__':
                         help='parent root class name')
     parser.add_argument('-s', '--system-root', type=int, default=1123,
                         help='system root object id')
-    parser.add_argument('-l', '--logger-dest', default='console:',
-                        help='filename, syslog:<facility>, or console:')
+    parser.add_argument('-l', '--logger-dest', default='syslog+unix://?facility=user&level=debug',
+                        help='logger destination url')
     parser.add_argument('-w', '--httpd-port', default=1123, type=int,
                         help='httpd server listens on this port')
     parser.add_argument('-p', '--create-pid', nargs='?', const='/var/run/snmpy.pid', type=argparse.FileType('w'), metavar='PID_FILE',
                         help='daemonize and write pidfile')
     parser.add_argument('-m', '--create-mib', nargs='?', const=sys.stdout, type=argparse.FileType('w'), metavar='MIB_FILE',
                         help='display generated mib file and exit')
-    parser.add_argument('-d', '--debug', default=False, action='store_true',
-                        help='enable debug logging')
-    parser.add_argument('-e', '--extra', default=[], action='append', nargs=2,
-                        help='extra key/val pairs for plugins')
+    parser.add_argument('-e', '--extra-data', default=[], action='append', nargs=2, metavar=('KEY', 'VAL'),
+                        help='extra key/val data for plugins')
+    parser.epilog = textwrap.dedent('''
+      supported logger formats:
+
+        console://
+        file://PATH
+        syslog+tcp://HOST:PORT/?facility=FACILITY
+        syslog+udp://HOST:PORT/?facility=FACILITY
+        syslog+unix://PATH?facility=FACILITY
+
+      all formats allow adding 'level=LEVEL' param
+    ''')
+
     conf = parse_conf(parser)
     mods = initialize(conf)
 

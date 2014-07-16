@@ -3,6 +3,9 @@ import logging
 import pickle
 import snmpy.mibgen
 
+LOG = logging.getLogger()
+
+
 class Meta(type):
     @staticmethod
     def wrapper(func):
@@ -62,7 +65,7 @@ class ValuePlugin(Plugin):
 
             self.items[obj] = PluginItem(oid + 1, oidstr, syntax, **config)
 
-            logging.debug('initialized item: %s (%s)', oidstr, syntax[0])
+            LOG.debug('initialized item: %s (%s)', oidstr, syntax[0])
 
         self.load()
 
@@ -83,7 +86,7 @@ class ValuePlugin(Plugin):
         try:
             for key, val in pickle.load(open(self.conf['save'])):
                 self[key] = val
-                logging.debug('%s: loaded from %s: %s', self.name, self.conf['save'], key)
+                LOG.debug('%s: loaded from %s: %s', self.name, self.conf['save'], key)
         except IOError as e:
             snmpy.log_error(e)
 
@@ -93,7 +96,7 @@ class ValuePlugin(Plugin):
 
         try:
             pickle.dump([(k, self[k].value) for k in self], open(self.conf['save'], 'w'))
-            logging.debug('%s: dumped to %s', self.name, self.conf['save'])
+            LOG.debug('%s: dumped to %s', self.name, self.conf['save'])
         except IOError as e:
             snmpy.log_error(e)
 
@@ -114,7 +117,7 @@ class TablePlugin(Plugin):
             syntax = snmpy.mibgen.get_syntax(cfg['type'])
 
             self.cols[obj] = PluginItem(oid + 1, oidstr, syntax, **cfg)
-            logging.debug('initialized column: %s (%s)', oidstr, syntax[0])
+            LOG.debug('initialized column: %s (%s)', oidstr, syntax[0])
 
         self.load()
 
@@ -139,7 +142,7 @@ class TablePlugin(Plugin):
 
         try:
             self.rows = pickle.load(open(self.conf['save']))
-            logging.debug('%s: loaded from %s', self.name, self.conf['save'])
+            LOG.debug('%s: loaded from %s', self.name, self.conf['save'])
         except IOError as e:
             snmpy.log_error(e)
 
@@ -149,6 +152,6 @@ class TablePlugin(Plugin):
 
         try:
             pickle.dump(self.rows, open(self.conf['save'], 'w'))
-            logging.debug('%s: saved state to %s', self.name, self.conf['save'])
+            LOG.debug('%s: saved state to %s', self.name, self.conf['save'])
         except IOError as e:
             snmpy.log_error(e)

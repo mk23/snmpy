@@ -16,6 +16,9 @@ import urlparse
 
 from snmpy import log_error, VERSION
 
+LOG = logging.getLogger()
+
+
 class HTTPError(Exception):
     code = 500
     def __init__(self, exception=None):
@@ -67,7 +70,7 @@ class Server(BaseHTTPServer.HTTPServer):
         try:
             self.serve_forever(poll_interval=None)
         except KeyboardInterrupt:
-            logging.info('stopping snmpy httpd')
+            LOG.info('stopping snmpy httpd')
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_TCP, socket.TCP_DEFER_ACCEPT, True)

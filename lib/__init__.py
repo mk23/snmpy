@@ -6,6 +6,8 @@ import signal
 import threading
 import traceback
 
+LOG = logging.getLogger()
+
 VERSION = '2.0.1'
 
 THREAD_TASK  = threading.Thread
@@ -22,7 +24,7 @@ def task_func(kind=THREAD_TASK):
 
 def work_func(func, proc, *args, **kwargs):
     try:
-        logging.info('starting background task: %s', func.__name__)
+        LOG.info('starting background task: %s', func.__name__)
         if proc:
             libc = ctypes.CDLL(ctypes.util.find_library('libc'))
             libc.prctl(1, signal.SIGTERM)
@@ -32,18 +34,18 @@ def work_func(func, proc, *args, **kwargs):
 
 def log_error(e, msg=None):
     if msg:
-        logging.error('%s: %s', msg, e)
+        LOG.error('%s: %s', msg, e)
     else:
-        logging.error(e)
+        LOG.error(e)
 
     for line in traceback.format_exc().split('\n'):
-        logging.debug('  %s', line)
+        LOG.debug('  %s', line)
 
 def log_fatal(item, prio='error', exit=1):
     if isinstance(item, Exception):
         log_error(item)
     else:
-        vars(logging).get(prio, 'error')(item)
+        vars(LOG).get(prio, 'error')(item)
 
     if exit is not None:
         os._exit(exit)

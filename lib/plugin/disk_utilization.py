@@ -4,6 +4,9 @@ import os
 import snmpy.plugin
 import subprocess
 
+LOG = logging.getLogger()
+
+
 class disk_utilization(snmpy.plugin.TablePlugin):
     def __init__(self, conf):
         conf['table'] = [
@@ -21,9 +24,9 @@ class disk_utilization(snmpy.plugin.TablePlugin):
         date = datetime.datetime.now() - datetime.timedelta(minutes=20)
         comm = [self.conf.get('sar_command', '/usr/bin/sar'), '-d', '-f', self.conf.get('sysstat_log', '/var/log/sysstat/sa%02d') % date.day, '-s', date.strftime('%H:%M:00')]
 
-        logging.debug('running sar command: %s', ' '.join(comm))
+        LOG.debug('running sar command: %s', ' '.join(comm))
         for line in subprocess.check_output(comm, stderr=open(os.devnull, 'w')).split('\n'):
-            logging.debug('line: %s', line)
+            LOG.debug('line: %s', line)
 
             part = line.split()
             if part and part[0] != 'Average:' and part[1].startswith('dev'):

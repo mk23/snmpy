@@ -2,6 +2,9 @@ import logging
 import os
 import snmpy.plugin
 
+LOG = logging.getLogger()
+
+
 class process_info(snmpy.plugin.TablePlugin):
     def __init__(self, conf):
         conf['table'] = [
@@ -31,7 +34,7 @@ class process_info(snmpy.plugin.TablePlugin):
             except:
                 pass
 
-        logging.debug('%d entries updated', len(self.rows))
+        LOG.debug('%d entries updated', len(self.rows))
 
     def parser(self, text, key, col=1, sep=None):
         return [l.split(sep)[col] for l in text if l.startswith(key)][0]
