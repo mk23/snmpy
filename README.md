@@ -32,7 +32,7 @@ SNMPy can be run in foreground or as a backgrounded daemon.  It supports logging
 ```
 usage: snmpy [-h] [-f CONFIG_FILE] [-i INCLUDE_DIR] [-t PERSIST_DIR]
            [-r PARENT_ROOT] [-s SYSTEM_ROOT] [-l LOGGER_DEST] [-w HTTPD_PORT]
-           [-p [PID_FILE]] [-m [MIB_FILE]] [-d] [-e EXTRA EXTRA]
+           [-p [PID_FILE]] [-m [MIB_FILE]] [-e KEY VAL]
 
 Modular SNMP AgentX system
 
@@ -49,16 +49,25 @@ optional arguments:
   -s SYSTEM_ROOT, --system-root SYSTEM_ROOT
                         system root object id
   -l LOGGER_DEST, --logger-dest LOGGER_DEST
-                        filename, syslog:<facility>, or console:
+                        logger destination url
   -w HTTPD_PORT, --httpd-port HTTPD_PORT
                         httpd server listens on this port
   -p [PID_FILE], --create-pid [PID_FILE]
                         daemonize and write pidfile
   -m [MIB_FILE], --create-mib [MIB_FILE]
                         display generated mib file and exit
-  -d, --debug           enable debug logging
-  -e EXTRA EXTRA, --extra EXTRA EXTRA
-                        extra key/val pairs for plugins
+  -e KEY VAL, --extra-data KEY VAL
+                        extra key/val data for plugins
+
+supported logger formats:
+
+  console://
+  file://PATH
+  syslog+tcp://HOST:PORT/?facility=FACILITY
+  syslog+udp://HOST:PORT/?facility=FACILITY
+  syslog+unix://PATH?facility=FACILITY
+
+all formats allow adding 'level=LEVEL' param
 ```
 
 The system starts by reading the global configuration file. Any options provided on the command-line override the config.
@@ -82,17 +91,16 @@ snmpy_global:
     persist_dir: '/var/lib/snmpy'
     parent_root: 'ucdavis'          # .1.3.6.1.4.1.2021
     system_root: '1123'             # .1.3.6.1.4.1.2021.1123
-    logger_dest: 'syslog:local1'
+    logger_dest: 'syslog+unix:///dev/log?facility=local1&level=DEBUG'
     create_pid:  '/var/run/snmpy.pid'
     httpd_port:  1123
-    debug:       False
 ```
 
 * `include_dir`: location for module configuration files (see module settings below).
 * `persist_dir`: location for module persistence data files.
 * `parent_root`: SNMP object under which to install the SNMPy subtree.
 * `system_root`: SNMP OID where the SNMPy subtree starts. `SNMPY-MIB::snmpyMIB` is rooted here, which can be walked to retreive all data that it manages.
-* `logger_dest`: Destination for the SNMPy log.  It can be a `/path/to/file`, `console:` for stdout, or `syslog:<facility>`.
+* `logger_dest`: Destination for the SNMPy log. The help screen epilog provides available formats. The file destination is a watched handler so it can be safely rotated without restarting the system.
 * `httpd_port`: Port to listen for http requests.  This is also used to make sure only one SNMPy process is running on a system.
 * `create_pid`: Location of the PID file.  If this is specified, SNMPy will daemonize and run in the background.
 * `create_mib`: This shouldn't be speicified in the config file because SNMPy will just write a MIB file and exit.  If a MIB file is needed, use the `-m | --create-mib` command-line parameter, or simply download from a running agent via HTTP.
