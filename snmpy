@@ -124,10 +124,22 @@ def initialize(conf):
         LOG.info('configuring %d plugin(s): %s', len(keys), ', '.join(keys))
 
         for name in keys:
-            LOG.debug('%s: creating plugin instance', name)
+            item = conf[name]['module']
 
-            base = conf[name]['module']
-            full = 'snmpy.plugin.%s' % base
+            if '/' in item: #item.startswith('/') and item.endswith('.py'):
+                path = os.path.dirname(item)
+                base = os.path.splitext(os.path.basename(item))[0]
+                full = base
+
+                if path not in sys.path:
+                    sys.path.append(path)
+                    LOG.info('%s: added to system path', path)
+            else:
+                base = item
+                full = 'snmpy.plugin.%s' % base
+
+            LOG.debug('%s: creating plugin instance from %s', name, full)
+
             code = importlib.import_module(full)
             plugins[name] = getattr(code, base)(conf[name])
 
