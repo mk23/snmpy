@@ -126,7 +126,7 @@ def initialize(conf):
         for name in keys:
             item = conf[name]['module']
 
-            if '/' in item: #item.startswith('/') and item.endswith('.py'):
+            if '/' in item:
                 path = os.path.dirname(item)
                 base = os.path.splitext(os.path.basename(item))[0]
                 full = base
