@@ -60,14 +60,11 @@ optional arguments:
                         extra key/val data for plugins
 
 supported logger formats:
-
-  console://
-  file://PATH
-  syslog+tcp://HOST:PORT/?facility=FACILITY
-  syslog+udp://HOST:PORT/?facility=FACILITY
-  syslog+unix://PATH?facility=FACILITY
-
-all formats allow adding 'level=LEVEL' param
+  console://?level=LEVEL
+  file://PATH?level=LEVEL
+  syslog+tcp://HOST:PORT/?facility=FACILITY&level=LEVEL
+  syslog+udp://HOST:PORT/?facility=FACILITY&level=LEVEL
+  syslog+unix://PATH?facility=FACILITY&level=LEVEL
 ```
 
 The system starts by reading the global configuration file. Any options provided on the command-line override the config.
