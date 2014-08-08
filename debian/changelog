@@ -1,3 +1,17 @@
+snmpy (2.0.2) stable; urgency=medium
+
+  * Tagging 2.0.2
+  * [43a91bf] Be more resilient calling release.sh when release.py is
+    unavailable and push to all remotes when done.
+  * [a1ff358] Slightly cleaner logger help docs.
+  * [0ad2ac6] Remove debugging code.
+  * [60c287c] Issue #41: Allow site-local modules to be loaded by
+    absolute path.
+  * [89234f0] Issue #42: Add new logger documentation.
+  * [473e9aa] Issue #42: Rework logging to take a url.
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Fri, 08 Aug 2014 11:14:47 -0700
+
 snmpy (2.0.1) stable; urgency=low
 
   * Tagging 2.0.1
