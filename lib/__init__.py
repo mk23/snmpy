@@ -8,7 +8,7 @@ import traceback
 
 LOG = logging.getLogger()
 
-VERSION = '2.0.2'
+VERSION = '2.0.3'
 
 THREAD_TASK  = threading.Thread
 PROCESS_TASK = multiprocessing.Process

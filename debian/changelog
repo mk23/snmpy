@@ -1,3 +1,11 @@
+snmpy (2.0.3) stable; urgency=medium
+
+  * Tagging 2.0.3
+  * [c4e3f18] Normalize changelog email.
+  * [1f6e0ba] Fix raid_info module breakage.
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Fri, 08 Aug 2014 17:45:23 -0700
+
 snmpy (2.0.2) stable; urgency=medium
 
   * Tagging 2.0.2
