@@ -24,7 +24,7 @@ snmpy (2.0.1) stable; urgency=low
   * [6adb0d8] Fix docs after branch merge.
   * [36e27aa] Colorize python syntax in table plugin example.
 
- -- Max Kalika <max@mklinbox-debian.vm-zone>  Sat, 31 May 2014 12:49:06 -0700
+ -- Max Kalika <max.kalika+projects@gmail.com>  Sat, 31 May 2014 12:49:06 -0700
 
 snmpy (2.0.0) precise; urgency=low
 
@@ -214,7 +214,7 @@ snmpy (2.0.0) precise; urgency=low
   * [dab3d1f] AGENTX: reduce library code to bare essentials for now.
   * [b2dfc7e] AGENTX: start on agentx support.
 
- -- Max Kalika <max@mklinbox-debian.vm-zone>  Wed, 16 Apr 2014 22:23:07 -0700
+ -- Max Kalika <max.kalika+projects@gmail.com>  Wed, 16 Apr 2014 22:23:07 -0700
 
 snmpy (1.0.0) precise; urgency=low
 
@@ -252,7 +252,7 @@ snmpy (1.0.0) precise; urgency=low
   * [333d3bd] Issue #1: First big refactor to convert config format to
     yaml.
 
- -- Max Kalika <max@mklinbox>  Wed, 05 Jun 2013 08:30:50 -0700
+ -- Max Kalika <max.kalika+projects@gmail.com>  Wed, 05 Jun 2013 08:30:50 -0700
 
 snmpy (20120921.001) lucid; urgency=low
 
