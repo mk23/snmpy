@@ -35,7 +35,7 @@ class raid_info(snmpy.plugin.TablePlugin):
             })
 
         for line in open('/proc/mdstat'):
-            find = self.patt['raid_device'].match(line)
+            find = patt['raid_device'].match(line)
             if find:
                 name = find.group('NAME')
                 raid[name] = {
@@ -45,7 +45,7 @@ class raid_info(snmpy.plugin.TablePlugin):
                     'disks': [],
                 }
                 for item in find.group('DISKS').split():
-                    disk = self.patt['disk_device'].match(item)
+                    disk = patt['disk_device'].match(item)
                     if disk:
                         raid[name]['disks'].append({
                             'number': disk.group('IDX'),
@@ -53,13 +53,13 @@ class raid_info(snmpy.plugin.TablePlugin):
                             'status': 'OPTIMAL',
                         })
 
-            find = self.patt['disk_status'].match(line)
+            find = patt['disk_status'].match(line)
             if find:
                 for indx, stat in enumerate(find.group('STATUS').split()):
                     if 'stat' == '_':
                         raid[name]['disks'][indx]['status'] = 'DEGRADED'
 
-            find = self.patt['raid_status'].match(line)
+            find = patt['raid_status'].match(line)
             if find:
                 raid[name]['state'] = find.group('STATE')
                 raid[name]['extra'] = find.group('EXTRA')
