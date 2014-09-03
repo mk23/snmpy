@@ -1,7 +1,7 @@
 SNMPY
 =====
 
-SNMPy extends a running [net-snmp](http://www.net-snmp.org) agent with a custom subtree made out of configurable plugin modules. It makes extensive use of `libnetsnmp` C library to implement an AgentX subagent.
+SNMPy extends a running [net-snmp](http://www.net-snmp.org) agent with a custom subtree made out of configurable plugins. It makes extensive use of `libnetsnmp` C library to implement an AgentX subagent.
 
 Prerequisites
 -------------
@@ -71,13 +71,13 @@ The system starts by reading the global configuration file. Any options provided
 
 * If `-m | --create-mib` was specified, it writes the generated MIB to the specified file (or `stdout` if not set or set to `-`) and exits.
 * If `-p | --create-pid` was specified, it daemonizes and writes the PID to the specified file (or `/var/run/snmpy.pid` if not set) and exits.
-* It then loads all modules located in the directory specified by `-i | --include-dir` and builds an SNMP tree, initializes the agent, and enters an update loop.
+* It then loads all plugins located in the directory specified by `-i | --include-dir` and builds an SNMP tree, initializes the agent, and enters an update loop.
 * It also creates an HTTP server that currently only answers to `/mib` GET requests upon which, it will deliver the generated run-time MIB file contents.
 
 Configuration
 -------------
 
-SNMPy configuration is [yaml](http://yaml.org) formatted.  It consists of one main file, specified by `-f | --config-file` on the command-line parameter, and many module configuration files located in the directory specified by `-i | --include-dir` command-line parameter or `include_dir` global setting.  These are explained below.
+SNMPy configuration is [yaml](http://yaml.org) formatted.  It consists of one main file, specified by `-f | --config-file` on the command-line parameter, and many plugin configuration files located in the directory specified by `-i | --include-dir` command-line parameter or `include_dir` global setting.  These are explained below.
 
 ### global settings ###
 All command-line parameters, shown above in the help screenshot, have a corresponding global setting.  For example `--parent-root` command-line parameter is `parent_root` global setting and so on.  The main configuration file must have any global settings under the `snmpy_global` top-level item in order to be recognized. i.e.
@@ -93,8 +93,8 @@ snmpy_global:
     httpd_port:  1123
 ```
 
-* `include_dir`: location for module configuration files (see module settings below).
-* `persist_dir`: location for module persistence data files.
+* `include_dir`: location for plugin configuration files (see plugin settings below).
+* `persist_dir`: location for plugin persistence data files.
 * `parent_root`: SNMP object under which to install the SNMPy subtree.
 * `system_root`: SNMP OID where the SNMPy subtree starts. `SNMPY-MIB::snmpyMIB` is rooted here, which can be walked to retreive all data that it manages.
 * `logger_dest`: Destination for the SNMPy log. The help screen epilog provides available formats. The file destination is a watched handler so it can be safely rotated without restarting the system.
@@ -104,26 +104,26 @@ snmpy_global:
 
         curl -s http://localhost:1123/mib # where 1123 is the configured httpd_port
 
-### module settings ###
-SNMPy module configuration begins with the filename which must meet these criteria:
+### plugin settings ###
+SNMPy plugin configuration begins with the filename which must meet these criteria:
 
 1. config file names begin with a system-unique and 0-padded 4 digit number followed by underscore
 1. config file names are used for subtree MIB object names
 1. config file names end with `.yml` or `.yaml`
 
-For example, with a global config above and a module file `/etc/snmpy/conf.d/0023_dmidecode_system.yml`, SNMP data will be made available via:
+For example, with a global config above and a plugin file `/etc/snmpy/conf.d/0023_dmidecode_system.yml`, SNMP data will be made available via:
 
 * Numeric OID: `.1.3.6.1.4.1.2021.1123.23`
 * Symbolic OID: `SNMPY-MIB::snmpyDmidecodeSystem`
 
-Every module configuration file must specify which plugin to use and how often, in minutes, to update.  Optionally, extra plugin-dependant configuration settings may be provided.  These are described below for each currently supported plugin.  At a minimum a module configuration file must contain these lines:
+Every plugin configuration file must specify which module to use and how often, in minutes, to update.  Optionally, extra module-dependant configuration settings may be provided.  These are described below for each currently supported module.  At a minimum a plugin configuration file must contain these lines:
 
 ```yaml
-module: # one of the plugins described below
+module: # one of the modules described below
 period: # refresh time in minutes or "once" for startup collection only
 ```
 
-Optionally every module may request its state be saved between SNMPy restarts by adding a top-level `retain` boolean key:
+Optionally every plugin may request its state be saved between SNMPy restarts by adding a top-level `retain` boolean key:
 
 ```yaml
 retain: # true | false
@@ -131,13 +131,13 @@ retain: # true | false
 
 Note: retain setting is ignored if `-r | --persist-dir` command-line parameter or `persist_dir` global configuration item is disabled.
 
-Plugins
+Modules
 -------
 
-SNMPy ships with several plugins ready for use, some of which are generic and can be applied toward many different use cases.  Several example configuration modules are available to demonstrate functionality.
+SNMPy ships with several modules ready for use, some of which are generic and can be applied toward many different use cases.  Several example configuration plugins are available to demonstrate functionality.
 
 ### exec_table ###
-The `exec_table` plugin provides tabular data from the output results of an executable command. Configuration items which must be specified are:
+The `exec_table` module provides tabular data from the output results of an executable command. Configuration items which must be specified are:
 
 ```yaml
 module: exec_table
@@ -182,7 +182,7 @@ See [`interface_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/in
     SNMPY-MIB::snmpyInterfaceInfoLinkDuplex.2 = STRING: "full duplex mode"
 
 ### exec_value ###
-The `exec_value` plugin provides simple key-value data from the output results of an executable command.  Configuration items which must be specified are:
+The `exec_value` module provides simple key-value data from the output results of an executable command.  Configuration items which must be specified are:
 
 ```yaml
 module: exec_value
@@ -217,7 +217,7 @@ See [`dmidecode_bios.yml`](https://github.com/mk23/snmpy/blob/master/examples/dm
     SNMPY-MIB::snmpyDmidecodeBiosRelease = STRING: "12/01/2006"
 
 ### file_table ###
-The `file_table` plugin provides tabular data from the contents of a file and behaves just like the `exec_table` plugin except the object parameter refers to a file instead of a command.  Configuration items which must be specified are:
+The `file_table` module provides tabular data from the contents of a file and behaves just like the `exec_table` module except the object parameter refers to a file instead of a command.  Configuration items which must be specified are:
 
 ```yaml
 module: file_table
@@ -245,7 +245,7 @@ table:
     * item names: List of one or more columns each, specifying its type.
 
 ### file_value ###
-The `file_value` plugin provides simple key-value data from the contents of a file and behaves similarly to the `exec_value` plugin except the object parameter refers to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
+The `file_value` module provides simple key-value data from the contents of a file and behaves similarly to the `exec_value` module except the object parameter refers to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
 
 ```yaml
 module: file_value
@@ -295,7 +295,7 @@ See [`puppet_status.yml`](https://github.com/mk23/snmpy/blob/master/examples/pup
     SNMPY-MIB::snmpyPuppetStatusFailure = INTEGER: 0
 
 ### log_processor ###
-The `log_processor` plugin provides simple key-value data from the contents of a constantly-appended log file, and behaves similarly to the `file_value` plugin except it is able to immediately react to new data as well as rotation events.  Configuration items which must be specified are:
+The `log_processor` module provides simple key-value data from the contents of a constantly-appended log file, and behaves similarly to the `file_value` module except it is able to immediately react to new data as well as rotation events.  Configuration items which must be specified are:
 
 ```yaml
 module: log_processor
@@ -331,7 +331,7 @@ See [`hbase_balancer.yml`](https://github.com/mk23/snmpy/blob/master/examples/hb
     SNMPY-MIB::snmpyHbaseBalancerEnabled = STRING: "false"
 
 ### process_info ###
-The `process_info` plugin provides per-process information (open files, running threads, consumed memory) on the running system.  It does not need any extra configuration other than module name and refresh period:
+The `process_info` module provides per-process information (open files, running threads, consumed memory) on the running system.  It does not need any extra configuration other than module name and refresh period:
 
 ```yaml
 module: process_info
@@ -355,7 +355,7 @@ See [`process_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/proc
     SNMPY-MIB::snmpyProcessInfoCtxInvoluntary.1 = Counter64: 143
 
 ### raid_info ###
-The `raid_info` plugin provides per-disk information on attached RAID devices.  Besides the module name and refresh period, it requires specification for the types of RAID controllers to probe:
+The `raid_info` module provides per-disk information on attached RAID devices.  Besides the module name and refresh period, it requires specification for the types of RAID controllers to probe:
 
 ```yaml
 module: raid_info
@@ -375,13 +375,13 @@ See [`raid_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/raid_in
     SNMPY-MIB::snmpyRaidInfoController.1 = STRING: "-"
     SNMPY-MIB::snmpyRaidInfoDevice.1 = STRING: "md0"
     SNMPY-MIB::snmpyRaidInfoLevel.1 = INTEGER: 1
-    SNMPY-MIB::snmpyRaidInfoState.1 = STRING: "active"
+    SNMPY-MIB::snmpyRaidInfoState.1 = STRING: "ONLINE"
     SNMPY-MIB::snmpyRaidInfoExtra.1 = STRING: "-"
     SNMPY-MIB::snmpyRaidInfoMember.1 = STRING: "sda2"
-    SNMPY-MIB::snmpyRaidInfoStatus.1 = STRING: "OPTIMAL"
+    SNMPY-MIB::snmpyRaidInfoStatus.1 = STRING: "ACTIVE"
 
 ### disk_utilization ###
-The `disk_utilization` plugin provides per-disk device utilization as a percentage as reported by the [`sar`](http://sebastien.godard.pagesperso-orange.fr/man_sar.html) command from the [`sysstat`](http://sebastien.godard.pagesperso-orange.fr) package and requires collections to be operational.  It has two optional parameters that specify the location of the command and the path to the database:
+The `disk_utilization` module provides per-disk device utilization as a percentage as reported by the [`sar`](http://sebastien.godard.pagesperso-orange.fr/man_sar.html) command from the [`sysstat`](http://sebastien.godard.pagesperso-orange.fr) package and requires collections to be operational.  It has two optional parameters that specify the location of the command and the path to the database:
 
 ```yaml
 module: disk_utilization
@@ -402,30 +402,30 @@ See [`disk_utilization.yml`](https://github.com/mk23/snmpy/blob/master/examples/
 Development
 -----------
 
-Custom module development requires subclassing either `snmpy.plugin.ValuePlugin` or `snmpy.plugin.TablePlugin` and, at a minimum, implementing the `update()` method.  There are several provided utilities for logging and text parsing that are also available to use. Both table and value classes inherit from a base `snmpy.plugin.Plugin` class that handles saving plugin state on update if requested by configuration.  They also handle all the low-level SNMP and AgentX object tracking so the higher level modules can focus on simply collecting the requisite data.
+Custom module development requires subclassing either `snmpy.module.ValueModule` or `snmpy.module.TableModule` and, at a minimum, implementing the `update()` method.  There are several provided utilities for logging and text parsing that are also available to use. Both table and value classes inherit from a base `snmpy.module.Module` class that handles saving plugin state on update if requested by configuration.  They also handle all the low-level SNMP and AgentX object tracking so the higher level modules can focus on simply collecting the requisite data.
 
-### value plugins ###
+### value modules ###
 
-The most basic value plugin module, must start with this skeleton named `example_value_plugin.py` in the system's `plugin` directory:
+The most basic value module, named `example_value_module.py`, must start with this skeleton code located in the system's `module` directory:
 
 ```python
-import snmpy.plugin
+import snmpy.module
 
-class example_value_plugin(snmpy.plugin.ValuePlugin): # class name must match file name
+class example_value_module(snmpy.module.ValueModule): # class name must match file name
     def update(self):
         pass
 ```
 
 This starting point will allow a MIB to be generated and the system to start, but otherwise, no data will be collected or returned.  The module may define its own items or allow the end user to specify them in the config (see [`exec_value`](#exec_value) documentation above for an example of config-supplied items).
 
-For this example, lets implement a module that simply counts the number of times it has been updated, and also calculates the estimated runtime as an integer and as a human-readable string.  The configuration for this plugin will be very simple since items will be defined in code rather than config and no retention is needed:
+For this example, lets implement a module that simply counts the number of times it has been updated, and also calculates the estimated runtime as an integer and as a human-readable string.  Configuration for this module will be very simple since items will be defined in code rather than config and no retention is needed:
 
 ```yaml
-module: example_value_plugin
+module: example_value_module
 period: 1
 ```
 
-First, we need to override the `__init__()` method to define our items and start the counter.  The system initializer passes the plugin configuration as the only parameter when instantiating the plugin class.  Our method must extend the plugin configuration with items we want the system to expose, call the superclass initializer, and start the counter.  The parent class handles creating all the necessary SNMP hooks and implements methods that allow us to just assign values to `self` by using the standard `dict` key accessors.
+First, we need to override the `__init__()` method to define our items and start the counter.  The system initializer passes the plugin configuration as the only parameter when instantiating the module class.  Our method must extend the plugin configuration with items we want the system to expose, call the superclass initializer, and start the counter.  The parent class handles creating all the necessary SNMP hooks and implements methods that allow us to just assign values to `self` by using the standard `dict` key accessors.
 
 ```python
     def __init__(self, conf):
@@ -435,7 +435,7 @@ First, we need to override the `__init__()` method to define our items and start
             {'uptime_verbose': {'type': 'string'}},
         ]
 
-    snmpy.plugin.ValuePlugin.__init__(self, conf)
+    snmpy.module.ValueModule.__init__(self, conf)
 
     self['update_counter'] = 0
 ```
@@ -453,27 +453,27 @@ Once the module is created and the configuration file installed, we can see it i
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValuePlugin
-    SNMPY-MIB::snmpyExampleValuePluginUpdateCounter = INTEGER: 1
-    SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 1
-    SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 1 minute"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValueModule
+    SNMPY-MIB::snmpyExampleValueModuleUpdateCounter = INTEGER: 1
+    SNMPY-MIB::snmpyExampleValueModuleUptimeMinutes = INTEGER: 1
+    SNMPY-MIB::snmpyExampleValueModuleUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 1 minute"
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValuePlugin
-    SNMPY-MIB::snmpyExampleValuePluginUpdateCounter = INTEGER: 4
-    SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 4
-    SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 4 minutes"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValueModule
+    SNMPY-MIB::snmpyExampleValueModuleUpdateCounter = INTEGER: 4
+    SNMPY-MIB::snmpyExampleValueModuleUptimeMinutes = INTEGER: 4
+    SNMPY-MIB::snmpyExampleValueModuleUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 4 minutes"
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValuePlugin
-    SNMPY-MIB::snmpyExampleValuePluginUpdateCounter = INTEGER: 36
-    SNMPY-MIB::snmpyExampleValuePluginUptimeMinutes = INTEGER: 36
-    SNMPY-MIB::snmpyExampleValuePluginUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 36 minutes"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleValueModule
+    SNMPY-MIB::snmpyExampleValueModuleUpdateCounter = INTEGER: 36
+    SNMPY-MIB::snmpyExampleValueModuleUptimeMinutes = INTEGER: 36
+    SNMPY-MIB::snmpyExampleValueModuleUptimeVerbose = STRING: "0 years, 0 days, 0 hours, 36 minutes"
 
-And here is the final full version of our new example value plugin.
+And here is the final full version of our new example value module.
 
 ```python
-import snmpy.plugin
+import snmpy.module
 
-class example_value_plugin(snmpy.plugin.ValuePlugin):
+class example_value_module(snmpy.module.ValueModule):
     def __init__(self, conf):
         conf['items'] = [
             {'update_counter': {'type': 'integer'}},
@@ -481,7 +481,7 @@ class example_value_plugin(snmpy.plugin.ValuePlugin):
             {'uptime_verbose': {'type': 'string'}},
         ]
 
-        snmpy.plugin.ValuePlugin.__init__(self, conf)
+        snmpy.module.ValueModule.__init__(self, conf)
         self['update_counter'] = 0
 
     def update(self):
@@ -504,24 +504,24 @@ class example_value_plugin(snmpy.plugin.ValuePlugin):
         )
 ```
 
-### table plugins ###
+### table modules ###
 
-The most basic table plugin module, must start with this skeleton named `example_table_plugin.py` in the system's `plugin` directory:
+The most basic table module, named `example_table_module.py`, must start with this skeleton code located in the system's `module` directory:
 
 ```python
-import snmpy.plugin
+import snmpy.module
 
-class example_table_plugin(snmpy.plugin.TablePlugin): # class name must match file name
+class example_table_module(snmpy.module.TableModule): # class name must match file name
     def update(self):
         pass
 ```
 
 This starting point will allow a MIB to be generated and the system to start, but otherwise no data will be collected or returned.  The module may define its own column types or allow the end user to specify them in the config (see [`exec_table`](#exec_table) documenation above for an example of config-supplied table).
 
-For this example, lets implement a module that reaches out to a url, collects all HTML tag names as column one and their occurance counts on the page as column two.  The configuration for this plugin will be mostly basic, but also allow the user to specify a URL to fetch and parse.
+For this example, lets implement a module that reaches out to a url, collects all HTML tag names as column one and their occurance counts on the page as column two.  Configuration for this module will be mostly basic, but also allow the user to specify a URL to fetch and parse.
 
 ```yaml
-module: example_table_plugin
+module: example_table_module
 period: 1
 
 object: http://github.com/mk23/snmpy
@@ -535,12 +535,12 @@ import re
 import requests
 ```
 
-On to actual code.  First, we need to override the `__init__()` method to define our table.  The system initializer passes the plugin configuration as the only parameter when instantiating the plugin class.  Our method must extend the plugin configuration with the table we want to expose and call the superclass initializer.  The parent class handles creating all necessary SNMP hooks and implements methods that allow us to call `self.append(row)` where row is a list of values corresponding to the columns defined in the initializer.  There are two ways to define a table
+On to actual code.  First, we need to override the `__init__()` method to define our table.  The system initializer passes the plugin configuration as the only parameter when instantiating the module class.  Our method must extend the plugin configuration with the table we want to expose and call the superclass initializer.  The parent class handles creating all necessary SNMP hooks and implements methods that allow us to call `self.append(row)` where row is a list of values corresponding to the columns defined in the initializer.  There are two ways to define a table
 
 1. A list of dictionaries specifying a mapping of column name to column type.  i.e. `[ {'col': 'integer'} ]`
 2. A list of dictionaries specifying a mapping of column name to a dictionary of attributes, one of which is `type`.  i.e. `[ {'col': {'type': 'string', 'attr': 'info'}} ]`
 
-For this plugin we'll choose the simple method:
+For this module we'll choose the simple method:
 
 ```python
     def __init__(self, conf):
@@ -549,10 +549,10 @@ For this plugin we'll choose the simple method:
             {'count': 'integer'},
         ]
 
-        snmpy.plugin.TablePlugin.__init__(self, conf)
+        snmpy.module.TableModule.__init__(self, conf)
 ```
 
-Next we implement the `update()` method to update our internal data for the system to expose to SNMP requests.  In this method, we fetch the contents of the configured URL, parse it via simple regex, and count using a python `collections.Counter` library.  The results are then appended as rows one at a time.
+Next we implement the `update()` method to update our internal data for the system to expose to SNMP requests.  In this method, we fetch the contents of the configured URL, parse it via simple regex, and count using a python [`collections.Counter`](https://docs.python.org/2/library/collections.html#collections.Counter) library.  The results are then appended as rows one at a time.
 
 ```python
     def update(self):
@@ -569,34 +569,34 @@ Once the module is created and the configuration file installed, we can see it i
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
 
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleTablePlugin | grep '\.[1-5] ='
-    SNMPY-MIB::snmpyExampleTablePluginTag.1 = STRING: "a"
-    SNMPY-MIB::snmpyExampleTablePluginTag.2 = STRING: "body"
-    SNMPY-MIB::snmpyExampleTablePluginTag.3 = STRING: "div"
-    SNMPY-MIB::snmpyExampleTablePluginTag.4 = STRING: "form"
-    SNMPY-MIB::snmpyExampleTablePluginTag.5 = STRING: "h"
-    SNMPY-MIB::snmpyExampleTablePluginCount.1 = INTEGER: 44
-    SNMPY-MIB::snmpyExampleTablePluginCount.2 = INTEGER: 1
-    SNMPY-MIB::snmpyExampleTablePluginCount.3 = INTEGER: 80
-    SNMPY-MIB::snmpyExampleTablePluginCount.4 = INTEGER: 2
-    SNMPY-MIB::snmpyExampleTablePluginCount.5 = INTEGER: 3
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyExampleTableModule | grep '\.[1-5] ='
+    SNMPY-MIB::snmpyExampleTableModuleTag.1 = STRING: "a"
+    SNMPY-MIB::snmpyExampleTableModuleTag.2 = STRING: "body"
+    SNMPY-MIB::snmpyExampleTableModuleTag.3 = STRING: "div"
+    SNMPY-MIB::snmpyExampleTableModuleTag.4 = STRING: "form"
+    SNMPY-MIB::snmpyExampleTableModuleTag.5 = STRING: "h"
+    SNMPY-MIB::snmpyExampleTableModuleCount.1 = INTEGER: 44
+    SNMPY-MIB::snmpyExampleTableModuleCount.2 = INTEGER: 1
+    SNMPY-MIB::snmpyExampleTableModuleCount.3 = INTEGER: 80
+    SNMPY-MIB::snmpyExampleTableModuleCount.4 = INTEGER: 2
+    SNMPY-MIB::snmpyExampleTableModuleCount.5 = INTEGER: 3
 
-And here is the final full version of our new example table plugin.
+And here is the final full version of our new example table module.
 
 ```python
 import collections
 import re
 import requests
-import snmpy.plugin
+import snmpy.module
 
-class example_table_plugin(snmpy.plugin.TablePlugin):
+class example_table_module(snmpy.module.TableModule):
     def __init__(self, conf):
         conf['table'] = [
             {'tag':   'string'},
             {'count': 'integer'},
         ]
 
-        snmpy.plugin.TablePlugin.__init__(self, conf)
+        snmpy.module.TableModule.__init__(self, conf)
 
     def update(self):
         data = requests.get(self.conf['object'])
@@ -614,7 +614,7 @@ The `snmpy.parser` module is a collection of two utility functions to make text 
 
 #### `parse_value(text, item, ignore=False)` ####
 
-Method for extracting and returning a single element from `text`.  The `item` to be extracted, an instance of `snmpy.plugin.PluginItem` class, has attributes describing its identifying regex, its native type to convert to, and optionally a consolidation function (cdef) if more than one result is found in text.  If multiple results are found, but no cdef is specified, the results are joined using the value of the item's join attribute.
+Method for extracting and returning a single element from `text`.  The `item` to be extracted, an instance of `snmpy.module.ModuleItem` class, has attributes describing its identifying regex, its native type to convert to, and optionally a consolidation function (cdef) if more than one result is found in text.  If multiple results are found, but no cdef is specified, the results are joined using the value of the item's join attribute.
 
 Supported cdefs:
 
