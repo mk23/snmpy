@@ -1,7 +1,8 @@
 import re
-import snmpy.plugin
+import snmpy.module
 
-class raid_info(snmpy.plugin.TablePlugin):
+
+class raid_info(snmpy.module.TableModule):
     def __init__(self, conf):
         conf['table'] = [
             {'type':       'string'},
@@ -17,7 +18,7 @@ class raid_info(snmpy.plugin.TablePlugin):
         if type(conf['type']) in (str, unicode):
             conf['type'] = [conf['type']]
 
-        snmpy.plugin.TablePlugin.__init__(self, conf)
+        snmpy.module.TableModule.__init__(self, conf)
 
     def update(self):
         for kind in self.conf['type']:

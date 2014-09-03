@@ -23,7 +23,7 @@ class Meta(type):
         return super(Meta, cls).__new__(cls, name, bases, attrs)
 
 
-class Plugin(object):
+class Module(object):
     __metaclass__ = Meta
 
     def __init__(self, conf):
@@ -34,10 +34,10 @@ class Plugin(object):
         pass
 
     def update(self):
-        raise(NotImplementedError('plugin module is missing update() method'))
+        raise(NotImplementedError('module is missing update() method'))
 
 
-class PluginItem(object):
+class ModuleItem(object):
     def __init__(self, oidnum, oidstr, syntax, **kwargs):
         self.__dict__.update(kwargs)
         self.oidnum = oidnum
@@ -46,9 +46,9 @@ class PluginItem(object):
         self.value  = None
 
 
-class ValuePlugin(Plugin):
+class ValueModule(Module):
     def __init__(self, conf):
-        Plugin.__init__(self, conf)
+        Module.__init__(self, conf)
 
         self.items = collections.OrderedDict()
         self.attrs = getattr(self, 'attrs', {})
@@ -63,7 +63,7 @@ class ValuePlugin(Plugin):
             config = self.attrs.copy()
             config.update(cfg)
 
-            self.items[obj] = PluginItem(oid + 1, oidstr, syntax, **config)
+            self.items[obj] = ModuleItem(oid + 1, oidstr, syntax, **config)
 
             LOG.debug('initialized item: %s (%s)', oidstr, syntax[0])
 
@@ -101,9 +101,9 @@ class ValuePlugin(Plugin):
             snmpy.log_error(e)
 
 
-class TablePlugin(Plugin):
+class TableModule(Module):
     def __init__(self, conf):
-        Plugin.__init__(self, conf)
+        Module.__init__(self, conf)
 
         self.rows = []
         self.cols = collections.OrderedDict()
@@ -116,7 +116,7 @@ class TablePlugin(Plugin):
             oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
             syntax = snmpy.mibgen.get_syntax(cfg['type'])
 
-            self.cols[obj] = PluginItem(oid + 1, oidstr, syntax, **cfg)
+            self.cols[obj] = ModuleItem(oid + 1, oidstr, syntax, **cfg)
             LOG.debug('initialized column: %s (%s)', oidstr, syntax[0])
 
         self.load()

@@ -1,13 +1,13 @@
 import datetime
 import logging
 import os
-import snmpy.plugin
+import snmpy.module
 import subprocess
 
 LOG = logging.getLogger()
 
 
-class disk_utilization(snmpy.plugin.TablePlugin):
+class disk_utilization(snmpy.module.TableModule):
     def __init__(self, conf):
         conf['table'] = [
             {'dev':  'string'},
@@ -15,7 +15,7 @@ class disk_utilization(snmpy.plugin.TablePlugin):
             {'util': 'integer'},
         ]
 
-        snmpy.plugin.TablePlugin.__init__(self, conf)
+        snmpy.module.TableModule.__init__(self, conf)
 
     def update(self):
         os.environ['LC_TIME'] = 'POSIX'

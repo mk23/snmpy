@@ -5,7 +5,7 @@ import signal
 import snmpy
 import snmpy.agentx
 import snmpy.mibgen
-import snmpy.plugin
+import snmpy.module
 import tempfile
 import time
 
@@ -41,10 +41,10 @@ class SnmpyAgent(object):
             try:
                 mod.update()
 
-                if isinstance(mod, snmpy.plugin.ValuePlugin):
+                if isinstance(mod, snmpy.module.ValueModule):
                     for item in mod:
                         self.snmp.replace_value(mod[item].oidstr, mod[item].value)
-                elif isinstance(mod, snmpy.plugin.TablePlugin):
+                elif isinstance(mod, snmpy.module.TableModule):
                     self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
             except Exception as e:
                 snmpy.log_error(e)
@@ -75,11 +75,11 @@ class SnmpyAgent(object):
         for mod in self.mods:
             mtbl.append(mod.name)
 
-            if isinstance(mod, snmpy.plugin.ValuePlugin):
+            if isinstance(mod, snmpy.module.ValueModule):
                 for item in mod:
                     getattr(self.snmp, mod[item].syntax.object_type)(mod[item].value, mod[item].oidstr)
 
-            elif isinstance(mod, snmpy.plugin.TablePlugin):
+            elif isinstance(mod, snmpy.module.TableModule):
                 self.snmp.Table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *list(getattr(self.snmp, col.syntax.object_type)() for col in mod.cols.values()))
 
             self.start_fetch(mod)

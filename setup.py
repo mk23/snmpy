@@ -20,7 +20,7 @@ if __name__ == '__main__':
         name='snmpy',
         version=VERSION,
         scripts=['snmpy'],
-        packages=['snmpy', 'snmpy.plugin'],
+        packages=['snmpy', 'snmpy.module'],
         package_dir={'snmpy': 'lib'},
         data_files=confs.items(),
         license='LICENSE.txt',

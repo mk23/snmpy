@@ -1,6 +1,6 @@
 import collections
 import re
-import snmpy.plugin
+import snmpy.module
 import time
 
 MIB_MODULE  = 'SNMPY-MIB'
@@ -33,7 +33,7 @@ def config_mib(plugin):
         {prefix}{name} OBJECT IDENTIFIER ::= {{ {prefix}MIB {oid} }}
     '''.format(prefix=KEY_PREFIX, name=name, oid=plugin.conf['snmpy_index'])
 
-    if isinstance(plugin, snmpy.plugin.ValuePlugin):
+    if isinstance(plugin, snmpy.module.ValueModule):
         for item in plugin:
             part += '''
                 {prefix}{name}{part} OBJECT-TYPE
@@ -43,7 +43,7 @@ def config_mib(plugin):
                     DESCRIPTION "{prefix}{name}{part}"
                     ::= {{ {prefix}{name} {oid} }}
             '''.format(prefix=KEY_PREFIX, name=name, part=camel_case(item), syntax=plugin[item].syntax.mib_type, oid=plugin[item].oidnum)
-    elif isinstance(plugin, snmpy.plugin.TablePlugin):
+    elif isinstance(plugin, snmpy.module.TableModule):
         types = []
         parts = ''
 

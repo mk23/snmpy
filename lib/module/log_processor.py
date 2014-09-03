@@ -1,15 +1,15 @@
 import logging
 import os
+import snmpy.module
 import snmpy.parser
-import snmpy.plugin
 import time
 
 LOG = logging.getLogger()
 
 
-class log_processor(snmpy.plugin.ValuePlugin):
+class log_processor(snmpy.module.ValueModule):
     def __init__(self, conf):
-        snmpy.plugin.ValuePlugin.__init__(self, conf)
+        snmpy.module.ValueModule.__init__(self, conf)
 
         self.tail(self.conf['object'].format(**self.conf['snmpy_extra']))
 

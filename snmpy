@@ -136,7 +136,7 @@ def initialize(conf):
                     LOG.info('%s: added to system path', path)
             else:
                 base = item
-                full = 'snmpy.plugin.%s' % base
+                full = 'snmpy.module.%s' % base
 
             LOG.debug('%s: creating plugin instance from %s', name, full)
 

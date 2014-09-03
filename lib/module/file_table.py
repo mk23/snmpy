@@ -1,7 +1,8 @@
+import snmpy.module
 import snmpy.parser
-import snmpy.plugin
 
-class file_table(snmpy.plugin.TablePlugin):
+
+class file_table(snmpy.module.TableModule):
     def update(self):
         text = open(self.conf['object']).read()
         for item in snmpy.parser.parse_table(self.conf['parser'], text):

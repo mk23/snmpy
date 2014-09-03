@@ -1,11 +1,12 @@
 import logging
 import os
+import snmpy.module
 import snmpy.parser
-import snmpy.plugin
 import stat
 import time
 
-class file_value(snmpy.plugin.ValuePlugin):
+
+class file_value(snmpy.module.ValueModule):
     kind = {
         stat.S_IFDIR:  'directory',
         stat.S_IFCHR:  'character device',
@@ -32,7 +33,7 @@ class file_value(snmpy.plugin.ValuePlugin):
                 {'file_gid':   {'type': 'integer', 'func': lambda x: x}},
             ] + conf.get('items', [])
 
-        snmpy.plugin.ValuePlugin.__init__(self, conf)
+        snmpy.module.ValueModule.__init__(self, conf)
 
     def update(self):
         info = text = None

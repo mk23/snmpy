@@ -1,11 +1,11 @@
 import logging
 import os
-import snmpy.plugin
+import snmpy.module
 
 LOG = logging.getLogger()
 
 
-class process_info(snmpy.plugin.TablePlugin):
+class process_info(snmpy.module.TableModule):
     def __init__(self, conf):
         conf['table'] = [
             {'pid':             {'type': 'integer',   'func': lambda s, l, f: int(self.parser(s, 'Pid'))}},
@@ -21,7 +21,7 @@ class process_info(snmpy.plugin.TablePlugin):
             {'ctx_involuntary': {'type': 'counter64', 'func': lambda s, l, f: int(self.parser(s, 'nonvoluntary_ctxt_switches'))}},
         ]
 
-        snmpy.plugin.TablePlugin.__init__(self, conf)
+        snmpy.module.TableModule.__init__(self, conf)
 
     def update(self):
         for pid in os.listdir('/proc'):
