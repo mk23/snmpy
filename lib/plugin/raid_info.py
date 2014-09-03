@@ -6,11 +6,11 @@ class raid_info(snmpy.plugin.TablePlugin):
         conf['table'] = [
             {'type':       'string'},
             {'controller': 'string'},
-            {'device':     'string'},
+            {'volume':     'string'},
             {'level':      'integer'},
             {'state':      'string'},
             {'extra':      'string'},
-            {'member':     'string'},
+            {'device':     'string'},
             {'status':     'string'},
         ]
 
@@ -28,44 +28,50 @@ class raid_info(snmpy.plugin.TablePlugin):
 
         if not patt:
             patt.update({
-                'raid_device': re.compile(r'(?P<NAME>.+?) : (?P<STATE>.+?) raid(?P<LEVEL>\d+) (?P<DISKS>.+)'),
+                'raid_volume': re.compile(r'(?P<NAME>.+?) : (?P<STATE>.+?) raid(?P<LEVEL>\d+) (?P<DISKS>.+)'),
                 'raid_status': re.compile(r'[\s\[\]\.\=\>]+(?P<STATE>resync|recovery)\s*=\s*(?:\(\d+\/\d+\))?\s*(?P<EXTRA>.*)'),
-                'disk_device': re.compile(r'(?P<DEV>.+?)\[(?P<IDX>\d+)\](?:\(\.\))?'),
+                'disk_device': re.compile(r'\s*(?P<DEV>.+?)\[(?P<IDX>\d+)\][^\s]*'),
                 'disk_status': re.compile(r'\[(?P<STATUS>[U_]+)\]$'),
             })
 
         for line in open('/proc/mdstat'):
-            find = patt['raid_device'].match(line)
+            find = patt['raid_volume'].match(line)
             if find:
                 name = find.group('NAME')
                 raid[name] = {
-                    'state': find.group('STATE'),
+                    'state': 'ONLINE' if find.group('STATE') == 'active' else 'OFFLINE',
                     'level': find.group('LEVEL'),
                     'extra': '-',
-                    'disks': [],
+                    'disks': {},
                 }
-                for item in find.group('DISKS').split():
-                    disk = patt['disk_device'].match(item)
-                    if disk:
-                        raid[name]['disks'].append({
-                            'number': disk.group('IDX'),
-                            'member': disk.group('DEV'),
-                            'status': 'OPTIMAL',
-                        })
+                for disk, indx in patt['disk_device'].findall(find.group('DISKS')):
+                    raid[name]['disks'][int(indx)] = {
+                        'member': disk,
+                        'status': 'UNKNOWN',
+                    }
 
-            find = patt['disk_status'].match(line)
+            find = patt['disk_status'].search(line)
             if find:
-                for indx, stat in enumerate(find.group('STATUS').split()):
-                    if 'stat' == '_':
-                        raid[name]['disks'][indx]['status'] = 'DEGRADED'
+                for indx, stat in enumerate(list(find.group('STATUS'))):
+                    if stat == '_':
+                        if indx not in raid[name]['disks']:
+                            raid[name]['disks'][indx] = {
+                                'member': '(missing)',
+                                'status': 'MISSING',
+                            }
+                        else:
+                            raid[name]['disks'][indx]['status'] = 'FAILED'
+                    elif stat == 'U':
+                        raid[name]['disks'][indx]['status'] = 'ACTIVE'
 
             find = patt['raid_status'].match(line)
             if find:
-                raid[name]['state'] = find.group('STATE')
+                raid[name]['state'] = 'REBUILD'
                 raid[name]['extra'] = find.group('EXTRA')
 
+
         for name, data in sorted(raid.items()):
-            for disk in sorted(data['disks'], key=lambda x: int(x['number']) if x['number'].isdigit() else x['number']):
+            for indx, disk in sorted(data['disks'].items()):
                 self.append([
                     'mdadm',
                     '-',
