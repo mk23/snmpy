@@ -1,3 +1,12 @@
+snmpy (2.0.4) stable; urgency=medium
+
+  * Tagging 2.0.4
+  * [b414532] Issue #44: Clarify plugin vs module in docs.
+  * [d7fe14f] Issue #44: python code should be referred to as 'module'.
+  * [e2c7616] Issue #43: Fix more cases in raid_info module.
+
+ -- Max Kalika <mkalika@apple.com>  Thu, 04 Sep 2014 19:09:28 -0700
+
 snmpy (2.0.3) stable; urgency=medium
 
   * Tagging 2.0.3
