@@ -370,15 +370,23 @@ Currently, only `mdadm` RAID type is supported, but `megaraid` and others may be
 See [`raid_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/raid_info.yml) example plugin:
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
-    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyRaidInfo | grep '\.1 ='
-    SNMPY-MIB::snmpyRaidInfoType.1 = STRING: "mdadm"
-    SNMPY-MIB::snmpyRaidInfoController.1 = STRING: "-"
-    SNMPY-MIB::snmpyRaidInfoDevice.1 = STRING: "md0"
-    SNMPY-MIB::snmpyRaidInfoLevel.1 = INTEGER: 1
-    SNMPY-MIB::snmpyRaidInfoState.1 = STRING: "ONLINE"
-    SNMPY-MIB::snmpyRaidInfoExtra.1 = STRING: "-"
-    SNMPY-MIB::snmpyRaidInfoMember.1 = STRING: "sda2"
-    SNMPY-MIB::snmpyRaidInfoStatus.1 = STRING: "ACTIVE"
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyRaidInfo | grep '\.[34] ='
+    SNMPY-MIB::snmpyRaidInfoController.3 = STRING: "mdadm"
+    SNMPY-MIB::snmpyRaidInfoController.4 = STRING: "mdadm"
+    SNMPY-MIB::snmpyRaidInfoVolumeLabel.3 = STRING: "/dev/md/1"
+    SNMPY-MIB::snmpyRaidInfoVolumeLabel.4 = STRING: "/dev/md/1"
+    SNMPY-MIB::snmpyRaidInfoVolumeBytes.3 = Counter64: 2983016792064
+    SNMPY-MIB::snmpyRaidInfoVolumeBytes.4 = Counter64: 2983016792064
+    SNMPY-MIB::snmpyRaidInfoVolumeLevel.3 = INTEGER: 10
+    SNMPY-MIB::snmpyRaidInfoVolumeLevel.4 = INTEGER: 10
+    SNMPY-MIB::snmpyRaidInfoVolumeState.3 = STRING: "RECOVERING"
+    SNMPY-MIB::snmpyRaidInfoVolumeState.4 = STRING: "RECOVERING"
+    SNMPY-MIB::snmpyRaidInfoVolumeExtra.3 = STRING: "20% complete"
+    SNMPY-MIB::snmpyRaidInfoVolumeExtra.4 = STRING: "20% complete"
+    SNMPY-MIB::snmpyRaidInfoMemberLabel.3 = STRING: "/dev/sda3"
+    SNMPY-MIB::snmpyRaidInfoMemberLabel.4 = STRING: "/dev/sdb3"
+    SNMPY-MIB::snmpyRaidInfoMemberState.3 = STRING: "REBUILDING"
+    SNMPY-MIB::snmpyRaidInfoMemberState.4 = STRING: "ACTIVE"
 
 ### disk_utilization ###
 The `disk_utilization` module provides per-disk device utilization as a percentage as reported by the [`sar`](http://sebastien.godard.pagesperso-orange.fr/man_sar.html) command from the [`sysstat`](http://sebastien.godard.pagesperso-orange.fr) package and requires collections to be operational.  It has two optional parameters that specify the location of the command and the path to the database:
