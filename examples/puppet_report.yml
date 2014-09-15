@@ -1,0 +1,15 @@
+module: file_value
+period: 1
+
+object:   '/var/lib/puppet/state/last_run_report.yaml'
+use_stat: True
+use_text: True
+
+items:
+    - environment:
+        type:  'string'
+        regex: '^  environment:\s*(\S*?)\n'
+
+    - system_state:
+        type:  'string'
+        regex: '^  status:\s*(\S+)'
