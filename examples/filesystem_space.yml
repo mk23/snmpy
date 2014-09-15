@@ -1,0 +1,18 @@
+module: exec_table
+period: 1
+
+object:  '/bin/df -lk --output=source,target,fstype,size,used,avail,itotal,iused,iavail --exclude-type=tmpfs --exclude-type=devtmpfs'
+parser:
+    type: 'regex'
+    path: '(?P<source>[^\s]+)\s+(?P<target>[^\s]+)\s+(?P<fstype>[^\s]+)\s+(?P<space_size>\d+)\s+(?P<space_used>\d+)\s+(?P<space_free>\d+)\s+(?P<inode_size>\d+)\s+(?P<inode_used>\d+)\s+(?P<inode_free>\d+)'
+
+table:
+    - source: 'string'
+    - target: 'string'
+    - fstype: 'string'
+    - space_size: 'integer64'
+    - space_used: 'integer64'
+    - space_free: 'integer64'
+    - inode_size: 'integer64'
+    - inode_used: 'integer64'
+    - inode_free: 'integer64'
