@@ -1,3 +1,17 @@
+snmpy (2.0.5) stable; urgency=medium
+
+  * Tagging 2.0.5
+  * [bd23dff] Issue #45: Update raid_info module documentation to
+    current output example.
+  * [d4d4bd5] Issue #45: Rewrite mdadm raid_info module to use output of
+    the command instead of /proc/mdstat.
+  * [334054f] Issue #47: Create an example puppet_report plugin that
+    exposes last run environment and status.
+  * [9dcf864] Issue #46: Create an example filesystem_space plugin that
+    uses 64-bit integers for disk space numbers.
+
+ -- Max Kalika <mkalika@apple.com>  Mon, 15 Sep 2014 02:41:55 -0700
+
 snmpy (2.0.4) stable; urgency=medium
 
   * Tagging 2.0.4
