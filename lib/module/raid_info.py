@@ -34,13 +34,13 @@ class raid_info(snmpy.module.TableModule):
                 'bytes': re.compile(r'Array Size : (?P<BYTES>\d+)'),
                 'level': re.compile(r'Raid Level : raid(?P<LEVEL>\d+)'),
                 'state': re.compile(r'State : (?P<STATE>[\w ,]+)'),
-                'extra': re.compile(r'Rebuild Status : (?P<EXTRA>.+)'),
+                'extra': re.compile(r'Re(?:build|sync) Status : (?P<EXTRA>.+)'),
             },
             'disks': re.compile(r'^(?:\s+\d+){4}\s+(?P<STATE>\w+(?:\s+\w+)?)(?:\s+(?P<LABEL>[\w\./_]+))?'),
         }
 
         def volume_state(kind):
-            if 'recovering' in kind:
+            if 'recovering' in kind or 'resyncing' in kind:
                 return 'RECOVERING'
             if 'degraded' in kind:
                 return 'DEGRADED'
