@@ -3,6 +3,30 @@ SNMPY
 
 SNMPy extends a running [net-snmp](http://www.net-snmp.org) agent with a custom subtree made out of configurable plugins. It makes extensive use of `libnetsnmp` C library to implement an AgentX subagent.
 
+Table of Contents
+-----------------
+* [Prerequisites](#prerequisites)
+* [Installation](#installation)
+* [Administration](#administration)
+* [Configuration](#configuration)
+  * [plugin settings](#plugin-settings)
+* [Modules](#modules)
+  * [`exec_table`](#exec_table)
+  * [`exec_value`](#exec_value)
+  * [`file_table`](#file_table)
+  * [`file_value`](#file_value)
+  * [`log_processor`](#log_processor)
+  * [`process_info`](#process_info)
+  * [`raid_info`](#raid_info)
+  * [`disk_utilization`](#disk_utilization)
+* [Development](#development)
+  * [value modules](#value-modules)
+  * [table modules](#table-modules)
+  * [parser](#parser)
+    * [`parse_value(...)`](#parse_valuetext-item-ignorefalse)
+    * [`parse_table(...)`](#parse_tableparser-text)
+* [License](#license)
+
 Prerequisites
 -------------
 
