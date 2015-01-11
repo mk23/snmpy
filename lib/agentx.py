@@ -3,6 +3,7 @@
 import ctypes.util
 import sys
 
+lib_c   = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
 lib_nsh = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmphelpers'))
 lib_nsa = ctypes.cdll.LoadLibrary(ctypes.util.find_library('netsnmpagent'))
 chk_fun = [
@@ -17,6 +18,12 @@ chk_fun = [
     'netsnmp_table_data_set_create_row_from_defaults',
     'netsnmp_set_row_column',
     'netsnmp_table_dataset_remove_and_delete_row',
+    'netsnmp_check_outstanding_agent_requests',
+    'snmp_select_info',
+    'snmp_read',
+    'snmp_timeout',
+    'snmp_store_if_needed',
+    'run_alarms',
 ]
 
 if not hasattr(lib_nsh, 'read_objid'):
@@ -25,6 +32,32 @@ if not hasattr(lib_nsh, 'read_objid'):
 for f in chk_fun:
     if not hasattr(lib_nsh, f):
             setattr(lib_nsh, f, getattr(lib_nsa, f))
+
+# From sys/time.h
+class timeval(ctypes.Structure):
+    pass
+timeval._fields_ = (
+    ('tv_sec', ctypes.c_long),
+    ('tv_usec', ctypes.c_long),
+)
+
+# From sys/select.h
+FD_SETSIZE      = 1024
+
+class fd_set(ctypes.Structure):
+    pass
+fd_set._fields_ = (
+    ('fds_bits', ctypes.c_long * (FD_SETSIZE / (8 * ctypes.sizeof(ctypes.c_long)))),
+)
+
+lib_c.select.restype  = ctypes.c_int
+lib_c.select.argtypes = (
+    ctypes.c_int,               # nfds
+    ctypes.POINTER(fd_set),     # readfds
+    ctypes.POINTER(fd_set),     # writefds
+    ctypes.POINTER(fd_set),     # exceptfds
+    ctypes.POINTER(timeval),    # timeout
+)
 
 # From net-snmp/library/asn1.h and net-snmp/snmp_impl.h
 ASN_BOOLEAN     = 0x01
@@ -305,6 +338,20 @@ lib_nsh.netsnmp_register_watched_instance.argtypes = (
     ctypes.POINTER(netsnmp_watcher_info),           # watchinfo
 )
 
+# From net-snmp/session_api.h
+lib_nsh.snmp_select_info.restype  = ctypes.c_int
+lib_nsh.snmp_select_info.argtypes = (
+    ctypes.POINTER(ctypes.c_int),   # numfds
+    ctypes.POINTER(fd_set),         # fdset
+    ctypes.POINTER(timeval),        # timeout
+    ctypes.POINTER(ctypes.c_int),   # block
+)
+
+lib_nsh.snmp_read.restype  = None
+lib_nsh.snmp_read.argtypes = (
+    ctypes.POINTER(fd_set), # fdset
+)
+
 # agentx.py constants
 MAX_STR_LEN = 1024
 
@@ -485,8 +532,38 @@ class AgentX(object):
         else:
             raise ValueError('%s is not a registered table oid' % oid)
 
-    def check_and_process(self):
-        lib_nsa.agent_check_and_process(1)
+    def check_and_process(self, lock=None):
+        block = ctypes.c_int(0)
+        num_fds = ctypes.c_int(0)
+        readers = fd_set()
+        timeout = timeval(sys.maxint, 0)
+
+        lib_nsh.snmp_select_info(ctypes.byref(num_fds), ctypes.byref(readers), ctypes.byref(timeout), ctypes.byref(block))
+        count = lib_c.select(num_fds, ctypes.byref(readers), None, None, ctypes.byref(timeout) if not block else None)
+
+        if count > 0:
+            if lock:
+                lock.acquire()
+
+            lib_nsh.snmp_read(ctypes.byref(readers))
+
+            if lock:
+                lock.release()
+        elif count == 0:
+            lib_nsh.snmp_timeout()
+        else:
+            return
+
+        if lock:
+            lock.acquire()
+
+        lib_nsh.snmp_store_if_needed()
+        lib_nsh.run_alarms()
+        lib_nsh.netsnmp_check_outstanding_agent_requests()
+
+        if lock:
+            lock.release()
+
 
 if __name__ == '__main__':
     import os

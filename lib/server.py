@@ -7,6 +7,7 @@ import snmpy.agentx
 import snmpy.mibgen
 import snmpy.module
 import tempfile
+import threading
 import time
 
 LOG = logging.getLogger()
@@ -18,6 +19,7 @@ class SnmpyAgent(object):
         self.done = False
         self.conf = conf
         self.mods = mods
+        self.lock = threading.Lock()
 
         self.start_httpd()
         self.start_agent()
@@ -39,15 +41,25 @@ class SnmpyAgent(object):
             LOG.debug('updating plugin: %s', mod.name)
 
             try:
+                success = True
                 mod.update()
-
-                if isinstance(mod, snmpy.module.ValueModule):
-                    for item in mod:
-                        self.snmp.replace_value(mod[item].oidstr, mod[item].value)
-                elif isinstance(mod, snmpy.module.TableModule):
-                    self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
             except Exception as e:
+                success = False
                 snmpy.log_error(e)
+
+            if success:
+                self.lock.acquire()
+
+                try:
+                    if isinstance(mod, snmpy.module.ValueModule):
+                        for item in mod:
+                            self.snmp.replace_value(mod[item].oidstr, mod[item].value)
+                    elif isinstance(mod, snmpy.module.TableModule):
+                        self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
+                except Exception as e:
+                    snmpy.log_error(e)
+
+                self.lock.release()
 
             if mod.conf['period'] in ('boot', 'once', '0', 0):
                 LOG.debug('run-once plugin complete: %s', mod.name)
@@ -92,7 +104,7 @@ class SnmpyAgent(object):
 
         self.snmp.start_subagent()
         while not self.done and multiprocessing.active_children():
-            self.snmp.check_and_process()
+            self.snmp.check_and_process(self.lock)
 
         LOG.info('stopping snmpy agent: %sprocess terminated', 'httpd ' if not multiprocessing.active_children() else '')
 
