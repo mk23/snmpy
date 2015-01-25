@@ -575,7 +575,7 @@ if __name__ == '__main__':
     t.append('clr', 77, 23)
 
     a.replace_value('AGENTX-TEST-MIB::agentxTestString', 'fum')
-    a.replace_table('AGENTX-TEST-MIB::agentxTestTable', ('boo', 1, 2), ('bee', 11, 12))
+    a.replace_table('AGENTX-TEST-MIB::agentxTestTable', ('boo', 1, 2), ('bee', 11, 12), (2323, 'bah', 21, 22), ('bai', 31, 32))
 
     a.start_subagent()
 
