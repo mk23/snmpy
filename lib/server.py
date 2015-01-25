@@ -79,7 +79,7 @@ class SnmpyAgent(object):
         )
 
         for mod in self.mods:
-            mtbl.append(mod.name)
+            mtbl.append(mod.conf['snmpy_index'], mod.name)
 
             if isinstance(mod, snmpy.module.ValueModule):
                 for item in mod:
