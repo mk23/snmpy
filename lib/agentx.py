@@ -428,14 +428,19 @@ class Table(object):
             lib_nsh.netsnmp_table_set_add_default_row(self.table, c + 1, cols[c]._type, 0, cols[c].reference(), cols[c].data_size())
 
     def append(self, *vals):
-        self.index.set_value(self.index.get_value() + 1)
+        if len(vals) == len(self.types) + 1:
+            idx, row = vals[0], vals[1:]
+        else:
+            idx, row = self.index.get_value() + 1, vals
+
+        self.index.set_value(idx)
         tmp_table_row = lib_nsh.netsnmp_table_data_set_create_row_from_defaults(self.table.contents.default_row)
 
         lib_nsa.snmp_varlist_add_variable(ctypes.byref(tmp_table_row.contents.indexes), None, 0, self.index._type, self.index.reference(), self.index.data_size())
 
-        for v in range(len(vals)):
-            i = self.types[v](vals[v])
-            lib_nsh.netsnmp_set_row_column(tmp_table_row, v + 1, i._type, i.reference(), i.data_size())
+        for col in range(len(row)):
+            val = self.types[col](row[col])
+            lib_nsh.netsnmp_set_row_column(tmp_table_row, col + 1, val._type, val.reference(), val.data_size())
 
         lib_nsh.netsnmp_table_dataset_add_row(self.table, tmp_table_row)
 
