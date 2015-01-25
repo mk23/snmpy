@@ -467,9 +467,8 @@ First, we need to override the `__init__()` method to define our items and start
             {'uptime_verbose': {'type': 'string'}},
         ]
 
-    snmpy.module.ValueModule.__init__(self, conf)
-
-    self['update_counter'] = 0
+        snmpy.module.ValueModule.__init__(self, conf)
+        self['update_counter'] = 0
 ```
 
 Next we implement the `update()` method to update our internal data for the system to expose to SNMP requests. There is a call to `self.format()` which is implemented in the full example below.
