@@ -195,12 +195,6 @@ lib_nsh.netsnmp_create_handler_registration.argtypes = (
     ctypes.c_int,       # modes
 )
 
-# From net-snmp/agent/snmp_agent.h
-lib_nsa.agent_check_and_process.restype  = ctypes.c_int
-lib_nsa.agent_check_and_process.argtypes = (
-    ctypes.c_int,       # block
-)
-
 # From net-snmp/agent/snmp_vars.h
 lib_nsa.init_agent.restype  = ctypes.c_int
 lib_nsa.init_agent.argtypes = (
