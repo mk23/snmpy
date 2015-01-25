@@ -41,25 +41,19 @@ class SnmpyAgent(object):
             LOG.debug('updating plugin: %s', mod.name)
 
             try:
-                success = True
                 mod.update()
-            except Exception as e:
-                success = False
-                snmpy.log_error(e)
 
-            if success:
-                self.lock.acquire()
-
-                try:
-                    if isinstance(mod, snmpy.module.ValueModule):
-                        for item in mod:
-                            self.snmp.replace_value(mod[item].oidstr, mod[item].value)
-                    elif isinstance(mod, snmpy.module.TableModule):
+                if isinstance(mod, snmpy.module.ValueModule):
+                    for item in mod:
+                        self.snmp.replace_value(mod[item].oidstr, mod[item].value)
+                elif isinstance(mod, snmpy.module.TableModule):
+                    try:
+                        self.lock.acquire()
                         self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
-                except Exception as e:
-                    snmpy.log_error(e)
-
-                self.lock.release()
+                    finally:
+                        self.lock.release()
+            except Exception as e:
+                snmpy.log_error(e)
 
             if mod.conf['period'] in ('boot', 'once', '0', 0):
                 LOG.debug('run-once plugin complete: %s', mod.name)
