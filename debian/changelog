@@ -1,3 +1,25 @@
+snmpy (2.0.6) stable; urgency=medium
+
+  * Tagging 2.0.6
+  * [b36ca84] Issue #49: Indent example_value plugin code.
+  * [3310cf9] Issue #51: Use the plugin's OID as the index value in the
+    table of running plugins.
+  * [cf6ae94] Issue #51: Update table test case to customize one row's
+    index value.
+  * [7d3ad48] Issue #51: Allow table index values to be customizable by
+    specifying it as the first parameter to append().
+  * [f8ce69e] Issue #50: agent_check_and_process() is no longer used,
+    remove prototype.
+  * [883c5d0] Issue #50: Only acquire lock when updating tables.
+  * [aa0e00a] Issue #49: Add table of contents to the doc.
+  * [4adb61e] Issue #50: Avoid table clearing race condition with
+    request processing by implementing a custom event loop with support
+    for locking in critical sections.
+  * [5443a35] Issue #48: Detect and report mdadm raid volume
+    resynchronization.
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Mon, 26 Jan 2015 13:33:07 -0800
+
 snmpy (2.0.5) stable; urgency=medium
 
   * Tagging 2.0.5
