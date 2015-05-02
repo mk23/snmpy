@@ -163,7 +163,7 @@ if __name__ == '__main__':
                         help='parent root class name')
     parser.add_argument('-s', '--system-root', type=int, default=1123,
                         help='system root object id')
-    parser.add_argument('-l', '--logger-dest', default='syslog+unix://?facility=user&level=debug',
+    parser.add_argument('-l', '--logger-dest',
                         help='logger destination url')
     parser.add_argument('-w', '--httpd-port', default=1123, type=int,
                         help='httpd server listens on this port')
