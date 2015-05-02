@@ -65,6 +65,7 @@ def parse_conf(parser):
 
 
 def create_log(logger=None):
+    arg = {}
     log = logging.NullHandler()
     fmt = '%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s'
 
