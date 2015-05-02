@@ -4,37 +4,97 @@ import snmpy.module
 
 LOG = logging.getLogger()
 
+_system_hz = os.sysconf('SC_CLK_TCK')
+_boot_time = list(int(line.split()[-1]) for line in open('/proc/stat') if line.startswith('btime')).pop()
+
+class process_data(object):
+    def __init__(self, pid):
+        self._f = len(os.listdir('/proc/%s/fd' % pid))
+        self._t = open('/proc/%s/stat' % pid).read().split(')').pop().split()
+        self._c = open('/proc/%s/cmdline' % pid).read().replace('\0', ' ')
+        self._s = {}
+        self._l = {}
+
+        for line in open('/proc/%s/status' % pid):
+            data = line.split()
+            if len(data) > 1:
+                self._s[data[0].strip(':').lower()] = data[1]
+
+        for line in open('/proc/%s/limits' % pid):
+            if line.startswith('Max'):
+                data = map(str.strip, filter(None, line.split('  ')))
+                self._l['_'.join(data[0].strip().split()[1:])] = data[1:-1]
+
+    @property
+    def pid(self):
+        return int(self._s['pid'])
+    @property
+    def ppid(self):
+        return int(self._s['ppid'])
+    @property
+    def name(self):
+        return self._s['name']
+    @property
+    def args(self):
+        return self._c
+    @property
+    def start_time(self):
+        return int(self._t[19]) / _system_hz + _boot_time
+    @property
+    def fd_open(self):
+        return self._f
+    @property
+    def fd_limit_soft(self):
+        return int(self._l['open_files'][0])
+    @property
+    def fd_limit_hard(self):
+        return int(self._l['open_files'][1])
+    @property
+    def thr_running(self):
+        return int(self._s.get('threads', 1))
+    @property
+    def mem_resident(self):
+        return int(self._s.get('vmrss', 0))
+    @property
+    def mem_swap(self):
+        return int(self._s.get('vmswap', 0))
+    @property
+    def ctx_voluntary(self):
+        return int(self._s.get('voluntary_ctxt_switches', 0))
+    @property
+    def ctx_involuntary(self):
+        return int(self._s.get('nonvoluntary_ctxt_switches', 0))
+
 
 class process_info(snmpy.module.TableModule):
     def __init__(self, conf):
         conf['table'] = [
-            {'pid':             {'type': 'integer',   'func': lambda s, l, f: int(self.parser(s, 'Pid'))}},
-            {'ppid':            {'type': 'integer',   'func': lambda s, l, f: int(self.parser(s, 'PPid'))}},
-            {'name':            {'type': 'string',    'func': lambda s, l, f: self.parser(s, 'Name')}},
-            {'fd_open':         {'type': 'integer',   'func': lambda s, l, f: f}},
-            {'fd_limit_soft':   {'type': 'integer',   'func': lambda s, l, f: int(self.parser(l, 'Max open files', 3))}},
-            {'fd_limit_hard':   {'type': 'integer',   'func': lambda s, l, f: int(self.parser(l, 'Max open files', 4))}},
-            {'thr_running':     {'type': 'integer',   'func': lambda s, l, f: int(self.parser(s, 'Threads'))}},
-            {'mem_resident':    {'type': 'integer64', 'func': lambda s, l, f: int(self.parser(s, 'VmRSS'))}},
-            {'mem_swap':        {'type': 'integer64', 'func': lambda s, l, f: int(self.parser(s, 'VmSwap'))}},
-            {'ctx_voluntary':   {'type': 'counter64', 'func': lambda s, l, f: int(self.parser(s, 'voluntary_ctxt_switches'))}},
-            {'ctx_involuntary': {'type': 'counter64', 'func': lambda s, l, f: int(self.parser(s, 'nonvoluntary_ctxt_switches'))}},
+            {'pid':             {'type': 'integer'}},
+            {'ppid':            {'type': 'integer'}},
+            {'name':            {'type': 'string'}},
+            {'args':            {'type': 'string'}},
+            {'start_time':      {'type': 'integer'}},
+            {'fd_open':         {'type': 'integer'}},
+            {'fd_limit_soft':   {'type': 'integer'}},
+            {'fd_limit_hard':   {'type': 'integer'}},
+            {'thr_running':     {'type': 'integer'}},
+            {'mem_resident':    {'type': 'integer64'}},
+            {'mem_swap':        {'type': 'integer64'}},
+            {'ctx_voluntary':   {'type': 'counter64'}},
+            {'ctx_involuntary': {'type': 'counter64'}},
         ]
 
         snmpy.module.TableModule.__init__(self, conf)
 
     def update(self):
         for pid in os.listdir('/proc'):
-            try:
-                s = open('/proc/%s/status' % pid).readlines()
-                l = open('/proc/%s/limits' % pid).readlines()
-                f = len(os.listdir('/proc/%s/fd' % pid))
+            if not pid.isdigit():
+                continue
 
-                self.append([c.func(s, l, f) for c in self.cols.values()])
-            except:
-                pass
+            try:
+                p = process_data(pid)
+                self.append([getattr(p, c) for c in self.cols.keys()])
+            except Exception as e:
+                snmpy.log_error(e, pid)
 
         LOG.debug('%d entries updated', len(self.rows))
-
-    def parser(self, text, key, col=1, sep=None):
-        return [l.split(sep)[col] for l in text if l.startswith(key)][0]
