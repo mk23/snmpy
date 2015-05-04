@@ -368,17 +368,19 @@ See [`process_info.yml`](https://github.com/mk23/snmpy/blob/master/examples/proc
 
     $ curl -s -o snmpy.mib http://localhost:1123/mib
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyProcessInfo | grep '\.1 ='
-    SNMPY-MIB::snmpyProcessInfoPid.1 = INTEGER: 4593
-    SNMPY-MIB::snmpyProcessInfoPpid.1 = INTEGER: 4592
-    SNMPY-MIB::snmpyProcessInfoName.1 = STRING: "python2.7"
-    SNMPY-MIB::snmpyProcessInfoFdOpen.1 = INTEGER: 10
+    SNMPY-MIB::snmpyProcessInfoPid.1 = INTEGER: 1
+    SNMPY-MIB::snmpyProcessInfoPpid.1 = INTEGER: 0
+    SNMPY-MIB::snmpyProcessInfoName.1 = STRING: "init"
+    SNMPY-MIB::snmpyProcessInfoArgs.1 = STRING: "/sbin/init"
+    SNMPY-MIB::snmpyProcessInfoStartTime.1 = INTEGER: 1430546101
+    SNMPY-MIB::snmpyProcessInfoFdOpen.1 = INTEGER: 14
     SNMPY-MIB::snmpyProcessInfoFdLimitSoft.1 = INTEGER: 1024
     SNMPY-MIB::snmpyProcessInfoFdLimitHard.1 = INTEGER: 4096
-    SNMPY-MIB::snmpyProcessInfoThrRunning.1 = INTEGER: 7
-    SNMPY-MIB::snmpyProcessInfoMemResident.1 = Counter64: 15052
-    SNMPY-MIB::snmpyProcessInfoMemSwap.1 = Counter64: 0
-    SNMPY-MIB::snmpyProcessInfoCtxVoluntary.1 = Counter64: 817
-    SNMPY-MIB::snmpyProcessInfoCtxInvoluntary.1 = Counter64: 143
+    SNMPY-MIB::snmpyProcessInfoThrRunning.1 = INTEGER: 1
+    SNMPY-MIB::snmpyProcessInfoMemResident.1 = Counter64: 1908
+    SNMPY-MIB::snmpyProcessInfoMemSwap.1 = Counter64: 248
+    SNMPY-MIB::snmpyProcessInfoCtxVoluntary.1 = Counter64: 8504
+    SNMPY-MIB::snmpyProcessInfoCtxInvoluntary.1 = Counter64: 11167
 
 ### raid_info ###
 The `raid_info` module provides per-disk information on attached RAID devices.  Besides the module name and refresh period, it requires specification for the types of RAID controllers to probe:
