@@ -308,17 +308,19 @@ See [`puppet_status.yml`](https://github.com/mk23/snmpy/blob/master/examples/pup
     SNMPY-MIB::snmpyPuppetStatusFileName = STRING: "/var/lib/puppet/state/last_run_summary.yaml"
     SNMPY-MIB::snmpyPuppetStatusFileType = STRING: "regular file"
     SNMPY-MIB::snmpyPuppetStatusFileMode = STRING: "0644"
-    SNMPY-MIB::snmpyPuppetStatusFileAtime = Counter64: 1430640632
+    SNMPY-MIB::snmpyPuppetStatusFileAtime = Counter64: 1430727085
     SNMPY-MIB::snmpyPuppetStatusFileMtime = Counter64: 1391621198
     SNMPY-MIB::snmpyPuppetStatusFileCtime = Counter64: 1401639435
     SNMPY-MIB::snmpyPuppetStatusFileNlink = INTEGER: 1
     SNMPY-MIB::snmpyPuppetStatusFileSize = INTEGER: 574
     SNMPY-MIB::snmpyPuppetStatusFileIno = INTEGER: 290787
-    SNMPY-MIB::snmpyPuppetStatusFileUid = INTEGER: 0
-    SNMPY-MIB::snmpyPuppetStatusFileGid = INTEGER: 0
+    SNMPY-MIB::snmpyPuppetStatusFileUid = INTEGER: 1000
+    SNMPY-MIB::snmpyPuppetStatusFileGid = INTEGER: 1000
     SNMPY-MIB::snmpyPuppetStatusRuntime = INTEGER: 27
     SNMPY-MIB::snmpyPuppetStatusSuccess = INTEGER: 1
     SNMPY-MIB::snmpyPuppetStatusFailure = INTEGER: 0
+    SNMPY-MIB::snmpyPuppetStatusVersion = Counter64: 1391616446
+    SNMPY-MIB::snmpyPuppetStatusLastRun = Counter64: 1391618985
 
 ### log_processor ###
 The `log_processor` module provides simple key-value data from the contents of a constantly-appended log file, and behaves similarly to the `file_value` module except it is able to immediately react to new data as well as rotation events.  Configuration items which must be specified are:
