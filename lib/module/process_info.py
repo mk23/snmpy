@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import snmpy.module
@@ -92,6 +93,9 @@ class process_info(snmpy.module.TableModule):
                 p = process_data(pid)
                 self.append([getattr(p, c) for c in self.cols.keys()])
             except Exception as e:
-                snmpy.log_error(e, pid)
+                if isinstance(e, EnvironmentError) and e.errno == errno.ENOENT:
+                    LOG.debug('%s: disappeared while gathering info', pid)
+                else:
+                    snmpy.log_error(e, pid)
 
         LOG.debug('%d entries updated', len(self.rows))
