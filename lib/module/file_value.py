@@ -4,7 +4,6 @@ import os
 import snmpy.module
 import snmpy.parser
 import stat
-import time
 
 
 class file_value(snmpy.module.ValueModule):
@@ -21,17 +20,17 @@ class file_value(snmpy.module.ValueModule):
     def __init__(self, conf):
         if conf.get('use_stat'):
             conf['items'] = [
-                {'file_name':  {'type': 'string',  'func': lambda x: self.conf['object']}},
-                {'file_type':  {'type': 'string',  'func': lambda x: self.kind[stat.S_IFMT(x)]}},
-                {'file_mode':  {'type': 'string',  'func': lambda x: '%04o' % stat.S_IMODE(x)}},
-                {'file_atime': {'type': 'integer', 'func': lambda x: int(time.time() - x)}},
-                {'file_mtime': {'type': 'integer', 'func': lambda x: int(time.time() - x)}},
-                {'file_ctime': {'type': 'integer', 'func': lambda x: int(time.time() - x)}},
-                {'file_nlink': {'type': 'integer', 'func': lambda x: x}},
-                {'file_size':  {'type': 'integer', 'func': lambda x: x}},
-                {'file_ino':   {'type': 'integer', 'func': lambda x: x}},
-                {'file_uid':   {'type': 'integer', 'func': lambda x: x}},
-                {'file_gid':   {'type': 'integer', 'func': lambda x: x}},
+                {'file_name':  {'type': 'string',    'func': lambda x: self.conf['object']}},
+                {'file_type':  {'type': 'string',    'func': lambda x: self.kind[stat.S_IFMT(x)]}},
+                {'file_mode':  {'type': 'string',    'func': lambda x: '%04o' % stat.S_IMODE(x)}},
+                {'file_atime': {'type': 'integer64', 'func': lambda x: int(x)}},
+                {'file_mtime': {'type': 'integer64', 'func': lambda x: int(x)}},
+                {'file_ctime': {'type': 'integer64', 'func': lambda x: int(x)}},
+                {'file_nlink': {'type': 'integer',   'func': lambda x: x}},
+                {'file_size':  {'type': 'integer',   'func': lambda x: x}},
+                {'file_ino':   {'type': 'integer',   'func': lambda x: x}},
+                {'file_uid':   {'type': 'integer',   'func': lambda x: x}},
+                {'file_gid':   {'type': 'integer',   'func': lambda x: x}},
             ] + conf.get('items', [])
         if conf.get('use_hash'):
             conf['items'].append({'file_md5': {'type': 'string'}})
