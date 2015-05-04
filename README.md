@@ -306,12 +306,12 @@ See [`puppet_status.yml`](https://github.com/mk23/snmpy/blob/master/examples/pup
     SNMPY-MIB::snmpyPuppetStatusFileName = STRING: "/var/lib/puppet/state/last_run_summary.yaml"
     SNMPY-MIB::snmpyPuppetStatusFileType = STRING: "regular file"
     SNMPY-MIB::snmpyPuppetStatusFileMode = STRING: "0644"
-    SNMPY-MIB::snmpyPuppetStatusFileAtime = INTEGER: 200
-    SNMPY-MIB::snmpyPuppetStatusFileMtime = INTEGER: 32074
-    SNMPY-MIB::snmpyPuppetStatusFileCtime = INTEGER: 32074
+    SNMPY-MIB::snmpyPuppetStatusFileAtime = Counter64: 1430640632
+    SNMPY-MIB::snmpyPuppetStatusFileMtime = Counter64: 1391621198
+    SNMPY-MIB::snmpyPuppetStatusFileCtime = Counter64: 1401639435
     SNMPY-MIB::snmpyPuppetStatusFileNlink = INTEGER: 1
     SNMPY-MIB::snmpyPuppetStatusFileSize = INTEGER: 574
-    SNMPY-MIB::snmpyPuppetStatusFileIno = INTEGER: 279301
+    SNMPY-MIB::snmpyPuppetStatusFileIno = INTEGER: 290787
     SNMPY-MIB::snmpyPuppetStatusFileUid = INTEGER: 0
     SNMPY-MIB::snmpyPuppetStatusFileGid = INTEGER: 0
     SNMPY-MIB::snmpyPuppetStatusRuntime = INTEGER: 27
