@@ -4,14 +4,11 @@ import snmpy.module
 
 LOG = logging.getLogger()
 
-_system_hz = os.sysconf('SC_CLK_TCK')
-_boot_time = list(int(line.split()[-1]) for line in open('/proc/stat') if line.startswith('btime')).pop()
-
 class process_data(object):
     def __init__(self, pid):
         self._f = len(os.listdir('/proc/%s/fd' % pid))
-        self._t = open('/proc/%s/stat' % pid).read().split(')').pop().split()
-        self._c = open('/proc/%s/cmdline' % pid).read().replace('\0', ' ')
+        self._c = open('/proc/%s/cmdline' % pid).read().replace('\0', ' ').strip()
+        self._t = os.stat('/proc/%s' % pid).st_mtime
         self._s = {}
         self._l = {}
 
@@ -39,7 +36,7 @@ class process_data(object):
         return self._c
     @property
     def start_time(self):
-        return int(self._t[19]) / _system_hz + _boot_time
+        return self._t
     @property
     def fd_open(self):
         return self._f
