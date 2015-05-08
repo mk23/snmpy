@@ -382,7 +382,7 @@ class ASNType(object):
 
 class OctetString(ASNType):
     def __init__(self, data=''):
-        self._data     = ctypes.create_string_buffer(data, MAX_STR_LEN)
+        self._data     = ctypes.create_string_buffer(data[:MAX_STR_LEN], MAX_STR_LEN)
         self._type     = ASN_OCTET_STR
         self._flags    = WATCHER_MAX_SIZE
         self._max_size = MAX_STR_LEN
