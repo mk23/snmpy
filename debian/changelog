@@ -1,3 +1,35 @@
+snmpy (2.0.7) stable; urgency=medium
+
+  * Tagging 2.0.7
+  * [5906d2d] Issue #60: Trim strings to MAX_STR_LEN in agentx.
+  * [7224e18] Issue #58: Deal with disappearing processes more
+    gracefully in process_info module.
+  * [cfca1ed] Issue #59: Remove debug and update logger example in
+    global config.
+  * [1edebd2] Issue #57: Treat timestamps as integer64, rename
+    version_config to version, update documentation.
+  * [106d625] Merge pull request #57 from mattevarts/puppet-timing
+  * [62b6dac] Add config version & last_run time to puppet status.
+  * [567bb01] Issue #54: Update process_info start time and args
+    documentation example.
+  * [b06f9b3] Issue #53: Update file_value documentation for use_hash
+    config setting.
+  * [71b8db2] Issue #55: Update file_value absolute date stamp
+    documentation example.
+  * [0d3f7e6] Issue #56: Use timestamp of /proc/%pid to determine
+    process start time.
+  * [18039c7] Issue #55: Use absolute date stamps in file_value module.
+    ** NOTE ** backwards incompatible change.
+  * [77ce7b1] Issue #54: Refactor process_info and add start_time and
+    args columns.
+  * [5189d1b] Issue #53: Add optional md5 hash item in file_value
+    module.
+  * [0d476bf] Issue #52: Fix null logger.
+  * [b94e6e3] Issue #52: Remove logger destination default.
+  * [4dfa033] Increment license year.
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Fri, 08 May 2015 16:01:21 -0700
+
 snmpy (2.0.6) stable; urgency=medium
 
   * Tagging 2.0.6
