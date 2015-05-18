@@ -17,3 +17,11 @@ items:
     - failure:
         type:  'integer'
         regex: 'events:.*?failure:\s*(\d+)'
+
+    - version_config:
+        type:  'integer'
+        regex: 'version:.*?config:\s*(\d+)'
+
+    - last_run:
+        type:  'integer'
+        regex: 'time:.*?last_run:\s*(\d+)'
