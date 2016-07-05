@@ -8,8 +8,8 @@ use_text: True
 items:
     - environment:
         type:  'string'
-        regex: '^  environment:\s*(\S*?)\n'
+        regex: '^(?:  )?environment:\s*(\S*?)\n'
 
     - system_state:
         type:  'string'
-        regex: '^  status:\s*(\S+)'
+        regex: '^(?:  )?status:\s*(\S+)'
