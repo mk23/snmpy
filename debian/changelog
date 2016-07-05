@@ -1,3 +1,13 @@
+snmpy (2.0.8) stable; urgency=medium
+
+  * Tagging 2.0.8
+  * [43b9d91] Issue #62: Add file_table example to docs. (Max Kalika)
+  * [1ad3f39] Issue #61: Update license year. (Max Kalika)
+  * [2cf380c] Issue #63: Update puppet report example regex to work with
+    newer agent file format. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Tue, 05 Jul 2016 10:26:23 -0700
+
 snmpy (2.0.7) stable; urgency=medium
 
   * Tagging 2.0.7
