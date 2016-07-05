@@ -268,6 +268,25 @@ table:
 * `table`: defines the columns for this plugin.
     * item names: List of one or more columns each, specifying its type.
 
+See [`debian_packages.yml`](https://github.com/mk23/snmpy/blob/master/examples/debian_packages.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyDmidecodeBios | grep '\.[12] ='
+    SNMPY-MIB::snmpyDebianPackagesPackage.1 = STRING: "libndr0"
+    SNMPY-MIB::snmpyDebianPackagesPackage.2 = STRING: "libxml-libxml-perl"
+    SNMPY-MIB::snmpyDebianPackagesStatus.1 = STRING: "install"
+    SNMPY-MIB::snmpyDebianPackagesStatus.2 = STRING: "install"
+    SNMPY-MIB::snmpyDebianPackagesSize.1 = INTEGER: 136
+    SNMPY-MIB::snmpyDebianPackagesSize.2 = INTEGER: 1005
+    SNMPY-MIB::snmpyDebianPackagesArch.1 = STRING: "amd64"
+    SNMPY-MIB::snmpyDebianPackagesArch.2 = STRING: "amd64"
+    SNMPY-MIB::snmpyDebianPackagesVersion.1 = STRING: "4.0.3+dfsg1-0.1ubuntu1"
+    SNMPY-MIB::snmpyDebianPackagesVersion.2 = STRING: "2.0010+dfsg-1"
+    SNMPY-MIB::snmpyDebianPackagesDepends.1 = STRING: "libc6 (>= 2.14), libsamba-util0, libtalloc2 (>= 2.0.4~git20101213)"
+    SNMPY-MIB::snmpyDebianPackagesDepends.2 = STRING: "libc6 (>= 2.14), libxml2 (>= 2.7.4), perl (>= 5.14.2-15), perlapi-5.14.2, libxml-namespacesupport-perl, libxml-sax-perl"
+    SNMPY-MIB::snmpyDebianPackagesDescription.1 = STRING: "NDR marshalling library"
+    SNMPY-MIB::snmpyDebianPackagesDescription.2 = STRING: "Perl interface to the libxml2 library"
+
 ### file_value ###
 The `file_value` module provides simple key-value data from the contents of a file and behaves similarly to the `exec_value` module except the object parameter refers to a file instead of a command and optionally enables file metadata.  Configuration items which must be specified are:
 
