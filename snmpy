@@ -155,9 +155,9 @@ def initialize(conf):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
+    parser.add_argument('-f', '--config-file', default='/etc/snmpy/snmpy.yml',
                         help='system configuration file')
-    parser.add_argument('-i', '--include-dir',
+    parser.add_argument('-i', '--include-dir', default='/etc/snmpy/conf.d'
                         help='plugin configuration path')
     parser.add_argument('-t', '--persist-dir',
                         help='plugin state persistence path')
@@ -165,7 +165,7 @@ if __name__ == '__main__':
                         help='parent root class name')
     parser.add_argument('-s', '--system-root', type=int, default=1123,
                         help='system root object id')
-    parser.add_argument('-l', '--logger-dest',
+    parser.add_argument('-l', '--logger-dest', default='console://?level=INFO',
                         help='logger destination url')
     parser.add_argument('-w', '--httpd-port', default=1123, type=int,
                         help='httpd server listens on this port')
@@ -189,6 +189,7 @@ if __name__ == '__main__':
 
     if conf['snmpy_global']['create_mib']:
         conf['snmpy_global']['create_mib'].write(snmpy.mibgen.create_mib(conf, mods))
+        conf['snmpy_global']['create_mib'].flush()
     else:
         snmpy.server.SnmpyAgent(conf, mods)
 
