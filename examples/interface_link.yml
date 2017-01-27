@@ -1,0 +1,18 @@
+module: exec_value
+period: 15
+
+object:  '/sbin/ethtool {default_interface}'
+
+items:
+    - interface:
+        type:  'string'
+        regex: 'Settings for (?P<interface>\w+):'
+    - speed:
+        type:  'string'
+        regex: 'Speed:\s+(?P<speed>\d+)'
+    - duplex:
+        type:  'string'
+        regex: 'Duplex:\s+(?P<duplex>[^\n]+)'
+    - carrier:
+        type:  'string'
+        regex: 'Link detected:\s+(?P<carrier>[^\n]+)'
