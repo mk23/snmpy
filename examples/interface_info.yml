@@ -8,14 +8,8 @@ parser:
         - 'Interface:\s+(?P<interface>[^\n]+)'
         - 'SysName:\s+(?P<switch_name>[^\n]+)'
         - 'PortID:\s+(?P<switch_port>[^\s]+)'
-        - 'Autoneg:\s+(?P<link_auto>[^\n]+)'
-        - 'oper type:\s+(?P<link_speed>\d+)'
-        - '(?P<link_duplex>(?:full|half) duplex mode)'
 
 table:
     - interface:   'string'
     - switch_name: 'string'
     - switch_port: 'string'
-    - link_auto:   'string'
-    - link_speed:  'integer'
-    - link_duplex: 'string'
