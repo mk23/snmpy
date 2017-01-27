@@ -1,3 +1,25 @@
+snmpy (2.0.10) stable; urgency=medium
+
+  * Tagging 2.0.10
+  * [c34b052] Issue #67: Use command-line extra data to format object
+    configuration in file_value module. (Max Kalika)
+  * [d0207ae] Issue #67: Use command-line extra data to format object
+    configuration in file_table module. (Max Kalika)
+  * [a588cac] Issue #67: Use command-line extra data to format object
+    configuration in exec_value module. (Max Kalika)
+  * [6a89149] Issue #67: Use command-line extra data to format object
+    configuration in exec_table module. (Max Kalika)
+  * [34eabc4] Issue #68: Add interface_link.yml plugin exposing speed,
+    duplex, etc. (Max Kalika)
+  * [526f811] Issue #69: Rename interface_info.yml example plugin to
+    interface_peer.yml. (Max Kalika)
+  * [6043b68] Issue #69: Support new lldp output format. (Max Kalika)
+  * [f9c6d7b] Issue #69: Remove link state from interface_info plugin
+    example. (Max Kalika)
+  * [67351c5] Issue #66: Update copywrite year. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Fri, 27 Jan 2017 14:23:22 -0800
+
 snmpy (2.0.9) stable; urgency=medium
 
   * Tagging 2.0.9
