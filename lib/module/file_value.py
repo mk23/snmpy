@@ -20,7 +20,7 @@ class file_value(snmpy.module.ValueModule):
     def __init__(self, conf):
         if conf.get('use_stat'):
             conf['items'] = [
-                {'file_name':  {'type': 'string',    'func': lambda x: self.conf['object']}},
+                {'file_name':  {'type': 'string',    'func': lambda x: self.conf['object'].format(**self.conf['snmpy_extra'])}},
                 {'file_type':  {'type': 'string',    'func': lambda x: self.kind[stat.S_IFMT(x)]}},
                 {'file_mode':  {'type': 'string',    'func': lambda x: '%04o' % stat.S_IMODE(x)}},
                 {'file_atime': {'type': 'integer64', 'func': lambda x: int(x)}},
@@ -40,7 +40,7 @@ class file_value(snmpy.module.ValueModule):
 
     def md5sum(self):
         md5 = hashlib.md5()
-        with open(self.conf['object'], 'rb') as f:
+        with open(self.conf['object'].format(**self.conf['snmpy_extra']), 'rb') as f:
             for part in iter(lambda: f.read(1024 * md5.block_size), b''):
                 md5.update(part)
 
@@ -48,16 +48,17 @@ class file_value(snmpy.module.ValueModule):
 
     def update(self):
         info = text = hash = None
+        name = self.conf['object'].format(**self.conf['snmpy_extra'])
 
         if self.conf.get('use_stat'):
-            info = os.lstat(self.conf['object'])
-            logging.debug('%s: %s', self.conf['object'], info)
+            info = os.lstat(name)
+            logging.debug('%s: %s', name, info)
         if self.conf.get('use_text'):
-            text = open(self.conf['object']).read()
-            logging.debug('%s: read %d bytes', self.conf['object'], len(text))
+            text = open(name).read()
+            logging.debug('%s: read %d bytes', name, len(text))
         if self.conf.get('use_hash'):
             hash = self.md5sum()
-            logging.debug('%s: computed md5sum: %s', self.conf['object'], hash)
+            logging.debug('%s: computed md5sum: %s', name, hash)
 
         for item in self:
             if hasattr(self[item], 'func') and info:
