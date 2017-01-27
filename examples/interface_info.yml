@@ -5,9 +5,9 @@ object:  '/usr/sbin/lldpctl'
 parser:
     type: 'regex'
     path:
-        - 'Interface:\s+(?P<interface>[^\n]+)'
-        - 'SysName:\s+(?P<switch_name>[^\n]+)'
-        - 'PortID:\s+(?P<switch_port>[^\s]+)'
+        - 'Interface:\s+(?P<interface>[^,\n]+)'
+        - 'SysName:\s+(?P<switch_name>[^,\n]+)'
+        - 'PortID:\s+(?:ifname )?(?P<switch_port>[^\s]+)'
 
 table:
     - interface:   'string'
