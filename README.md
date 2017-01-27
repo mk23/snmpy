@@ -686,4 +686,4 @@ Generator for extracting and yielding dictionaries from `text`, one per row wher
 
 License
 -------
-[MIT](http://mk23.mit-license.org/2011-2016/license.html)
+[MIT](http://mk23.mit-license.org/2011-2017/license.html)
