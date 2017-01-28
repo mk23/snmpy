@@ -7,6 +7,7 @@ import importlib
 import logging.handlers
 import os
 import resource
+import snmpy
 import snmpy.mibgen
 import snmpy.server
 import socket
@@ -32,8 +33,8 @@ def parse_conf(parser):
             background(conf['snmpy_global']['create_pid'])
 
         create_log(conf['snmpy_global']['logger_dest'])
-    except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-        parser.error('cannot parse configuration file: %s' % e)
+    except (IOError, yaml.YAMLError) as e:
+        raise ValueError('cannot parse configuration file: %s', e)
 
     if conf['snmpy_global']['include_dir']:
         for item in glob.glob('%s/*.y*ml' % conf['snmpy_global']['include_dir']):
@@ -58,8 +59,8 @@ def parse_conf(parser):
                 if conf['snmpy_global']['persist_dir'] and conf[name].get('retain', False):
                     conf[name]['save'] = '%s/%s.dat' % (conf['snmpy_global']['persist_dir'], name)
 
-            except (IOError, yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-                parser.error('cannot parse configuration file: %s' % e)
+            except (IOError, yaml.YAMLError) as e:
+                raise ValueError('cannot parse configuration file: %s', e)
 
     return conf
 
@@ -154,9 +155,9 @@ def initialize(conf):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-f', '--config-file', default='/etc/snmpy.yml',
+    parser.add_argument('-f', '--config-file', default='/etc/snmpy/snmpy.yml',
                         help='system configuration file')
-    parser.add_argument('-i', '--include-dir',
+    parser.add_argument('-i', '--include-dir', default='/etc/snmpy/conf.d'
                         help='plugin configuration path')
     parser.add_argument('-t', '--persist-dir',
                         help='plugin state persistence path')
@@ -164,7 +165,7 @@ if __name__ == '__main__':
                         help='parent root class name')
     parser.add_argument('-s', '--system-root', type=int, default=1123,
                         help='system root object id')
-    parser.add_argument('-l', '--logger-dest',
+    parser.add_argument('-l', '--logger-dest', default='console://?level=INFO',
                         help='logger destination url')
     parser.add_argument('-w', '--httpd-port', default=1123, type=int,
                         help='httpd server listens on this port')
@@ -188,6 +189,7 @@ if __name__ == '__main__':
 
     if conf['snmpy_global']['create_mib']:
         conf['snmpy_global']['create_mib'].write(snmpy.mibgen.create_mib(conf, mods))
+        conf['snmpy_global']['create_mib'].flush()
     else:
         snmpy.server.SnmpyAgent(conf, mods)
 
