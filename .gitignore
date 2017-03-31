@@ -1,8 +1,7 @@
 *.sw*
 *.pyc
 build
-test
-lib/__version__.py
+snmpy.8
 debian/files
 debian/snmpy*
 *.egg-info/

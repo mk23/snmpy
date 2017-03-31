@@ -182,6 +182,8 @@ if __name__ == '__main__':
           -  syslog+udp://HOST:PORT/?facility=FACILITY&level=LEVEL
           -  syslog+unix://PATH?facility=FACILITY&level=LEVEL
     ''')
+    if 'H2M_ENABLED' in os.environ:
+        parser.usage  = argparse.SUPPRESS
 
     conf = parse_conf(parser)
     mods = initialize(conf)
