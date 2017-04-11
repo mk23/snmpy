@@ -23,6 +23,9 @@ def parse_conf(parser):
         args = parser.parse_args()
         conf = yaml.load(open(args.config_file))
 
+        if args.create_mib:
+            conf['snmpy_global']['create_pid'] = None
+
         parser.set_defaults(**(conf['snmpy_global']))
 
         args = parser.parse_args()
