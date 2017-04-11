@@ -3,10 +3,13 @@ Section: net
 Priority: extra
 Maintainer: Max Kalika <max.kalika+projects@gmail.com>
 Build-Depends: debhelper (>= 7), python (>= 2.7), python-setuptools, help2man
-Standards-Version: 3.8.3
+Standards-Version: 3.9.5
 XS-Python-Version: 2.7
 
 Package: snmpy
 Architecture: any
 Depends: ${misc:Depends}, python (>= 2.7), python-yaml, libsnmp15 | libsnmp30, snmp-mibs-downloader
-Description: SNMPy is a modular system for extending net-snmp through its agentx mechanism.
+Description: Modular system for extending net-snmp through its agentx mechanism.
+ Allows creating python modules for extending net-snmp. Ships with
+ several generic modules that can satisfy a number of use-cases by
+ simple configuration plugins.
