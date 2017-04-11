@@ -1,3 +1,25 @@
+snmpy (2.0.11-upstream1) trusty; urgency=medium
+
+  * Tagging 2.0.11-upstream1
+  * [2f90445] Issue #70: Prefix maintainer version with a dash. (Max
+    Kalika)
+  * [382369b] Issue #71: Provide better default configuration paths.
+    (Max Kalika)
+  * [199d968] Issue #70: Fix remaining lintian errors and warnings. (Max
+    Kalika)
+  * [22eb0ab] Issue #73: Expect plugins to begin with 4 digits. (Max
+    Kalika)
+  * [7d8739b] Issue #72: Allow unprivileged mib generation. (Max Kalika)
+  * [766dc41] Issue #75: Add maximum speed to interface link example.
+    (Max Kalika)
+  * [67e1dc9] Issue #74, #70: Generate and package basic manpage. (Max
+    Kalika)
+  * [d1b7e4d] Issue #74: Tweak logger format documentation to work with
+    help2man. (Max Kalika)
+  * [cb392ea] Issue #74: Add --version cli param. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Tue, 11 Apr 2017 08:22:10 -0700
+
 snmpy (2.0.10) stable; urgency=medium
 
   * Tagging 2.0.10
