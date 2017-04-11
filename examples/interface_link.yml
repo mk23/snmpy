@@ -8,8 +8,11 @@ items:
         type:  'string'
         regex: 'Settings for (?P<interface>\w+):'
     - speed:
-        type:  'string'
+        type:  'integer'
         regex: 'Speed:\s+(?P<speed>\d+)'
+    - avail:
+        type:  'integer'
+        regex: 'Supported link modes:(?:\s+(\d+)[\w/]+)+'
     - duplex:
         type:  'string'
         regex: 'Duplex:\s+(?P<duplex>[^\n]+)'
