@@ -17,8 +17,8 @@ echo
 	echo 'raise Exception("unable to load release.py")'
 ) |
 	exec /usr/bin/env python2.7 - ${COMMIT} \
-		--release trusty \
-		--append upstream1 \
+		--release=trusty \
+		--append=-upstream1 \
 		--extra lib/__init__.py "VERSION = '{version}'" \
 		"$@"
 
