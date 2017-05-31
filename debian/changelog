@@ -1,3 +1,11 @@
+snmpy (2.0.12-upstream1) trusty; urgency=medium
+
+  * Tagging 2.0.12-upstream1
+  * [b13a315] Issue #76: Extend use_hash to provide start and stop
+    limits. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Wed, 31 May 2017 16:36:35 -0700
+
 snmpy (2.0.11-upstream1) trusty; urgency=medium
 
   * Tagging 2.0.11-upstream1
