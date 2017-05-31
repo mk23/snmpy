@@ -296,8 +296,8 @@ period: 5
 
 object: '/path/to/file'
 use_stat: True # or False
-use_hash: True # or False
 use_text: True # or False
+use_hash: True # or False or bytes or start:bytes
 
 items:
     - item_one:
@@ -313,7 +313,7 @@ items:
 
 * `object`: Full path to a file to read and parse.
 * `use_stat`: Toggles file metadata (size, dates, permissions) in the results.
-* `use_hash`: Toggles file hash (md5sum) in the results.
+* `use_hash`: Toggles file hash (md5sum) in the results. Optionally specified by number of bytes to read or start position and number of bytes to read separated by colon.
 * `use_text`: Toggles content parsing. If disabled, `items` section below is ignored.
 * `items`: defines key-value pairs for this plugin.
     * item names: List of one or more item definitions.
