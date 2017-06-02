@@ -313,7 +313,7 @@ items:
 
 * `object`: Full path to a file to read and parse.
 * `use_stat`: Toggles file metadata (size, dates, permissions) in the results.
-* `use_hash`: Toggles file hash (md5sum) in the results. Optionally specified by number of bytes to read or start position and number of bytes to read separated by colon.
+* `use_hash`: Toggles file hash (md5sum) and the byte span in the results. Optionally specified by number of bytes to read or start position and number of bytes to read separated by colon.
 * `use_text`: Toggles content parsing. If disabled, `items` section below is ignored.
 * `items`: defines key-value pairs for this plugin.
     * item names: List of one or more item definitions.

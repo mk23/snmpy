@@ -4,7 +4,6 @@ import os
 import snmpy.module
 import snmpy.parser
 import stat
-import sys
 
 
 class file_value(snmpy.module.ValueModule):
@@ -35,20 +34,21 @@ class file_value(snmpy.module.ValueModule):
             ] + conf.get('items', [])
         if conf.get('use_hash'):
             conf['items'].append({'file_md5': {'type': 'string'}})
+            conf['items'].append({'md5_span': {'type': 'string'}})
 
 
         snmpy.module.ValueModule.__init__(self, conf)
 
-    def md5sum(self):
+    def md5sum(self, size):
         num = 0
 
         tmp = self.conf['use_hash']
         if isinstance(tmp, bool):
-            lim = slice(sys.maxsize)
+            lim = slice(size)
         elif isinstance(tmp, int):
-            lim = slice(tmp)
+            lim = slice(min(tmp, size))
         else:
-            lim = slice(*(int(i) for i in tmp.split(':', 1)))
+            lim = slice(*(min(int(i), size) for i in tmp.split(':', 1)))
 
         md5 = hashlib.md5()
         with open(self.conf['object'].format(**self.conf['snmpy_extra']), 'rb') as f:
@@ -62,20 +62,18 @@ class file_value(snmpy.module.ValueModule):
                 if num >= lim.stop:
                     break
 
-        return md5.hexdigest()
+        return '%d:%d' % (lim.start or 0, lim.stop), md5.hexdigest()
 
     def update(self):
-        info = text = hash = None
+        text = part = hash = None
         name = self.conf['object'].format(**self.conf['snmpy_extra'])
+        info = os.lstat(name)
 
-        if self.conf.get('use_stat'):
-            info = os.lstat(name)
-            logging.debug('%s: %s', name, info)
         if self.conf.get('use_text'):
             text = open(name).read()
             logging.debug('%s: read %d bytes', name, len(text))
         if self.conf.get('use_hash'):
-            hash = self.md5sum()
+            part, hash = self.md5sum(info.st_size)
             logging.debug('%s: computed md5sum: %s', name, hash)
 
         for item in self:
@@ -83,5 +81,7 @@ class file_value(snmpy.module.ValueModule):
                 self[item] = self[item].func(getattr(info, 'st_%s' % item[5:], info.st_mode))
             elif item == 'file_md5':
                 self[item] = hash
+            elif item == 'md5_span':
+                self[item] = part
             elif text:
                 self[item] = snmpy.parser.parse_value(text, self[item])
