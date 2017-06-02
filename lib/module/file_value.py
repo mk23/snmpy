@@ -49,7 +49,6 @@ class file_value(snmpy.module.ValueModule):
             lim = slice(tmp)
         else:
             lim = slice(*(int(i) for i in tmp.split(':', 1)))
-        print lim
 
         md5 = hashlib.md5()
         with open(self.conf['object'].format(**self.conf['snmpy_extra']), 'rb') as f:
@@ -57,7 +56,6 @@ class file_value(snmpy.module.ValueModule):
             for part in iter(lambda: f.read(1024 * md5.block_size), b''):
                 blob = part[:lim.stop - num]
 
-                print lim, blob
                 md5.update(blob)
                 num += len(blob)
 
