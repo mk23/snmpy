@@ -1,3 +1,13 @@
+snmpy (2.0.13-upstream1) trusty; urgency=medium
+
+  * Tagging 2.0.13-upstream1
+  * [dd367e8] Issue #78: emit byte range used for hashing if enabled in
+    file_value module. (Max Kalika)
+  * [fe48382] Issue #77: remove debugging prints in file_value module.
+    (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Fri, 02 Jun 2017 17:14:04 -0700
+
 snmpy (2.0.12-upstream1) trusty; urgency=medium
 
   * Tagging 2.0.12-upstream1
