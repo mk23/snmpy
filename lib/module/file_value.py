@@ -4,6 +4,7 @@ import os
 import snmpy.module
 import snmpy.parser
 import stat
+import sys
 
 
 class file_value(snmpy.module.ValueModule):
@@ -41,28 +42,28 @@ class file_value(snmpy.module.ValueModule):
 
     def md5sum(self, size):
         num = 0
+        md5 = hashlib.md5()
 
         tmp = self.conf['use_hash']
         if isinstance(tmp, bool):
-            lim = slice(size)
+            beg, end = 0, size or sys.maxsize
         elif isinstance(tmp, int):
-            lim = slice(min(tmp, size))
+            beg, end = 0, min(tmp, size or sys.maxsize)
         else:
-            lim = slice(*(min(int(i), size) for i in tmp.split(':', 1)))
+            beg, end = tuple(min(int(i), size or sys.maxsize) for i in tmp.split(':', 1))
 
-        md5 = hashlib.md5()
         with open(self.conf['object'].format(**self.conf['snmpy_extra']), 'rb') as f:
-            f.seek(lim.start or 0)
+            f.seek(beg or 0)
             for part in iter(lambda: f.read(1024 * md5.block_size), b''):
-                blob = part[:lim.stop - num]
+                blob = part[:end - num]
 
                 md5.update(blob)
                 num += len(blob)
 
-                if num >= lim.stop:
+                if num >= end:
                     break
 
-        return '%d:%d' % (lim.start or 0, lim.stop), md5.hexdigest()
+        return '%d:%d' % (beg or 0, num), md5.hexdigest()
 
     def update(self):
         text = part = hash = None
