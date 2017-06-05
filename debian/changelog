@@ -1,3 +1,11 @@
+snmpy (2.0.14-upstream1) trusty; urgency=medium
+
+  * Tagging 2.0.14-upstream1
+  * [62966fd] Issue #79: Support /proc files in file_value module's md5
+    hashing. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Mon, 05 Jun 2017 10:19:31 -0700
+
 snmpy (2.0.13-upstream1) trusty; urgency=medium
 
   * Tagging 2.0.13-upstream1
