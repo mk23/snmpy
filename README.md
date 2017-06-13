@@ -16,6 +16,7 @@ Table of Contents
   * [`file_table`](#file_table)
   * [`file_value`](#file_value)
   * [`log_processor`](#log_processor)
+  * [`filesystem_space`](#filesystem_space)
   * [`process_info`](#process_info)
   * [`raid_info`](#raid_info)
   * [`disk_utilization`](#disk_utilization)
@@ -376,6 +377,32 @@ See [`hbase_balancer.yml`](https://github.com/mk23/snmpy/blob/master/examples/hb
     $ echo '[ignored text] BalanceSwitch=false [ignored text]' >> /var/log/hbase/hbase-hbase-master-localhost.log
     $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyHbaseBalancer
     SNMPY-MIB::snmpyHbaseBalancerEnabled = STRING: "false"
+
+### filesystem_space ###
+The `filesystem_space` module provides per-mount point information (target path, filesystem type, source device, device id, space and inodes free, used, and total).  It optionally takes a list of filesystem types to exclude.
+
+```yaml
+module: filesystem_space
+period: 1
+
+exclude:
+    - tmpfs
+    - devtmpfs
+```
+
+See [`filesystem_space.yml`](https://github.com/mk23/snmpy/blob/master/examples/filesystem_space.yml) example plugin:
+
+    $ curl -s -o snmpy.mib http://localhost:1123/mib
+    $ snmpwalk -m +./snmpy.mib -v2c -cpublic localhost SNMPY-MIB::snmpyFilesystemSpace | grep '\.1 ='
+    SNMPY-MIB::snmpyFilesystemSpaceSource.1 = STRING: "/dev/sda1"
+    SNMPY-MIB::snmpyFilesystemSpaceTarget.1 = STRING: "/"
+    SNMPY-MIB::snmpyFilesystemSpaceFstype.1 = STRING: "ext4"
+    SNMPY-MIB::snmpyFilesystemSpaceSpaceSize.1 = Counter64: 64891708
+    SNMPY-MIB::snmpyFilesystemSpaceSpaceUsed.1 = Counter64: 12635768
+    SNMPY-MIB::snmpyFilesystemSpaceSpaceFree.1 = Counter64: 48936596
+    SNMPY-MIB::snmpyFilesystemSpaceInodeSize.1 = Counter64: 4128768
+    SNMPY-MIB::snmpyFilesystemSpaceInodeUsed.1 = Counter64: 515662
+    SNMPY-MIB::snmpyFilesystemSpaceInodeFree.1 = Counter64: 3613106
 
 ### process_info ###
 The `process_info` module provides per-process information (open files, running threads, consumed memory) on the running system.  It does not need any extra configuration other than module name and refresh period:
