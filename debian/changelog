@@ -1,3 +1,15 @@
+snmpy (2.0.15-upstream1) trusty; urgency=medium
+
+  * Tagging 2.0.15-upstream1
+  * [1165f28] Issue #80: Add documentation for new filesystem_space
+    module. (Max Kalika)
+  * [99eb049] Issue #80: Create example configuration for
+    filesystem_space module. (Max Kalika)
+  * [cd42bda] Issue #80: Create filesystem_space module, mimicking df
+    behavior. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Tue, 13 Jun 2017 12:28:01 -0700
+
 snmpy (2.0.14-upstream1) trusty; urgency=medium
 
   * Tagging 2.0.14-upstream1
