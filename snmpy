@@ -156,7 +156,7 @@ def initialize(conf):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', version=snmpy.VERSION, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', version=snmpy.__version__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-f', '--config-file', default='/etc/snmpy/snmpy.yml',
                         help='system configuration file')
     parser.add_argument('-i', '--include-dir', default='/etc/snmpy/conf.d',

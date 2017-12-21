@@ -14,7 +14,7 @@ import traceback
 import urllib
 import urlparse
 
-from snmpy import log_error, VERSION
+from snmpy import log_error, __version__
 
 LOG = logging.getLogger()
 
@@ -65,7 +65,7 @@ class Server(BaseHTTPServer.HTTPServer):
 
         Handler.log_message     = lambda *args: True
         Handler.extra_settings  = collections.namedtuple('extra_settings', kwargs.keys())(*kwargs.values())
-        Handler.server_version += ' %s/%s' % (__name__, VERSION)
+        Handler.server_version += ' %s/%s' % (__name__, __version__)
 
         try:
             self.serve_forever(poll_interval=None)

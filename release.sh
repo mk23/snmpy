@@ -18,7 +18,7 @@ echo
 ) |
 	exec /usr/bin/env python2.7 - ${COMMIT} \
 		--release=xenial \
-		--extra lib/__init__.py "VERSION = '{version}'" \
+		--extra lib/snmpy/__init__.py "__version__ = '{version}'" \
 		"$@"
 
 if [ -n "${COMMIT}" ] ; then

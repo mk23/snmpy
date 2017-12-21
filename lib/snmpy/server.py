@@ -79,7 +79,7 @@ class SnmpyAgent(object):
         self.snmp = snmpy.agentx.AgentX(self.__class__.__name__, temp.name)
 
         self.snmp.OctetString(
-            snmpy.VERSION,
+            snmpy.__version__,
             snmpy.mibgen.get_oidstr(snmpy.mibgen.VERSION_KEY)
         )
         mtbl = self.snmp.Table(

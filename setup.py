@@ -3,7 +3,7 @@
 import glob
 
 from setuptools import setup
-from lib import VERSION
+from lib.snmpy import __version__
 
 if __name__ == '__main__':
     confs = {
@@ -18,10 +18,10 @@ if __name__ == '__main__':
         url='https://github.com/mk23/snmpy',
 
         name='snmpy',
-        version=VERSION,
+        version=__version__,
         scripts=['snmpy'],
         packages=['snmpy', 'snmpy.module'],
-        package_dir={'snmpy': 'lib'},
+        package_dir={'snmpy': 'lib/snmpy'},
         data_files=confs.items(),
         license='LICENSE.txt',
         install_requires=['yaml', 'setuptools']
