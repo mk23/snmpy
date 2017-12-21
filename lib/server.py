@@ -37,21 +37,18 @@ class SnmpyAgent(object):
     @snmpy.task_func(snmpy.THREAD_TASK)
     def start_fetch(self, mod):
         LOG.info('began plugin update thread: %s', mod.name)
+
+        if mod.conf['save']:
+            LOG.debug('committing previously retained data if any: %s', mod.name)
+            self.commit_data(mod)
+
         while not self.done:
             LOG.debug('updating plugin: %s', mod.name)
 
             try:
                 mod.update()
+                self.commit_data(mod)
 
-                if isinstance(mod, snmpy.module.ValueModule):
-                    for item in mod:
-                        self.snmp.replace_value(mod[item].oidstr, mod[item].value)
-                elif isinstance(mod, snmpy.module.TableModule):
-                    try:
-                        self.lock.acquire()
-                        self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
-                    finally:
-                        self.lock.release()
             except Exception as e:
                 snmpy.log_error(e)
 
@@ -61,6 +58,18 @@ class SnmpyAgent(object):
 
             time.sleep(mod.conf['period'] * 60)
         LOG.info('ended plugin update thread: %s', mod.name)
+
+    def commit_data(self, mod):
+        if isinstance(mod, snmpy.module.ValueModule):
+            for item in mod:
+                self.snmp.replace_value(mod[item].oidstr, mod[item].value)
+        elif isinstance(mod, snmpy.module.TableModule):
+            try:
+                self.lock.acquire()
+                self.snmp.replace_table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *mod.rows)
+            finally:
+                self.lock.release()
+
 
     def start_agent(self):
         temp = tempfile.NamedTemporaryFile()
