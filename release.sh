@@ -18,7 +18,6 @@ echo
 ) |
 	exec /usr/bin/env python2.7 - ${COMMIT} \
 		--release=xenial \
-		--append=-upstream1 \
 		--extra lib/__init__.py "VERSION = '{version}'" \
 		"$@"
 
