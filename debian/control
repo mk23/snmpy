@@ -2,7 +2,7 @@ Source: snmpy
 Section: net
 Priority: extra
 Maintainer: Max Kalika <max.kalika+projects@gmail.com>
-Build-Depends: debhelper (>= 7), python (>= 2.7), python-setuptools, help2man
+Build-Depends: debhelper (>= 7), python (>= 2.7), python-setuptools,  dh-python, help2man
 Standards-Version: 3.9.5
 XS-Python-Version: 2.7
 

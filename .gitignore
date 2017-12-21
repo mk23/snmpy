@@ -4,4 +4,5 @@ build
 snmpy.8
 debian/files
 debian/snmpy*
+debian/debhelper*
 *.egg-info/
