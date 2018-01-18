@@ -1,3 +1,18 @@
+snmpy (2.0.16) xenial; urgency=medium
+
+  * Tagging 2.0.16
+  * [9f86ead] Issue #81: Add ethtool wrapper scripts to work around
+    bridged interfaces. (Max Kalika)
+  * [ecab9fe] Issue #87: Update copyright year. (Max Kalika)
+  * [6f1dd02] Issue #86: Move modules files to lib/snmpy. (Max Kalika)
+  * [4288184] Issue #84: Load saved plugin data before running first
+    poll. (Max Kalika)
+  * [57083b2] Issue #85: Convert to native Debian format. (Max Kalika)
+  * [9a092ac] Issue #83: Xenial requires dh-python as a build
+    dependency. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Thu, 18 Jan 2018 14:52:29 -0800
+
 snmpy (2.0.15-upstream1) trusty; urgency=medium
 
   * Tagging 2.0.15-upstream1
