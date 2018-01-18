@@ -3,11 +3,11 @@ Upstream-Name: snmpy
 Source: https://github.com/mk23/snmpy
 
 Files: *
-Copyright: 2011-2017 Max Kalika <max.kalika+projects@gmail.com>
+Copyright: 2011-2018 Max Kalika <max.kalika+projects@gmail.com>
 License: MIT
 
 Files: debian/*
-Copyright: 2011-2017 Max Kalika <max.kalika+projects@gmail.com>
+Copyright: 2011-2018 Max Kalika <max.kalika+projects@gmail.com>
 License: MIT
 
 License: MIT
