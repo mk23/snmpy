@@ -1,7 +1,7 @@
 module: exec_value
 period: 15
 
-object:  '/sbin/ethtool {default_interface}'
+object:  '/usr/bin/ethtool_wrapper.sh {default_interface}'
 
 items:
     - interface:

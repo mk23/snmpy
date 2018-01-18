@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
         name='snmpy',
         version=__version__,
-        scripts=['snmpy'],
+        scripts=['snmpy'] + glob.glob('scripts/*'),
         packages=['snmpy', 'snmpy.module'],
         package_dir={'snmpy': 'lib/snmpy'},
         data_files=confs.items(),
