@@ -1,0 +1,13 @@
+module: exec_table
+period: 5
+
+object: 'cat /proc/cpuinfo | grep "\(siblings\|cpu cores\)" | head -n 2'
+parser:
+    type: 'regex'
+    path:
+        - 'siblings\s+:\s+(?P<siblings>[^\n]+)'
+        - 'cpu cores\s+:\s+(?P<cpu_cores>[^\n]+)'
+
+table:
+    - siblings:    'integer'
+    - cpu_cores:   'integer'
