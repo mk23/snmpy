@@ -23,12 +23,19 @@ class filesystem_space(snmpy.module.TableModule):
         snmpy.module.TableModule.__init__(self, conf)
 
     def update(self):
+        seen = set()
+
         for line in open('/proc/self/mountinfo'):
             ((m_id, p_id, d_id, root, path, opts), (kind, dev, args)) = tuple(i.split(None, 7) for i in line.split('- '))
 
             if kind in self.conf.get('exclude', []):
                 LOG.debug('discovered excluded filesystem type: %s -> %s (%s)', dev, path, kind)
                 continue
+            if dev in seen:
+                LOG.debug('discovered overlay/duplicate mount: %s -> %s (%s)', dev, path, kind)
+                continue
+            else:
+                seen.add(dev)
 
             try:
                 stat = None
@@ -36,7 +43,7 @@ class filesystem_space(snmpy.module.TableModule):
             except Exception as e:
                 snmpy.log_error(e)
 
-            if getattr(stat, 'f_blocks', 0) > 0:
+            if getattr(stat, 'f_blocks', 0) > 0 and '/' in dev:
                 LOG.debug('discovered real filesystem: %s -> %s', dev, path)
 
                 self.append([
