@@ -1,4 +1,4 @@
-SNMPY
+SNMPY [![Downloads](https://img.shields.io/github/downloads/mk23/snmpy/total.svg)](https://img.shields.io/github/downloads/mk23/snmpy/total.svg) [![Release](https://img.shields.io/github/release/mk23/snmpy.svg)](https://img.shields.io/github/release/mk23/snmpy.svg) [![License](https://img.shields.io/github/license/mk23/snmpy.svg)](https://img.shields.io/github/license/mk23/snmpy.svg)
 =====
 
 SNMPy extends a running [net-snmp](http://www.net-snmp.org) agent with a custom subtree made out of configurable plugins. It makes extensive use of `libnetsnmp` C library to implement an AgentX subagent.
