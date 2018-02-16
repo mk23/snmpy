@@ -1,3 +1,13 @@
+snmpy (2.0.17) xenial; urgency=medium
+
+  * Tagging 2.0.17
+  * [8396ccb] Issue #88: Add downloads, release and license badges. (Max
+    Kalika)
+  * [095b8f8] Issue #89: Filter out virtual and duplicate devices in the
+    filesystem module. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Thu, 15 Feb 2018 16:13:28 -0800
+
 snmpy (2.0.16) xenial; urgency=medium
 
   * Tagging 2.0.16

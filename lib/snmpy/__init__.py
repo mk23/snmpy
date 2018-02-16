@@ -6,7 +6,7 @@ import signal
 import threading
 import traceback
 
-__version__ = '2.0.16'
+__version__ = '2.0.17'
 
 LOG = logging.getLogger()
 
