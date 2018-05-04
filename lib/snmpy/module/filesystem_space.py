@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import snmpy.module
 
 LOG = logging.getLogger()
@@ -22,11 +23,17 @@ class filesystem_space(snmpy.module.TableModule):
 
         snmpy.module.TableModule.__init__(self, conf)
 
+    def _unescape_path(self, path):
+		return re.sub(r'(\\[0-3][0-7][0-7])', lambda x: chr((ord(x.group(0)[1]) - 48) * 64 + (ord(x.group(0)[2]) - 48) * 8 + (ord(x.group(0)[3]) - 48)), path)
+
     def update(self):
         seen = set()
 
         for line in open('/proc/self/mountinfo'):
             ((m_id, p_id, d_id, root, path, opts), (kind, dev, args)) = tuple(i.split(None, 7) for i in line.split('- '))
+
+            dev  = self._unescape_path(dev)
+            path = self._unescape_path(path)
 
             if kind in self.conf.get('exclude', []):
                 LOG.debug('discovered excluded filesystem type: %s -> %s (%s)', dev, path, kind)
