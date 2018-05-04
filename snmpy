@@ -129,8 +129,11 @@ def initialize(conf):
 
         for name in keys:
             item = conf[name]['module']
+            pycs = sys.dont_write_bytecode
 
             if '/' in item:
+                sys.dont_write_bytecode = not conf['snmpy_global']['compile_bc']
+
                 path = os.path.dirname(item)
                 base = os.path.splitext(os.path.basename(item))[0]
                 full = base
@@ -145,6 +148,8 @@ def initialize(conf):
             LOG.debug('%s: creating plugin instance from %s', name, full)
 
             code = importlib.import_module(full)
+            sys.dont_write_bytecode = pycs
+
             plugins[name] = getattr(code, base)(conf[name])
 
             LOG.debug('%s: created plugin instance of %s (%s)', name, base, plugins[name])
@@ -177,6 +182,8 @@ if __name__ == '__main__':
                         help='display generated mib file and exit')
     parser.add_argument('-e', '--extra-data', default=[], action='append', nargs=2, metavar=('KEY', 'VAL'),
                         help='extra key/val data for plugins')
+    parser.add_argument('-c', '--compile-bc', default=False, action='store_true',
+                        help='compile bytecode for custom modules')
     parser.epilog = textwrap.dedent('''
         supported logger formats:
           -  console://?level=LEVEL

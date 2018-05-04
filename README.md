@@ -57,7 +57,7 @@ SNMPy can be run in foreground or as a backgrounded daemon.  It supports logging
 ```
 usage: snmpy [-h] [-f CONFIG_FILE] [-i INCLUDE_DIR] [-t PERSIST_DIR]
            [-r PARENT_ROOT] [-s SYSTEM_ROOT] [-l LOGGER_DEST] [-w HTTPD_PORT]
-           [-p [PID_FILE]] [-m [MIB_FILE]] [-e KEY VAL]
+           [-p [PID_FILE]] [-m [MIB_FILE]] [-e KEY VAL] [-c]
 
 Modular SNMP AgentX system
 
@@ -83,6 +83,7 @@ optional arguments:
                         display generated mib file and exit
   -e KEY VAL, --extra-data KEY VAL
                         extra key/val data for plugins
+  -c, --compile-bc      compile bytecode for custom modules
 
 supported logger formats:
   console://?level=LEVEL
@@ -116,6 +117,7 @@ snmpy_global:
     logger_dest: 'syslog+unix:///dev/log?facility=local1&level=DEBUG'
     create_pid:  '/var/run/snmpy.pid'
     httpd_port:  1123
+    compile_bc:  True
 ```
 
 * `include_dir`: location for plugin configuration files (see plugin settings below).
@@ -126,6 +128,7 @@ snmpy_global:
 * `httpd_port`: Port to listen for http requests.  This is also used to make sure only one SNMPy process is running on a system.
 * `create_pid`: Location of the PID file.  If this is specified, SNMPy will daemonize and run in the background.
 * `create_mib`: This shouldn't be speicified in the config file because SNMPy will just write a MIB file and exit.  If a MIB file is needed, use the `-m | --create-mib` command-line parameter, or simply download from a running agent via HTTP.
+* `compile_bc`: Enable compiling bytecode (`*.pyc`) for modules specified by absolute path (those not shipping with SNMPy itself).
 
         curl -s http://localhost:1123/mib # where 1123 is the configured httpd_port
 
