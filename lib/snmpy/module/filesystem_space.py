@@ -30,7 +30,7 @@ class filesystem_space(snmpy.module.TableModule):
         seen = set()
 
         for line in open('/proc/self/mountinfo'):
-            ((m_id, p_id, d_id, root, path, opts), (kind, dev, args)) = tuple(i.split(None, 7) for i in line.split('- '))
+            ((m_id, p_id, d_id, root, path, opts), (kind, dev, args)) = tuple(i.strip().split(None, 5) for i in line.split('-', 1))
 
             dev  = self._unescape_path(dev)
             path = self._unescape_path(path)
