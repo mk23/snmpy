@@ -1,3 +1,11 @@
+snmpy (2.0.19) xenial; urgency=medium
+
+  * Tagging 2.0.19
+  * [7d8af19] Issue #93: Fix parsing mount info on machines with dashes
+    in mountpoints or device names. (Max Kalika)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Tue, 08 May 2018 11:23:16 -0700
+
 snmpy (2.0.18) xenial; urgency=medium
 
   * Tagging 2.0.18
