@@ -79,7 +79,7 @@ def create_log(logger=None):
         if url.scheme in ('file', '') and url.path:
             log = logging.handlers.WatchedFileHandler(url.path)
         elif url.scheme.startswith('syslog'):
-            fmt = '%(module)s:%(lineno)d - %(threadName)s - %(message)s'
+            fmt = 'snmpy[%(process)d]: %(module)s:%(lineno)d - %(threadName)s - %(message)s'
             if url.scheme == 'syslog+tcp':
                 log = logging.handlers.SysLogHandler(address=(url.hostname or 'localhost', url.port or logging.handlers.SYSLOG_TCP_PORT), facility=arg.get('facility', ['user'])[0].lower(), socktype=socket.SOCK_STREAM)
             elif url.scheme == 'syslog+udp':
