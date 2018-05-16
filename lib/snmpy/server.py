@@ -62,7 +62,10 @@ class SnmpyAgent(object):
     def commit_data(self, mod):
         if isinstance(mod, snmpy.module.ValueModule):
             for item in mod:
-                self.snmp.replace_value(mod[item].oidstr, mod[item].value)
+                if mod[item].value is None:
+                    LOG.warn("'%s' doesn't have a value, ignoring", item)
+                else:
+                    self.snmp.replace_value(mod[item].oidstr, mod[item].value)
         elif isinstance(mod, snmpy.module.TableModule):
             try:
                 self.lock.acquire()
