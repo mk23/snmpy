@@ -13,3 +13,7 @@ items:
     - system_state:
         type:  'string'
         regex: '^(?:  )?status:\s*(\S+)'
+
+    - cached_catalog_status:
+        type:  'string'
+        regex: '^(?:  )?cached_catalog_status:\s*(\S+)'
