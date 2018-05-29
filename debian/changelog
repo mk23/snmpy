@@ -1,3 +1,15 @@
+snmpy (2.0.20) xenial; urgency=medium
+
+  * Tagging 2.0.20
+  * [14c4518] Issue #97: Collect cache_catalog_status from puppet's
+    last_run_report (Marc Rovner)
+  * [2d748ea] Issue #96: Continue updating item beyond first failure
+    (Marc Rovner)
+  * [a0cd7da] Issue #95: Add program / pid to logging fmt for syslog
+    logging (Marc Rovner)
+
+ -- Max Kalika <max.kalika+projects@gmail.com>  Tue, 29 May 2018 10:45:54 -0700
+
 snmpy (2.0.19) xenial; urgency=medium
 
   * Tagging 2.0.19
