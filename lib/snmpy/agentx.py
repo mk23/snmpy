@@ -449,7 +449,7 @@ class Table(object):
 
         row_iter = self.table.contents.table.contents.first_row
         while bool(row_iter):
-            row_next = row_iter.contents.next
+            row_next = row_iter.contents.__next__
             lib_nsh.netsnmp_table_dataset_remove_and_delete_row(self.table, row_iter)
             row_iter = row_next
 
@@ -535,7 +535,7 @@ class AgentX(object):
         block = ctypes.c_int(0)
         num_fds = ctypes.c_int(0)
         readers = fd_set()
-        timeout = timeval(sys.maxint, 0)
+        timeout = timeval(sys.maxsize, 0)
 
         lib_nsh.snmp_select_info(ctypes.byref(num_fds), ctypes.byref(readers), ctypes.byref(timeout), ctypes.byref(block))
         count = lib_c.select(num_fds, ctypes.byref(readers), None, None, ctypes.byref(timeout) if not block else None)

@@ -12,7 +12,7 @@ import snmpy.server
 import socket
 import sys
 import textwrap
-import urlparse
+import urllib.parse
 import yaml
 
 LOG = logging.getLogger()
@@ -46,7 +46,7 @@ def parse_conf(parser):
                     raise ValueError('%s: plugin name already assigned at another index', name)
                 if int(indx) < 1:
                     raise ValueError('%s: invalid plugin index', indx)
-                if int(indx) in list(v['snmpy_index'] for k, v in conf.items() if k != 'snmpy_global'):
+                if int(indx) in list(v['snmpy_index'] for k, v in list(conf.items()) if k != 'snmpy_global'):
                     raise ValueError('%s: index already assigned to another plugin', indx)
 
                 conf[name] = {
@@ -73,8 +73,8 @@ def create_log(logger=None):
     fmt = '%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s'
 
     if logger:
-        url = urlparse.urlparse(logger)
-        arg = urlparse.parse_qs(url.query)
+        url = urllib.parse.urlparse(logger)
+        arg = urllib.parse.parse_qs(url.query)
 
         if url.scheme in ('file', '') and url.path:
             log = logging.handlers.WatchedFileHandler(url.path)
@@ -157,7 +157,7 @@ def initialize(conf):
         snmpy.log_fatal(e, 'initialization failed')
 
     LOG.info('initialization complete')
-    return plugins.values()
+    return list(plugins.values())
 
 
 if __name__ == '__main__':

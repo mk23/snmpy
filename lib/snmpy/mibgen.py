@@ -21,7 +21,7 @@ def get_syntax(key, type_map=collections.OrderedDict()):
         type_map['Counter64'] = re.compile(r'(?:long|int(?:eger)?64|count(?:er)?64)')
         type_map['Integer32'] = re.compile(r'(?:int(?:eger)?|count)(?:32)?')
 
-    for name, info in type_map.items():
+    for name, info in list(type_map.items()):
         if info.match(key):
             return object_syntax(name, name, int)
 

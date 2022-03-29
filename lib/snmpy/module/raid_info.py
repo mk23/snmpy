@@ -16,7 +16,7 @@ class raid_info(snmpy.module.TableModule):
             {'member_state': 'string'},
         ]
 
-        if type(conf['type']) in (str, unicode):
+        if type(conf['type']) in (str, str):
             conf['type'] = [conf['type']]
 
         snmpy.module.TableModule.__init__(self, conf)
@@ -67,7 +67,7 @@ class raid_info(snmpy.module.TableModule):
                     }
                     continue
 
-                for attr, rexp in patt['attrs'].items():
+                for attr, rexp in list(patt['attrs'].items()):
                     find = rexp.search(line)
                     if find:
                         raid[name][attr] = find.group(attr.upper())

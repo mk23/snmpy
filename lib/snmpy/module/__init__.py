@@ -23,9 +23,7 @@ class Meta(type):
         return super(Meta, cls).__new__(cls, name, bases, attrs)
 
 
-class Module(object):
-    __metaclass__ = Meta
-
+class Module(object, metaclass=Meta):
     def __init__(self, conf):
         self.conf = conf
         self.name = conf['name']
@@ -34,7 +32,7 @@ class Module(object):
         pass
 
     def update(self):
-        raise(NotImplementedError('module is missing update() method'))
+        raise NotImplementedError
 
 
 class ModuleItem(object):
@@ -56,7 +54,7 @@ class ValueModule(Module):
         self.attrs['cdef'] = self.attrs.get('cdef', None)
         self.attrs['join'] = self.attrs.get('join', '')
         for oid in range(len(self.conf['items'])):
-            obj, cfg = self.conf['items'][oid].items().pop()
+            obj, cfg = list(self.conf['items'][oid].items()).pop()
 
             oidstr = snmpy.mibgen.get_oidstr(self.name, obj)
             syntax = snmpy.mibgen.get_syntax(cfg['type'])
@@ -108,7 +106,7 @@ class TableModule(Module):
         self.rows = []
         self.cols = collections.OrderedDict()
         for oid in range(len(self.conf['table'])):
-            obj, cfg = self.conf['table'][oid].items().pop()
+            obj, cfg = list(self.conf['table'][oid].items()).pop()
 
             if not isinstance(cfg, dict):
                 cfg = {'type': cfg}
@@ -130,10 +128,10 @@ class TableModule(Module):
     def append(self, data):
         self.rows.append([])
         if type(data) in (list, tuple):
-            for col in self.cols.values():
+            for col in list(self.cols.values()):
                 self.rows[-1].append(col.syntax.native_type(data[col.oidnum - 1]))
         elif isinstance(data, dict):
-            for key, col in self.cols.items():
+            for key, col in list(self.cols.items()):
                 self.rows[-1].append(col.syntax.native_type(data[key]))
 
     def load(self):
