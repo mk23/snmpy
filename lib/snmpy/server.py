@@ -75,7 +75,7 @@ class SnmpyAgent(object):
 
 
     def start_agent(self):
-        temp = tempfile.NamedTemporaryFile()
+        temp = tempfile.NamedTemporaryFile(mode="w")
         temp.write(self.text)
         temp.flush()
 

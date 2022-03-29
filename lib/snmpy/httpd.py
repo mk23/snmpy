@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import http.server
 
@@ -138,7 +138,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('X-Handler-Time', '%.02fms' % (time.time() * 1000 - self.start_time))
         self.send_header('X-Handler-Pid', os.getpid())
         self.end_headers()
-        self.wfile.write(response.body)
+        self.wfile.write(response.body.encode('utf8'))
 
     def do_GET(self):
         self.route_request('GET')

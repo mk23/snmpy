@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import argparse
 import collections
@@ -21,7 +21,7 @@ LOG = logging.getLogger()
 def parse_conf(parser):
     try:
         args = parser.parse_args()
-        conf = yaml.load(open(args.config_file))
+        conf = yaml.load(open(args.config_file), Loader=yaml.FullLoader)
 
         if args.create_mib:
             conf['snmpy_global']['create_pid'] = None
@@ -56,7 +56,7 @@ def parse_conf(parser):
                     'snmpy_index': int(indx),
                     'snmpy_extra': dict(args.extra_data),
                 }
-                conf[name].update(yaml.load(open(item)) or {})
+                conf[name].update(yaml.load(open(item), Loader=yaml.FullLoader) or {})
 
                 if conf['snmpy_global']['persist_dir'] and conf[name].get('retain', False):
                     conf[name]['save'] = '%s/%s.dat' % (conf['snmpy_global']['persist_dir'], name)
@@ -161,7 +161,10 @@ def initialize(conf):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', version=snmpy.__version__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description='Modular SNMP AgentX system',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-v', '--version', action='version', version=snmpy.__version__)
     parser.add_argument('-f', '--config-file', default='/etc/snmpy/snmpy.yml',
                         help='system configuration file')
     parser.add_argument('-i', '--include-dir', default='/etc/snmpy/conf.d',

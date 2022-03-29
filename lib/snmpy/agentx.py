@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import ctypes.util
 import sys
@@ -47,7 +47,7 @@ FD_SETSIZE      = 1024
 class fd_set(ctypes.Structure):
     pass
 fd_set._fields_ = (
-    ('fds_bits', ctypes.c_long * (FD_SETSIZE / (8 * ctypes.sizeof(ctypes.c_long)))),
+    ('fds_bits', ctypes.c_long * (FD_SETSIZE // (8 * ctypes.sizeof(ctypes.c_long)))),
 )
 
 lib_c.select.restype  = ctypes.c_int
@@ -382,7 +382,7 @@ class ASNType(object):
 
 class OctetString(ASNType):
     def __init__(self, data=''):
-        self._data     = ctypes.create_string_buffer(data[:MAX_STR_LEN], MAX_STR_LEN)
+        self._data     = ctypes.create_unicode_buffer(data[:MAX_STR_LEN], MAX_STR_LEN)
         self._type     = ASN_OCTET_STR
         self._flags    = WATCHER_MAX_SIZE
         self._max_size = MAX_STR_LEN
@@ -459,11 +459,11 @@ class AgentX(object):
         self.data = {}
 
         lib_nsa.netsnmp_enable_subagent()
-        lib_nsa.init_agent(self.name)
+        lib_nsa.init_agent(self.name.encode('utf8'))
 
         lib_nsa.netsnmp_init_mib()
         if mib is not None:
-            lib_nsa.read_mib(mib)
+            lib_nsa.read_mib(mib.encode('utf8'))
 
     def ObjectFactory(func):
         def wrapped(self, val=None, oid=None):
@@ -494,14 +494,14 @@ class AgentX(object):
         return tbl
 
     def start_subagent(self):
-        lib_nsa.init_snmp(self.name)
+        lib_nsa.init_snmp(self.name.encode('utf8'))
 
     def create_handler(self, oid):
         root_len = ctypes.c_size_t(MAX_OID_LEN)
         root_oid = (ctypes.c_ulong * MAX_OID_LEN)()
-        lib_nsh.read_objid(oid, root_oid, ctypes.byref(root_len))
+        lib_nsh.read_objid(oid.encode('utf8'), root_oid, ctypes.byref(root_len))
 
-        return lib_nsh.netsnmp_create_handler_registration(oid, None, root_oid, root_len, 0)
+        return lib_nsh.netsnmp_create_handler_registration(oid.encode('utf8'), None, root_oid, root_len, 0)
 
     def register_value(self, obj, oid):
         if oid not in self.data:
