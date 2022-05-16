@@ -21,7 +21,10 @@ LOG = logging.getLogger()
 def parse_conf(parser):
     try:
         args = parser.parse_args()
-        conf = yaml.load(open(args.config_file), Loader=yaml.FullLoader)
+        try:
+            conf = yaml.load(open(args.config_file), Loader=yaml.FullLoader)
+        except:
+            conf = yaml.load(open(args.config_file))
 
         if args.create_mib:
             conf['snmpy_global']['create_pid'] = None
@@ -56,7 +59,10 @@ def parse_conf(parser):
                     'snmpy_index': int(indx),
                     'snmpy_extra': dict(args.extra_data),
                 }
-                conf[name].update(yaml.load(open(item), Loader=yaml.FullLoader) or {})
+                try:
+                    conf[name].update(yaml.load(open(item), Loader=yaml.FullLoader) or {})
+                except:
+                    conf[name].update(yaml.load(open(item)) or {})
 
                 if conf['snmpy_global']['persist_dir'] and conf[name].get('retain', False):
                     conf[name]['save'] = '%s/%s.dat' % (conf['snmpy_global']['persist_dir'], name)

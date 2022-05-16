@@ -58,7 +58,7 @@ class raid_info(snmpy.module.TableModule):
                 return 'ACTIVE'
 
         try:
-            for line in subprocess.check_output('/sbin/mdadm --detail --scan --verbose --verbose'.split()).split('\n'):
+            for line in subprocess.check_output('/sbin/mdadm --detail --scan --verbose --verbose'.split()).decode('ascii').split('\n'):
                 find = patt['label'].match(line)
                 if find:
                     name = find.group('LABEL')

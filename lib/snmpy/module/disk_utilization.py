@@ -25,7 +25,7 @@ class disk_utilization(snmpy.module.TableModule):
         comm = [self.conf.get('sar_command', '/usr/bin/sar'), '-d', '-f', self.conf.get('sysstat_log', '/var/log/sysstat/sa%02d') % date.day, '-s', date.strftime('%H:%M:00')]
 
         LOG.debug('running sar command: %s', ' '.join(comm))
-        for line in subprocess.check_output(comm, stderr=open(os.devnull, 'w')).split('\n'):
+        for line in subprocess.check_output(comm, stderr=open(os.devnull, 'w')).decode('ascii').split('\n'):
             LOG.debug('line: %s', line)
 
             part = line.split()

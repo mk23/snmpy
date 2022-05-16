@@ -138,7 +138,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('X-Handler-Time', '%.02fms' % (time.time() * 1000 - self.start_time))
         self.send_header('X-Handler-Pid', os.getpid())
         self.end_headers()
-        self.wfile.write(response.body.encode('utf8'))
+        self.wfile.write(response.body.encode('ascii'))
 
     def do_GET(self):
         self.route_request('GET')
