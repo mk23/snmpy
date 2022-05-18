@@ -33,12 +33,12 @@ def parse_table(parser, text):
     if 'type' not in parser or parser['type'] not in ['regex']:
         LOG.warn('invalid or missing parser type: %s', parser.get('path'))
         yield
-    if 'path' not in parser or type(parser['path']) not in (str, unicode, list, tuple):
+    if 'path' not in parser or type(parser['path']) not in (str, str, list, tuple):
         LOG.warn('invalid or missing parser path: %s', parser.get('path'))
         yield
 
     if parser['type'] == 'regex':
-        if type(parser['path']) in (str, unicode):
+        if type(parser['path']) in (str, str):
             patt = parser['path']
         elif type(parser['path']) in (list, tuple):
             patt = '.*?'.join(parser['path'])

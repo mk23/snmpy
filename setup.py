@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import glob
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
         scripts=['snmpy'] + glob.glob('scripts/*'),
         packages=['snmpy', 'snmpy.module'],
         package_dir={'snmpy': 'lib/snmpy'},
-        data_files=confs.items(),
+        data_files=list(confs.items()),
         license='LICENSE.txt',
         install_requires=['yaml', 'setuptools']
     )

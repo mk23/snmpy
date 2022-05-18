@@ -20,7 +20,7 @@ class process_data(object):
 
         for line in open('/proc/%s/limits' % pid):
             if line.startswith('Max'):
-                data = map(str.strip, filter(None, line.split('  ')))
+                data = list(map(str.strip, [_f for _f in line.split('  ') if _f]))
                 self._l['_'.join(data[0].strip().split()[1:])] = data[1:-1]
 
     @property
@@ -91,7 +91,7 @@ class process_info(snmpy.module.TableModule):
 
             try:
                 p = process_data(pid)
-                self.append([getattr(p, c) for c in self.cols.keys()])
+                self.append([getattr(p, c) for c in list(self.cols.keys())])
             except Exception as e:
                 if isinstance(e, EnvironmentError) and e.errno == errno.ENOENT:
                     LOG.debug('%s: disappeared while gathering info', pid)

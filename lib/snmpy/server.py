@@ -1,4 +1,4 @@
-import httpd
+from . import httpd
 import logging
 import multiprocessing
 import signal
@@ -75,7 +75,7 @@ class SnmpyAgent(object):
 
 
     def start_agent(self):
-        temp = tempfile.NamedTemporaryFile()
+        temp = tempfile.NamedTemporaryFile(mode="w")
         temp.write(self.text)
         temp.flush()
 
@@ -98,7 +98,7 @@ class SnmpyAgent(object):
                     getattr(self.snmp, mod[item].syntax.object_type)(mod[item].value, mod[item].oidstr)
 
             elif isinstance(mod, snmpy.module.TableModule):
-                self.snmp.Table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *list(getattr(self.snmp, col.syntax.object_type)() for col in mod.cols.values()))
+                self.snmp.Table(snmpy.mibgen.get_oidstr(mod.name, 'table'), *list(getattr(self.snmp, col.syntax.object_type)() for col in list(mod.cols.values())))
 
             self.start_fetch(mod)
 

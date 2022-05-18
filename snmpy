@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import argparse
 import collections
@@ -12,7 +12,7 @@ import snmpy.server
 import socket
 import sys
 import textwrap
-import urlparse
+import urllib.parse
 import yaml
 
 LOG = logging.getLogger()
@@ -21,7 +21,10 @@ LOG = logging.getLogger()
 def parse_conf(parser):
     try:
         args = parser.parse_args()
-        conf = yaml.load(open(args.config_file))
+        try:
+            conf = yaml.load(open(args.config_file), Loader=yaml.FullLoader)
+        except:
+            conf = yaml.load(open(args.config_file))
 
         if args.create_mib:
             conf['snmpy_global']['create_pid'] = None
@@ -46,7 +49,7 @@ def parse_conf(parser):
                     raise ValueError('%s: plugin name already assigned at another index', name)
                 if int(indx) < 1:
                     raise ValueError('%s: invalid plugin index', indx)
-                if int(indx) in list(v['snmpy_index'] for k, v in conf.items() if k != 'snmpy_global'):
+                if int(indx) in list(v['snmpy_index'] for k, v in list(conf.items()) if k != 'snmpy_global'):
                     raise ValueError('%s: index already assigned to another plugin', indx)
 
                 conf[name] = {
@@ -56,7 +59,10 @@ def parse_conf(parser):
                     'snmpy_index': int(indx),
                     'snmpy_extra': dict(args.extra_data),
                 }
-                conf[name].update(yaml.load(open(item)) or {})
+                try:
+                    conf[name].update(yaml.load(open(item), Loader=yaml.FullLoader) or {})
+                except:
+                    conf[name].update(yaml.load(open(item)) or {})
 
                 if conf['snmpy_global']['persist_dir'] and conf[name].get('retain', False):
                     conf[name]['save'] = '%s/%s.dat' % (conf['snmpy_global']['persist_dir'], name)
@@ -73,8 +79,8 @@ def create_log(logger=None):
     fmt = '%(asctime)s.%(msecs)03d%(module)20s:%(lineno)-3d %(threadName)-12s %(levelname)8s: %(message)s'
 
     if logger:
-        url = urlparse.urlparse(logger)
-        arg = urlparse.parse_qs(url.query)
+        url = urllib.parse.urlparse(logger)
+        arg = urllib.parse.parse_qs(url.query)
 
         if url.scheme in ('file', '') and url.path:
             log = logging.handlers.WatchedFileHandler(url.path)
@@ -157,11 +163,14 @@ def initialize(conf):
         snmpy.log_fatal(e, 'initialization failed')
 
     LOG.info('initialization complete')
-    return plugins.values()
+    return list(plugins.values())
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Modular SNMP AgentX system', version=snmpy.__version__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description='Modular SNMP AgentX system',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-v', '--version', action='version', version=snmpy.__version__)
     parser.add_argument('-f', '--config-file', default='/etc/snmpy/snmpy.yml',
                         help='system configuration file')
     parser.add_argument('-i', '--include-dir', default='/etc/snmpy/conf.d',

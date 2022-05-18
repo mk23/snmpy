@@ -1,6 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-import BaseHTTPServer
+import http.server
 
 import collections
 import logging
@@ -11,8 +11,8 @@ import sys
 import signal
 import time
 import traceback
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 
 from snmpy import log_error, __version__
 
@@ -42,7 +42,7 @@ class Response():
             'body': '',
         })
 
-        for key, val in kwargs.items():
+        for key, val in list(kwargs.items()):
             if key == 'head':
                 self.head.update(kwargs['head'])
             else:
@@ -51,20 +51,20 @@ class Response():
     def __setattr__(self, key, val):
         if key.startswith('_') or key == 'head' or key not in self.__dict__:
             raise AttributeError('setting attribute %s is not supported' % key)
-        if key == 'code' and type(val) != int:
+        if key == 'code' and not isinstance(val, int):
             raise AttributeError('setting attribute %s requires an integer' % key)
 
         self.__dict__[key] = val
 
 
-class Server(BaseHTTPServer.HTTPServer):
+class Server(http.server.HTTPServer):
     allow_reuse_address = True
 
     def __init__(self, port, addr='', **kwargs):
-        BaseHTTPServer.HTTPServer.__init__(self, (addr, port), Handler)
+        http.server.HTTPServer.__init__(self, (addr, port), Handler)
 
         Handler.log_message     = lambda *args: True
-        Handler.extra_settings  = collections.namedtuple('extra_settings', kwargs.keys())(*kwargs.values())
+        Handler.extra_settings  = collections.namedtuple('extra_settings', list(kwargs.keys()))(*list(kwargs.values()))
         Handler.server_version += ' %s/%s' % (__name__, __version__)
 
         try:
@@ -75,7 +75,7 @@ class Server(BaseHTTPServer.HTTPServer):
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_TCP, socket.TCP_DEFER_ACCEPT, True)
         self.socket.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK,     True)
-        BaseHTTPServer.HTTPServer.server_bind(self)
+        http.server.HTTPServer.server_bind(self)
 
     def process_request(self, *args):
         def handle_timeout(*args):
@@ -85,14 +85,14 @@ class Server(BaseHTTPServer.HTTPServer):
             signal.signal(signal.SIGALRM, handle_timeout)
             signal.alarm(10)
 
-            BaseHTTPServer.HTTPServer.process_request(self, *args)
+            http.server.HTTPServer.process_request(self, *args)
         except Exception as e:
             log_error(e)
         finally:
             signal.alarm(0)
 
 
-class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
+class Handler(http.server.BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
 
     request_handlers = {
@@ -107,14 +107,14 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
     def route_request(self, method):
         self.start_time  = time.time() * 1000
 
-        self.url   = urlparse.urlparse(self.path)
-        self.path  = urllib.unquote(self.url.path)
-        self.query = urlparse.parse_qs(self.url.query)
+        self.url   = urllib.parse.urlparse(self.path)
+        self.path  = urllib.parse.unquote(self.url.path)
+        self.query = urllib.parse.parse_qs(self.url.query)
 
         response = Response(head=self.default_headers)
 
         try:
-            for patt, func in self.request_handlers[method].items():
+            for patt, func in list(self.request_handlers[method].items()):
                 find = patt.match(self.path)
                 if find:
                     response = Response(head=self.default_headers)
@@ -131,21 +131,21 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
             response.body = e.body
 
         self.send_response(response.code, response.line)
-        for key, val in response.head.items():
+        for key, val in list(response.head.items()):
             if key.lower() != 'content-length':
                 self.send_header(key, val)
         self.send_header('Content-length', len(response.body))
         self.send_header('X-Handler-Time', '%.02fms' % (time.time() * 1000 - self.start_time))
         self.send_header('X-Handler-Pid', os.getpid())
         self.end_headers()
-        self.wfile.write(response.body)
+        self.wfile.write(response.body.encode('ascii'))
 
     def do_GET(self):
         self.route_request('GET')
 
 def GET(path=None):
     def wrapper(func):
-        patt = r'/%s(?:/|$)' % (path.strip('/') if path is not None else func.func_name.replace('_', '-'))
+        patt = r'/%s(?:/|$)' % (path.strip('/') if path is not None else func.__name__.replace('_', '-'))
         Handler.request_handlers['GET'][re.compile(patt)] = func
     return wrapper
 

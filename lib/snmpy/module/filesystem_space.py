@@ -24,7 +24,7 @@ class filesystem_space(snmpy.module.TableModule):
         snmpy.module.TableModule.__init__(self, conf)
 
     def _unescape_path(self, path):
-		return re.sub(r'(\\[0-3][0-7][0-7])', lambda x: chr((ord(x.group(0)[1]) - 48) * 64 + (ord(x.group(0)[2]) - 48) * 8 + (ord(x.group(0)[3]) - 48)), path)
+        return re.sub(r'(\\[0-3][0-7][0-7])', lambda x: chr((ord(x.group(0)[1]) - 48) * 64 + (ord(x.group(0)[2]) - 48) * 8 + (ord(x.group(0)[3]) - 48)), path)
 
     def update(self):
         seen = set()

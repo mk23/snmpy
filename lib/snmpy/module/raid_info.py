@@ -16,7 +16,7 @@ class raid_info(snmpy.module.TableModule):
             {'member_state': 'string'},
         ]
 
-        if type(conf['type']) in (str, unicode):
+        if type(conf['type']) in (str, str):
             conf['type'] = [conf['type']]
 
         snmpy.module.TableModule.__init__(self, conf)
@@ -58,7 +58,7 @@ class raid_info(snmpy.module.TableModule):
                 return 'ACTIVE'
 
         try:
-            for line in subprocess.check_output('/sbin/mdadm --detail --scan --verbose --verbose'.split()).split('\n'):
+            for line in subprocess.check_output('/sbin/mdadm --detail --scan --verbose --verbose'.split()).decode('ascii').split('\n'):
                 find = patt['label'].match(line)
                 if find:
                     name = find.group('LABEL')
@@ -67,7 +67,7 @@ class raid_info(snmpy.module.TableModule):
                     }
                     continue
 
-                for attr, rexp in patt['attrs'].items():
+                for attr, rexp in list(patt['attrs'].items()):
                     find = rexp.search(line)
                     if find:
                         raid[name][attr] = find.group(attr.upper())

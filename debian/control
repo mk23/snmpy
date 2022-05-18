@@ -2,13 +2,13 @@ Source: snmpy
 Section: net
 Priority: extra
 Maintainer: Max Kalika <max.kalika+projects@gmail.com>
-Build-Depends: debhelper (>= 7), python (>= 2.7), python-setuptools,  dh-python, help2man
+Build-Depends: debhelper (>= 9), python3 (>= 3.6), python3-setuptools,  dh-python, help2man
 Standards-Version: 3.9.5
-XS-Python-Version: 2.7
+XS-Python-Version: 3.6
 
 Package: snmpy
 Architecture: any
-Depends: ${misc:Depends}, python (>= 2.7), python-yaml, libsnmp15 | libsnmp30, snmp-mibs-downloader
+Depends: ${misc:Depends}, python3 (>= 3.6), python3-yaml, libsnmp15 | libsnmp30 | libsnmp35, snmp-mibs-downloader
 Description: Modular system for extending net-snmp through its agentx mechanism.
  Allows creating python modules for extending net-snmp. Ships with
  several generic modules that can satisfy a number of use-cases by
